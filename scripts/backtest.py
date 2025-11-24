@@ -1,0 +1,234 @@
+"""Backtesting script with GO/NO-GO decision.
+
+CRITICAL: This uses ACTUAL model results on 2024 test data.
+GO/NO-GO decision based on real performance, not simulated.
+"""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import pandas as pd
+import yaml
+import joblib
+import matplotlib.pyplot as plt
+import json
+import logging
+from src.backtesting.engine import BacktestEngine
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+def prepare_predictions(calibrator, feature_cols):
+    """Generate predictions on test set."""
+    logger.info("Loading test data...")
+    df = pd.read_parquet('data/processed/features_2016_2024.parquet')
+    
+    # Filter to test period (2023-2024)
+    df = df[df['season'].isin([2023, 2024])].copy()
+    
+    logger.info(f"Test period: {len(df)} games")
+    
+    # Generate predictions
+    X = df[feature_cols].fillna(0)
+    df['pred_prob'] = calibrator.predict_proba(X)
+    
+    # Actual outcomes
+    df['actual'] = (df['home_score'] > df['away_score']).astype(int)
+    
+    # Use actual moneyline odds (convert from American to decimal)
+    def american_to_decimal(american_odds):
+        """Convert American odds to decimal odds."""
+        if pd.isna(american_odds):
+            return 1.91  # Default to -110 if missing
+        if american_odds > 0:
+            return (american_odds / 100) + 1
+        else:
+            return (100 / abs(american_odds)) + 1
+    
+    # Use home team moneyline (since we're predicting home win)
+    # If missing, default to -110 (1.91 decimal)
+    if 'home_moneyline' in df.columns:
+        df['odds'] = df['home_moneyline'].apply(american_to_decimal)
+    else:
+        logger.warning("home_moneyline not found, using default 1.91 odds")
+        df['odds'] = 1.91
+    
+    return df
+
+
+def plot_equity_curve(history_df, save_path):
+    """Plot bankroll evolution."""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+    # Bankroll
+    ax1.plot(history_df.index, history_df['bankroll'], linewidth=2)
+    ax1.axhline(y=history_df['bankroll'].iloc[0], color='r',
+                linestyle='--', label='Initial', alpha=0.7)
+    ax1.set_xlabel('Bet Number')
+    ax1.set_ylabel('Bankroll ($)')
+    ax1.set_title('Bankroll Evolution')
+    ax1.legend()
+    ax1.grid(alpha=0.3)
+    
+    # Drawdown
+    ax2.plot(history_df.index, history_df['drawdown'] * 100,
+             linewidth=2, color='red')
+    ax2.set_xlabel('Bet Number')
+    ax2.set_ylabel('Drawdown (%)')
+    ax2.set_title('Drawdown Over Time')
+    ax2.grid(alpha=0.3)
+    ax2.axhline(y=0, color='black', linestyle='-', alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    logger.info(f"Equity curve saved to {save_path}")
+    plt.close()
+
+
+def main():
+    logger.info("="*70)
+    logger.info("NFL BETTING SYSTEM - BACKTESTING")
+    logger.info("="*70)
+    
+    # Load config
+    with open('config/config.yaml') as f:
+        config = yaml.safe_load(f)
+    
+    # Load calibrated model
+    logger.info("Loading calibrated model...")
+    calibrator = joblib.load('models/calibrated_model.pkl')
+    
+    # Get feature columns (must match training script exclusions)
+    temp_df = pd.read_parquet('data/processed/features_2016_2024.parquet')
+    exclude = ['game_id', 'gameday', 'home_team', 'away_team', 'season', 'week',
+               'home_score', 'away_score', 'target', 'result', 'total',
+               'game_type', 'weekday', 'gametime', 'location', 'overtime',
+               'old_game_id', 'gsis', 'nfl_detail_id', 'pfr', 'pff', 'espn', 'ftn',
+               'away_qb_id', 'home_qb_id', 'away_qb_name', 'home_qb_name',
+               'away_coach', 'home_coach', 'referee', 'stadium_id', 'stadium',
+               # CRITICAL: Exclude betting lines (data leakage)
+               'home_moneyline', 'away_moneyline',
+               'spread_line', 'home_spread_odds', 'away_spread_odds',
+               'total_line', 'over_odds', 'under_odds',
+               'line_movement', 'total_movement', 'home_favorite',  # Derived from betting lines
+               'div_game', 'roof', 'surface']
+    feature_cols = [col for col in temp_df.columns if col not in exclude]
+    feature_cols = [col for col in feature_cols if temp_df[col].dtype in ['float64', 'int64']]
+    
+    # Prepare predictions
+    predictions_df = prepare_predictions(calibrator, feature_cols)
+    
+    # Initialize backtest
+    initial_bankroll = config['betting']['bankroll']['initial']
+    engine = BacktestEngine(
+        initial_bankroll=initial_bankroll,
+        config=config['betting']
+    )
+    
+    # Run backtest
+    logger.info(f"\nStarting backtest with ${initial_bankroll:,}...")
+    metrics, history_df = engine.run_backtest(predictions_df)
+    
+    # Print results
+    logger.info("\n" + "="*70)
+    logger.info("BACKTEST RESULTS (2023-2024)")
+    logger.info("="*70)
+    logger.info(f"Total Bets:        {metrics['total_bets']:,}")
+    logger.info(f"Wins / Losses:     {metrics['wins']} / {metrics['losses']}")
+    logger.info(f"Win Rate:          {metrics['win_rate']:.2f}%")
+    logger.info(f"Total Profit:      ${metrics['total_profit']:,.2f}")
+    logger.info(f"ROI:               {metrics['roi']:.2f}%")
+    logger.info(f"Max Drawdown:      {metrics['max_drawdown']:.2f}%")
+    logger.info(f"Sharpe Ratio:      {metrics['sharpe_ratio']:.2f}")
+    logger.info(f"Avg CLV:           {metrics['avg_clv']:.2f}%")
+    logger.info(f"Positive CLV:      {metrics['positive_clv_pct']:.1f}% of bets")
+    logger.info(f"Final Bankroll:    ${metrics['final_bankroll']:,.2f}")
+    logger.info("="*70)
+    
+    # GO/NO-GO DECISION
+    logger.info("\n" + "="*70)
+    logger.info("GO/NO-GO DECISION CRITERIA")
+    logger.info("="*70)
+    
+    go_criteria = config.get('validation', {}).get('go_criteria', {})
+    
+    checks = {
+        'Win Rate >55%': (
+            metrics['win_rate'] > go_criteria.get('min_accuracy', 0.55) * 100,
+            metrics['win_rate']
+        ),
+        'ROI >3%': (
+            metrics['roi'] > go_criteria.get('min_roi', 0.03) * 100,
+            metrics['roi']
+        ),
+        'Max Drawdown <20%': (
+            metrics['max_drawdown'] > go_criteria.get('max_drawdown_threshold', -0.20) * 100,
+            metrics['max_drawdown']
+        ),
+        'Total Bets >50': (
+            metrics['total_bets'] > go_criteria.get('min_bets', 50),
+            metrics['total_bets']
+        ),
+        'Sharpe Ratio >0.5': (
+            metrics['sharpe_ratio'] > go_criteria.get('sharpe_ratio_min', 0.5),
+            metrics['sharpe_ratio']
+        ),
+        'Positive CLV': (
+            metrics['avg_clv'] > 0,
+            metrics['avg_clv']
+        )
+    }
+    
+    passed_count = 0
+    for criterion, (passed, value) in checks.items():
+        status = "[OK] PASS" if passed else "[FAIL]"
+        logger.info(f"{status:12} {criterion:30} (value: {value:.2f})")
+        if passed:
+            passed_count += 1
+    
+    logger.info("="*70)
+    
+    # Final decision
+    if passed_count == len(checks):
+        logger.info("\n[GO DECISION] - ALL CRITERIA PASSED")
+        logger.info("─"*70)
+        logger.info("System passes ALL GO criteria.")
+        logger.info("RECOMMENDATION: Proceed to paper trading (4 weeks minimum)")
+        exit_code = 0
+    elif passed_count >= len(checks) * 0.67:
+        logger.warning("\n[CAUTION] - REVIEW REQUIRED")
+        logger.warning("─"*70)
+        logger.warning(f"System passes {passed_count}/{len(checks)} criteria.")
+        logger.warning("RECOMMENDATION: Review failed criteria")
+        exit_code = 1
+    else:
+        logger.error("\n[NO-GO DECISION] - FAILED")
+        logger.error("─"*70)
+        logger.error(f"System fails {len(checks) - passed_count}/{len(checks)} criteria.")
+        logger.error("RECOMMENDATION: DO NOT proceed to live trading")
+        exit_code = 2
+    
+    # Generate reports
+    logger.info("\n" + "="*70)
+    logger.info("GENERATING REPORTS")
+    logger.info("="*70)
+    
+    Path('reports/img').mkdir(parents=True, exist_ok=True)
+    plot_equity_curve(history_df, 'reports/img/equity_curve.png')
+    
+    history_df.to_csv('reports/bet_history.csv', index=False)
+    
+    with open('reports/backtest_metrics.json', 'w') as f:
+        json.dump(metrics, f, indent=2)
+    
+    logger.info("[OK] reports/bet_history.csv")
+    logger.info("[OK] reports/backtest_metrics.json")
+    logger.info("[OK] reports/img/equity_curve.png")
+    
+    return exit_code
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+

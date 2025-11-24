@@ -1,92 +1,50 @@
 # NFL Betting System Configuration
-# Generated: 2025-11-23
 
-system:
-  name: "NFL XGBoost Betting System"
-  version: "1.0.0"
-  confidence: 0.87
+model:
+  params:
+    n_estimators: 200
+    max_depth: 6
+    learning_rate: 0.05
+    early_stopping_rounds: 10
 
-data:
-  source: "nfl_data_py"
-  seasons: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
-  test_season: 2024
-  min_games: 100
-  cache_days: 7
+betting:
+  kelly_fraction: 0.25  # 1/4 Kelly
+  min_edge: 0.02  # 2% minimum edge
+  min_probability: 0.55  # 55% minimum win probability
+  max_bet_size: 0.02  # 2% max bet of bankroll
+  bankroll:
+    initial: 10000
+
+validation:
+  go_criteria:
+    min_accuracy: 0.55  # 55% win rate
+    min_roi: 0.03  # 3% ROI
+    max_drawdown_threshold: -0.20  # -20% max drawdown
+    min_bets: 50
+    sharpe_ratio_min: 0.5
 
 features:
   core:
-    - spread_favorite
-    - over_under_line
-    - rest_days_home
-    - rest_days_away
-    - epa_offense_home
-    - epa_defense_home
-    - epa_offense_away
-    - epa_defense_away
     - elo_home
     - elo_away
     - elo_diff
-
+    - elo_prob_home
+    - rest_days_home
+    - rest_days_away
+    - spread_line
+    - total_line
+    - home_favorite
   advanced:
-    - sharp_money_indicator
-    - line_movement_spread
-    - weather_wind
-    - weather_temperature
-    - is_dome
+    - win_pct_home
+    - win_pct_away
+    - point_diff_home
+    - point_diff_away
+    - is_back_to_back_home
+    - is_back_to_back_away
     - post_bye_home
     - post_bye_away
-
-model:
-  type: "xgboost"
-  params:
-    n_estimators: 100
-    max_depth: 5
-    learning_rate: 0.05
-    objective: "binary:logistic"
-    eval_metric: "logloss"
-    early_stopping_rounds: 10
-
-  calibration:
-    method: "sigmoid"  # Platt scaling
-    cv_folds: 3
-
-betting:
-  strategy: "kelly"
-  kelly_fraction: 0.25      # 1/4 Kelly criterion
-  min_edge: 0.02            # 2% minimum edge
-  min_probability: 0.55     # 55% minimum confidence
-  max_bet_size: 0.02        # 2% max bankroll per bet
-
-  bankroll:
-    initial: 10000
-    min_safe: 5000
-
-  circuit_breakers:
-    max_drawdown: 0.15           # 15% max drawdown
-    consecutive_losses: 10       # Halt after 10 straight losses
-    weekly_loss_limit: 0.05      # 5% max weekly loss
-
-validation:
-  cv_folds: 5
-  test_size: 0.2
-  random_state: 42
-  metrics:
-    - accuracy
-    - brier_score
-    - log_loss
-    - roc_auc
-
-monitoring:
-  retrain_frequency: "weekly"
-  min_accuracy: 0.55
-  min_roi: 0.03
-  alert_on_drawdown: 0.10
-
-go_no_go_criteria:
-  win_rate_min: 0.55
-  roi_min: 0.03
-  max_drawdown_threshold: 0.20
-  min_bets: 50
-  sharpe_ratio_min: 0.5
-  positive_clv: true
-
+    - temp
+    - wind
+    - is_dome
+    - is_cold
+    - is_windy
