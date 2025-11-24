@@ -331,13 +331,41 @@ bet_size = min(bet_size, 0.02)  # Max 2% per bet
 
 ### Risk Management
 
+**Tiered Strategy Based on Bankroll Size:**
+
+#### 🎯 **Small Bankroll ($100-$500)** - Recreational
 | Safeguard | Threshold | Action |
 |-----------|-----------|--------|
-| **Max Bet Size** | 2% of bankroll | Hard cap per bet |
+| **Bet Size Range** | $1-$25 per bet | Flat betting recommended |
+| **Typical Bet** | $5-$10 | 2-5% of bankroll |
+| **Min Edge** | 1.5% | Lower threshold for action |
+| **Min Probability** | 52% | More opportunities |
+| **Max Drawdown** | -30% | Higher risk tolerance |
+| **Daily Bet Limit** | 3-10 bets | More action for fun |
+
+**Recommended**: Start with $5 flat bets regardless of edge size. Simple and sustainable.
+
+#### 💼 **Medium Bankroll ($1K-$10K)** - Serious Bettor
+| Safeguard | Threshold | Action |
+|-----------|-----------|--------|
+| **Max Bet Size** | 2-3% of bankroll | Kelly-based sizing |
 | **Min Edge** | 2% | Skip bets below threshold |
-| **Min Probability** | 55% | Minimum confidence required |
+| **Min Probability** | 55% | Higher confidence needed |
 | **Max Drawdown** | -20% | Circuit breaker trigger |
-| **Daily Bet Limit** | 5 bets | Prevent overexposure |
+| **Daily Bet Limit** | 5-8 bets | Selective betting |
+
+**Recommended**: Use 1/4 Kelly with proper edge calculation.
+
+#### 🏢 **Large Bankroll ($10K+)** - Professional
+| Safeguard | Threshold | Action |
+|-----------|-----------|--------|
+| **Max Bet Size** | 1-2% of bankroll | Conservative Kelly |
+| **Min Edge** | 2.5% | High selectivity |
+| **Min Probability** | 57% | Very high confidence |
+| **Max Drawdown** | -15% | Strict risk management |
+| **Daily Bet Limit** | 3-5 bets | Maximum selectivity |
+
+**Recommended**: Full Kelly criterion with strict discipline.
 
 ### Value Betting
 

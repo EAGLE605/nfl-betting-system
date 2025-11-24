@@ -8,12 +8,40 @@ model:
     early_stopping_rounds: 10
 
 betting:
-  kelly_fraction: 0.25  # 1/4 Kelly
-  min_edge: 0.02  # 2% minimum edge
-  min_probability: 0.55  # 55% minimum win probability
-  max_bet_size: 0.02  # 2% max bet of bankroll
+  # Tiered betting strategy - choose your profile
+  
+  # SMALL BANKROLL ($100-$500) - Recreational
+  small:
+    flat_bet: 5  # $5 flat bet (simple & effective)
+    min_edge: 0.015  # 1.5% minimum edge
+    min_probability: 0.52  # 52% minimum confidence
+    max_bet_size: 25  # Hard cap at $25
+    max_drawdown: -0.30  # -30% circuit breaker
+    daily_limit: 10  # Up to 10 bets per day
+  
+  # MEDIUM BANKROLL ($1K-$10K) - Serious
+  medium:
+    kelly_fraction: 0.25  # 1/4 Kelly
+    min_edge: 0.02  # 2% minimum edge
+    min_probability: 0.55  # 55% minimum confidence
+    max_bet_size: 0.03  # 3% max bet of bankroll
+    max_drawdown: -0.20  # -20% circuit breaker
+    daily_limit: 8
+  
+  # LARGE BANKROLL ($10K+) - Professional
+  large:
+    kelly_fraction: 0.5  # 1/2 Kelly (more aggressive)
+    min_edge: 0.025  # 2.5% minimum edge
+    min_probability: 0.57  # 57% minimum confidence
+    max_bet_size: 0.02  # 2% max bet of bankroll
+    max_drawdown: -0.15  # -15% circuit breaker
+    daily_limit: 5
+  
+  # Default profile (you can change this)
+  active_profile: small
+  
   bankroll:
-    initial: 10000
+    initial: 500  # Starting bankroll (adjust to yours)
 
 validation:
   go_criteria:
