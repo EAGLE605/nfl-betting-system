@@ -42,7 +42,7 @@
 
 ```bash
 # Step 1: Set your API key (one-time setup)
-$env:ODDS_API_KEY="7f5005117f0b98ea00ef64e2cb4b26a4"
+$env:ODDS_API_KEY="your_odds_api_key_here"
 
 # Step 2: Generate daily picks (with Grok AI)
 python scripts/generate_daily_picks_with_grok.py
@@ -228,7 +228,7 @@ tracker.export_to_excel()
 ### API Keys (config/api_keys.env)
 ```bash
 # The Odds API (✅ Active - 488 requests remaining)
-ODDS_API_KEY=7f5005117f0b98ea00ef64e2cb4b26a4
+ODDS_API_KEY=your_odds_api_key_here
 
 # xAI Grok (✅ Active - $25 credit)
 XAI_API_KEY=your_xai_api_key_here

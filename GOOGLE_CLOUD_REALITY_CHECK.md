@@ -197,7 +197,7 @@ Result: $880-1,725/month (more likely)
 ```bash
 # Every Sunday morning
 cd C:\Scripts\nfl-betting-system
-$env:ODDS_API_KEY="7f5005117f0b98ea00ef64e2cb4b26a4"
+$env:ODDS_API_KEY="your_odds_api_key_here"
 python scripts/generate_daily_picks_with_grok.py
 
 # Review picks, place bets, track results
