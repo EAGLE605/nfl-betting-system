@@ -7,9 +7,9 @@ Supports multiple notification channels:
 - Desktop (Windows toast) - optional
 """
 
+from .desktop_notifier import DesktopNotifier
 from .email_sender import EmailSender
 from .sms_sender import SMSSender
-from .desktop_notifier import DesktopNotifier
 
 __all__ = ['EmailSender', 'SMSSender', 'DesktopNotifier']
 
