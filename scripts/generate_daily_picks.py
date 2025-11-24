@@ -12,9 +12,15 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
 import logging
 import json
+from pathlib import Path
+from dotenv import load_dotenv
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Load API keys from .env file
+env_path = Path(__file__).parent.parent / "config" / "api_keys.env"
+load_dotenv(env_path)
 
 from agents.api_integrations import TheOddsAPI, NOAAWeatherAPI
 from scripts.line_shopping import LineShoppingEngine

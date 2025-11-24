@@ -5,11 +5,11 @@ Setup script for NFL Betting System
 This is a minimal setup.py for development mode installation.
 """
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="nfl-betting-system",
-    version="0.1.0",
+    version="1.0.0",
     description="NFL Betting System with XGBoost",
     author="NFL Betting System",
     packages=find_packages(where="src"),

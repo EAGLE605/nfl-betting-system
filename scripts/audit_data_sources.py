@@ -5,12 +5,13 @@ Tests ALL endpoints and data sources mentioned in strategy documents.
 Verifies: availability, access, rate limits, data quality.
 """
 
-import requests
 import json
+import logging
 import time
 from datetime import datetime
 from typing import Dict, List, Tuple
-import logging
+
+import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ class DataSourceAuditor:
             time.sleep(0.5)  # Rate limit respect
     
     def audit_nflverse(self):
-        """Verify nflverse/nfl_data_py availability."""
+        """Verify nflverse/nflreadpy availability."""
         logger.info("\n[2] AUDITING NFLVERSE...")
         
         try:
@@ -134,14 +135,14 @@ class DataSourceAuditor:
                 logger.info(f"  ✅ Repository: {data.get('html_url')}")
                 
                 # Check if package is on PyPI
-                pypi_url = 'https://pypi.org/pypi/nfl_data_py/json'
+                pypi_url = 'https://pypi.org/pypi/nflreadpy/json'
                 pypi_resp = self.session.get(pypi_url, timeout=10)
                 if pypi_resp.status_code == 200:
                     pypi_data = pypi_resp.json()
                     version = pypi_data.get('info', {}).get('version', 'Unknown')
-                    logger.info(f"  ✅ nfl_data_py on PyPI: EXISTS (v{version})")
+                    logger.info(f"  ✅ nflreadpy on PyPI: EXISTS (v{version})")
                 else:
-                    logger.warning(f"  ⚠️  nfl_data_py: Not found on PyPI")
+                    logger.warning(f"  ⚠️  nflreadpy: Not found on PyPI")
             else:
                 logger.error(f"  ❌ nflverse: GitHub repo not found")
                 self.results.append({

@@ -6,19 +6,19 @@ Downloads and validates NFL data from nflreadpy (nflverse).
 Handles caching, validation, and error recovery.
 
 Author: NFL Betting System
-Date: 2025-11-24
+Date: 2025-01-27
 """
 
 import json
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional, Dict
-import time
+from typing import Dict, List, Optional
 
-import pandas as pd
 import nflreadpy as nfl
+import pandas as pd
 from tqdm import tqdm
 
 # Per-module logging (not module-level config)
@@ -532,9 +532,9 @@ if __name__ == "__main__":
     seasons = list(range(2016, 2025))
     results = pipeline.download_all(seasons, include_pbp=True)
 
-    print("\n" + "=" * 60)
-    print("DOWNLOAD SUMMARY")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("DOWNLOAD SUMMARY")
+    logger.info("=" * 60)
     for name, df in results.items():
-        print(f"{name:20s}: {len(df):8,} rows, {len(df.columns):3d} columns")
-    print("=" * 60)
+        logger.info(f"{name:20s}: {len(df):8,} rows, {len(df.columns):3d} columns")
+    logger.info("=" * 60)

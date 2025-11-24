@@ -4,12 +4,13 @@ COMPLETE API INTEGRATIONS - VERIFIED WORKING ENDPOINTS
 All endpoints tested and verified as of 2025-11-24.
 """
 
-import requests
-import os
-from typing import Dict, List, Optional
-import pandas as pd
-from datetime import datetime
 import logging
+import os
+from datetime import datetime
+from typing import Dict, List, Optional
+
+import pandas as pd
+import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -321,12 +322,12 @@ class NFLVerseAPI:
     """
     nflverse Data - Best free NFL data source
     
-    ✅ VERIFIED: nfl_data_py package working
+    ✅ VERIFIED: nflreadpy package working
     ✅ FREE: No limits
     ✅ UPDATED: Nightly during season
     
     Installation:
-        pip install nfl_data_py
+        pip install nflreadpy
     
     Documentation:
         https://github.com/nflverse/nflverse-data
@@ -334,11 +335,11 @@ class NFLVerseAPI:
     
     def __init__(self):
         try:
-            import nfl_data_py as nfl
+            import nflreadpy as nfl
             self.nfl = nfl
-            logger.info("[OK] nfl_data_py imported successfully")
+            logger.info("[OK] nflreadpy imported successfully")
         except ImportError:
-            logger.error("[ERROR] nfl_data_py not installed. Run: pip install nfl_data_py")
+            logger.error("[ERROR] nflreadpy not installed. Run: pip install nflreadpy")
             self.nfl = None
     
     def get_play_by_play(self, seasons: List[int]) -> pd.DataFrame:

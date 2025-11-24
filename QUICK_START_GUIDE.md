@@ -6,7 +6,7 @@
 
 ## 📋 **PREREQUISITES**
 
-✅ Python 3.8+ installed  
+✅ Python 3.10+ installed (3.10-3.13 supported)  
 ✅ All requirements installed: `pip install -r requirements.txt`  
 ✅ Repository cloned and working
 
@@ -307,7 +307,7 @@ logs/pipeline.log              (all activity)
 - Check `IMPLEMENTATION_COMPLETE.md` for detailed documentation
 - Review `logs/pipeline.log` for error messages
 - Ensure all dependencies installed: `pip install -r requirements.txt`
-- Verify Python 3.8+ is installed
+- Verify Python 3.10+ is installed (3.10-3.13 supported)
 
 ---
 

@@ -8,32 +8,33 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-import pandas as pd
-from typing import List, Optional
 import logging
+from typing import List, Optional
+
+import pandas as pd
 
 try:
     from .base import FeatureBuilder
     from .elo import EloFeatures
-    from .rest_days import RestDaysFeatures
-    from .epa import EPAFeatures
-    from .weather import WeatherFeatures
-    from .line import LineFeatures
-    from .form import FormFeatures
     from .encoding import CategoricalEncodingFeatures
-    from .referee import RefereeFeatures
+    from .epa import EPAFeatures
+    from .form import FormFeatures
     from .injury import InjuryFeatures
+    from .line import LineFeatures
+    from .referee import RefereeFeatures
+    from .rest_days import RestDaysFeatures
+    from .weather import WeatherFeatures
 except ImportError:
     from src.features.base import FeatureBuilder
     from src.features.elo import EloFeatures
-    from src.features.rest_days import RestDaysFeatures
-    from src.features.epa import EPAFeatures
-    from src.features.weather import WeatherFeatures
-    from src.features.line import LineFeatures
-    from src.features.form import FormFeatures
     from src.features.encoding import CategoricalEncodingFeatures
-    from src.features.referee import RefereeFeatures
+    from src.features.epa import EPAFeatures
+    from src.features.form import FormFeatures
     from src.features.injury import InjuryFeatures
+    from src.features.line import LineFeatures
+    from src.features.referee import RefereeFeatures
+    from src.features.rest_days import RestDaysFeatures
+    from src.features.weather import WeatherFeatures
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +211,7 @@ def create_features(
     
     # Try to load injury data
     try:
-        import nfl_data_py as nfl
+        import nflreadpy as nfl
         injury_data = nfl.import_injuries(list(range(min(seasons), max(seasons) + 1)))
         if injury_data is not None and len(injury_data) > 0:
             pipeline.add_builder(InjuryFeatures(injury_data=injury_data))
@@ -250,11 +251,11 @@ if __name__ == "__main__":
     # Create features
     df = create_features(seasons, output_path=args.output)
 
-    print("=" * 70)
-    print("FEATURE GENERATION COMPLETE")
-    print("=" * 70)
-    print(f"Seasons:  {min(seasons)}-{max(seasons)}")
-    print(f"Games:    {len(df):,}")
-    print(f"Features: {len(df.columns)}")
-    print(f"Output:   {args.output}")
-    print("=" * 70)
+    logger.info("=" * 70)
+    logger.info("FEATURE GENERATION COMPLETE")
+    logger.info("=" * 70)
+    logger.info(f"Seasons:  {min(seasons)}-{max(seasons)}")
+    logger.info(f"Games:    {len(df):,}")
+    logger.info(f"Features: {len(df.columns)}")
+    logger.info(f"Output:   {args.output}")
+    logger.info("=" * 70)

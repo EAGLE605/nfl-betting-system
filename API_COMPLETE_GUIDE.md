@@ -115,7 +115,7 @@ game_summary = api.get_game_summary('401547502')
 
 ---
 
-## 3. NFLVERSE (nfl_data_py) ✅
+## 3. NFLVERSE (nflreadpy) ✅
 
 ### Verification
 ```
@@ -158,7 +158,7 @@ ngs_receiving = api.get_next_gen_stats('receiving', [2024])
 
 ### Installation
 ```bash
-pip install nfl_data_py
+pip install nflreadpy
 ```
 
 ### Data Available
@@ -361,7 +361,7 @@ print("Complete daily workflow executed!")
 ### Installation
 ```bash
 # Required packages
-pip install requests pandas nfl_data_py
+pip install requests pandas nflreadpy
 
 # Optional (for advanced features)
 pip install playwright  # For web scraping

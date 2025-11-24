@@ -33,8 +33,8 @@ pip install -r requirements.txt
 ### Step 3: Verify Installation
 
 ```powershell
-# Check that nfl_data_py is installed
-python -c "import nfl_data_py; print('✓ nfl_data_py installed')"
+# Check that nflreadpy is installed
+python -c "import nflreadpy; print('✓ nflreadpy installed')"
 
 # Check pandas
 python -c "import pandas; print('✓ pandas installed')"
@@ -71,11 +71,11 @@ python scripts/download_data.py
 
 ## Troubleshooting
 
-### Issue: "No module named 'nfl_data_py'"
+### Issue: "No module named 'nflreadpy'"
 
 **Solution:**
 ```powershell
-pip install nfl-data-py
+pip install nflreadpy
 ```
 
 ### Issue: "numpy compilation error"
@@ -126,10 +126,10 @@ Run this complete test:
 
 ```powershell
 # 1. Check Python version
-python --version  # Should be 3.10, 3.11, or 3.12
+python --version  # Should be 3.10, 3.11, 3.12, or 3.13
 
 # 2. Check imports
-python -c "import nfl_data_py, pandas, numpy, xgboost; print('✓ All imports successful')"
+python -c "import nflreadpy, pandas, numpy, xgboost; print('✓ All imports successful')"
 
 # 3. Run tests
 pytest tests/ -v
@@ -276,8 +276,8 @@ Once data pipeline is working:
 
 ---
 
-**Last Updated**: 2025-11-23  
-**Python Version**: 3.10+ (recommend 3.12)  
+**Last Updated**: 2025-01-27  
+**Python Version**: 3.10-3.13 (recommend 3.12+)  
 **Status**: Data Pipeline Ready ✓
 
 

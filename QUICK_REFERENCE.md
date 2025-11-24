@@ -4,7 +4,7 @@
 
 ### Setup (First Time Only)
 ```powershell
-# 1. Create virtual environment
+# 1. Create virtual environment (Python 3.10-3.13)
 py -3.12 -m venv .venv
 
 # 2. Activate
@@ -87,7 +87,7 @@ nfl-betting-system/
 
 | Issue | Solution |
 |-------|----------|
-| `No module named 'nfl_data_py'` | `pip install -r requirements.txt` |
+| `No module named 'nflreadpy'` | `pip install -r requirements.txt` |
 | `numpy compilation error` | Use Python 3.12: `py -3.12 -m venv .venv` |
 | `Download failed` | Try `--no-pbp` or `--seasons 2023` |
 | `Tests fail` | Run from project root: `cd C:\Scripts\nfl-betting-system` |
@@ -157,7 +157,7 @@ Before moving to Day 3-4:
 
 - [ ] Python 3.12 installed
 - [ ] Virtual environment activated
-- [ ] Dependencies installed (`pip list | findstr nfl-data-py`)
+- [ ] Dependencies installed (`pip list | findstr nflreadpy`)
 - [ ] `python validate_setup.py` passes
 - [ ] Data downloaded (check `data/raw/`)
 - [ ] Tests pass (`pytest tests/ -v`)

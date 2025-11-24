@@ -16,12 +16,12 @@ This script checks:
 5. Optional: Tests pass
 
 Author: NFL Betting System
-Date: 2025-11-23
+Date: 2025-01-27
 """
 
+import subprocess
 import sys
 from pathlib import Path
-import subprocess
 
 
 class Colors:

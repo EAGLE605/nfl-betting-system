@@ -96,7 +96,7 @@
 
 ### Prerequisites
 
-- **Python**: 3.10+ (3.12+ recommended)
+- **Python**: 3.10-3.13 (3.12+ recommended)
 - **OS**: Windows, macOS, or Linux
 - **RAM**: 8GB minimum, 16GB recommended
 - **Storage**: 2GB for historical data
@@ -709,7 +709,7 @@ copies of the Software.
 ### Data Sources
 - **nflverse** - Free NFL data ecosystem
 - **The Odds API** - Real-time betting odds
-- **nfl_data_py** - Python wrapper for nflverse
+- **nflreadpy** - Python wrapper for nflverse
 
 ### Technologies
 - **XGBoost** - Gradient boosting framework
@@ -734,6 +734,6 @@ copies of the Software.
 
 ---
 
-**Last Updated**: November 24, 2025 | **Version**: 1.0.0 | **Status**: Production Ready ✅
+**Last Updated**: January 27, 2025 | **Version**: 1.0.0 | **Status**: Production Ready ✅
 
 </div>

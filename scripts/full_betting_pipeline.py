@@ -58,7 +58,7 @@ class NFLScheduleManager:
             List of game dictionaries with kickoff times
         """
         try:
-            import nfl_data_py as nfl
+            import nflreadpy as nfl
 
             # Get current season
             now = datetime.now()
@@ -89,7 +89,7 @@ class NFLScheduleManager:
             List of game dictionaries
         """
         try:
-            import nfl_data_py as nfl
+            import nflreadpy as nfl
 
             # Determine season from date
             date = datetime.strptime(date_str, '%Y-%m-%d')
@@ -113,7 +113,7 @@ class NFLScheduleManager:
         Parse kickoff time from game dictionary.
         
         Args:
-            game: Game dictionary from nfl_data_py
+            game: Game dictionary from nflreadpy
         
         Returns:
             Datetime object in Eastern time

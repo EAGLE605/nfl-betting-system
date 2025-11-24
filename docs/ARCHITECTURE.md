@@ -8,9 +8,8 @@ The NFL Betting System is a data-driven sports betting platform using XGBoost cl
 
 ### Layer 1: Data Abstraction
 - **Purpose**: Decouple data source from business logic
-- **Current**: `nfl_data_py` (deprecated but functional)
-- **Future**: `nflreadpy` (via abstraction interface)
-- **Files**: `src/data/source_interface.py`, `src/data_pipeline.py`
+- **Current**: `nflreadpy` (nflverse data package)
+- **Files**: `src/data_pipeline.py`
 
 ### Layer 2: Feature Engineering
 - **Purpose**: Transform raw data into predictive features
@@ -30,7 +29,7 @@ The NFL Betting System is a data-driven sports betting platform using XGBoost cl
 ## Data Flow
 
 ```
-Raw Data (nfl_data_py)
+Raw Data (nflreadpy/nflverse)
     ↓
 Data Pipeline (download, cache, validate)
     ↓
@@ -45,7 +44,7 @@ GO/NO-GO Decision
 
 ## Key Design Decisions
 
-1. **Abstraction Layer**: Future-proof against nfl_data_py deprecation
+1. **Data Source**: Uses nflreadpy for nflverse data access
 2. **Modular Features**: Each feature builder is independent and testable
 3. **Probability Calibration**: Critical for accurate Kelly sizing
 4. **Circuit Breakers**: Risk management to prevent ruin
@@ -60,11 +59,11 @@ GO/NO-GO Decision
 
 ## Technology Stack
 
-- **Language**: Python 3.12
-- **ML**: XGBoost, scikit-learn
-- **Data**: pandas, numpy, pyarrow
+- **Language**: Python 3.10-3.13 (3.12+ recommended)
+- **ML**: XGBoost, scikit-learn, LightGBM
+- **Data**: pandas, numpy, pyarrow, polars, nflreadpy
 - **Testing**: pytest (>80% coverage target)
-- **Source**: nfl_data_py → nflreadpy
+- **Source**: nflreadpy (nflverse data)
 
 ## Validation Framework
 
