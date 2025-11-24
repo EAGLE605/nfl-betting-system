@@ -5,10 +5,11 @@ Grok is xAI's advanced reasoning AI with real-time data access.
 Perfect for analyzing game situations, sentiment, and making betting decisions.
 """
 
-import requests
 import json
-from typing import Dict, List, Optional
 import logging
+from typing import Dict, List, Optional
+
+import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

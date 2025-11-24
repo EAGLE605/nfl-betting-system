@@ -15,16 +15,18 @@ This is the foundation of the automated betting system.
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import pandas as pd
-import numpy as np
-import requests
-from datetime import datetime, timedelta
-import pytz
 import json
 import logging
-from typing import List, Dict, Optional
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+
+import numpy as np
+import pandas as pd
+import pytz
+import requests
 
 logging.basicConfig(
     level=logging.INFO,

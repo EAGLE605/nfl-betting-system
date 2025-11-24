@@ -3,17 +3,18 @@ Enhanced Daily Picks System with Grok AI Integration
 Combines XGBoost model + Grok's real-time analysis for maximum edge
 """
 
+import json
 import os
 import sys
-import json
 from datetime import datetime
 from typing import Dict, List
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripts.generate_daily_picks import DailyPicksGenerator
-from agents.xai_grok_agent import GrokAgent
 import logging
+
+from agents.xai_grok_agent import GrokAgent
+from scripts.generate_daily_picks import DailyPicksGenerator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
