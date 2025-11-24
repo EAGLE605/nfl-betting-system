@@ -4,12 +4,24 @@ Test The Odds API with real NFL data
 
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from agents.api_integrations import TheOddsAPI
 
 # Load API key from environment
-API_KEY = '***REMOVED***'
+config_path = Path(__file__).parent.parent / 'config' / 'api_keys.env'
+load_dotenv(config_path)
+
+API_KEY = os.getenv('ODDS_API_KEY')
+if not API_KEY:
+    print("ERROR: ODDS_API_KEY not found in config/api_keys.env")
+    print("Please set your API key in the config file.")
+    sys.exit(1)
 
 print("="*70)
 print("TESTING THE ODDS API - LIVE NFL ODDS")
