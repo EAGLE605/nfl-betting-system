@@ -133,13 +133,14 @@ class TheOddsAPI:
     
     BASE_URL = "https://api.the-odds-api.com/v4"
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, use_cache: bool = True):
         """
         Initialize The Odds API client.
         
         Args:
             api_key: Your API key from the-odds-api.com
                     If None, will try to load from environment variable ODDS_API_KEY
+            use_cache: Enable multi-layer caching (default: True)
         
         To get an API key:
             1. Go to https://the-odds-api.com/
@@ -152,10 +153,47 @@ class TheOddsAPI:
             logger.warning("No API key provided. Set ODDS_API_KEY environment variable.")
         
         self.session = requests.Session()
+        
+        # Initialize cache
+        self.use_cache = use_cache
+        if use_cache:
+            try:
+                from src.utils.odds_cache import OddsCache
+                self.cache = OddsCache()
+                logger.debug("Odds caching enabled (memory + file + database)")
+            except Exception as e:
+                logger.warning(f"Could not initialize cache: {e}")
+                self.use_cache = False
+                self.cache = None
+        else:
+            self.cache = None
     
-    def get_nfl_odds(self, regions: str = 'us', markets: str = 'h2h,spreads,totals') -> List[Dict]:
+    def _extract_games_from_cache(self, cached_data: Dict) -> List[Dict]:
+        """Extract games list from cached data structure."""
+        data = cached_data.get('data', {})
+        if isinstance(data, dict):
+            # Check for nested data key
+            if 'data' in data:
+                inner_data = data['data']
+                if isinstance(inner_data, dict) and 'games' in inner_data:
+                    return inner_data['games']
+                elif isinstance(inner_data, list):
+                    return inner_data
+            elif 'games' in data:
+                return data['games']
+        elif isinstance(data, list):
+            return data
+        return []
+    
+    def get_nfl_odds(self, regions: str = 'us', markets: str = 'h2h,spreads,totals', force_refresh: bool = False) -> List[Dict]:
         """
         Get current NFL odds from multiple sportsbooks.
+        
+        Implements intelligent caching:
+        - Checks memory cache first (5 min TTL)
+        - Falls back to file cache (dynamic TTL based on game time)
+        - Fetches fresh from API only if needed
+        - Stores historical data in database
         
         Args:
             regions: Comma-separated regions (us, uk, eu, au)
@@ -163,6 +201,7 @@ class TheOddsAPI:
                     - h2h: Moneyline (head-to-head)
                     - spreads: Point spreads
                     - totals: Over/under totals
+            force_refresh: Bypass cache and fetch fresh data
         
         Returns:
             List of games with odds from multiple sportsbooks
@@ -179,7 +218,29 @@ class TheOddsAPI:
             logger.error("API key required. Sign up at the-odds-api.com")
             return []
         
+        # Try cache first (unless forced refresh)
+        if self.use_cache and self.cache and not force_refresh:
+            cached_data = self.cache.get('nfl_odds')
+            if cached_data:
+                games = self._extract_games_from_cache(cached_data)
+                logger.info(f"[CACHE] Loaded {len(games)} games from cache")
+                return games
+        
+        # Cache miss or forced refresh - check rate limits
+        if self.use_cache and self.cache:
+            if not self.cache.should_fetch_fresh():
+                logger.error("Rate limit critical - using stale cache if available")
+                cached_data = self.cache.get('nfl_odds', max_age_minutes=120)  # Accept 2hr old data
+                if cached_data:
+                    games = self._extract_games_from_cache(cached_data)
+                    return games
+                return []
+        
+        # Fetch fresh data
         try:
+            import time
+            start_time = time.time()
+            
             url = f"{self.BASE_URL}/sports/americanfootball_nfl/odds/"
             params = {
                 'apiKey': self.api_key,
@@ -193,15 +254,42 @@ class TheOddsAPI:
             response = self.session.get(url, params=params, timeout=10)
             response.raise_for_status()
             
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
             # Check remaining requests
             remaining = response.headers.get('x-requests-remaining')
             used = response.headers.get('x-requests-used')
             logger.info(f"API Requests - Used: {used}, Remaining: {remaining}")
             
-            return response.json()
+            games = response.json()
+            
+            # Update cache
+            if self.use_cache and self.cache:
+                cache_data = {
+                    'games': games,
+                    'regions': regions,
+                    'markets': markets
+                }
+                self.cache.set({'data': cache_data}, 'nfl_odds')
+                
+                # Update rate limit tracking
+                if remaining:
+                    self.cache.update_api_usage(int(remaining), response_time_ms)
+            
+            return games
         
         except Exception as e:
             logger.error(f"The Odds API error: {e}")
+            
+            # Try to return stale cache on error
+            if self.use_cache and self.cache:
+                logger.warning("API error - attempting to use stale cache")
+                cached_data = self.cache.get('nfl_odds', max_age_minutes=240)  # Accept 4hr old
+                if cached_data:
+                    games = self._extract_games_from_cache(cached_data)
+                    logger.info(f"[CACHE FALLBACK] Loaded {len(games)} games from stale cache")
+                    return games
+            
             return []
     
     def get_available_sports(self) -> List[Dict]:
