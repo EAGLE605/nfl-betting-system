@@ -55,6 +55,49 @@ pytest tests/test_data_pipeline.py -v
 
 ---
 
+## 🔐 Security & API Keys
+
+**IMPORTANT**: This project requires API keys that must be kept secure.
+
+### First-Time Setup
+
+1. **Copy the API keys template:**
+   ```powershell
+   Copy-Item config/api_keys.env.template config/api_keys.env
+   ```
+
+2. **Get your API keys:**
+   - **The Odds API** (Required): https://the-odds-api.com/
+     - Free tier: 500 requests/month
+     - Sign up and copy your API key
+   
+   - **xAI Grok API** (Optional): https://x.ai/api
+     - For AI-powered analysis and insights
+
+3. **Add keys to `config/api_keys.env`:**
+   ```bash
+   ODDS_API_KEY=your_actual_key_here
+   XAI_API_KEY=your_xai_key_here  # Optional
+   ```
+
+4. **Verify protection:**
+   ```powershell
+   # This should show the file is gitignored
+   git check-ignore -v config/api_keys.env
+   ```
+
+### ⚠️ Security Rules
+
+- ✅ **DO**: Store keys in `config/api_keys.env` (gitignored)
+- ✅ **DO**: Use `os.getenv('KEY_NAME')` to load keys
+- ❌ **DON'T**: Hardcode API keys in code
+- ❌ **DON'T**: Commit `config/api_keys.env` to git
+- ❌ **DON'T**: Share keys in issues or pull requests
+
+📖 **See [SECURITY.md](SECURITY.md) for full security guidelines**
+
+---
+
 ## Project Structure
 
 ```
