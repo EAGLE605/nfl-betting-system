@@ -103,17 +103,71 @@
   - [ ] Integrate with dashboard
   - [ ] End-to-end testing
 
+- [ ] **System Disconnect Auditing (CRITICAL - Living System)**
+  - [ ] Create `src/audit/system_connectivity_auditor.py`
+  - [ ] Implement continuous connectivity monitoring
+  - [ ] Check data flow between components:
+    - [ ] Data Pipeline → Feature Engineering → Model Training
+    - [ ] Model → Prediction Engine → Daily Picks Generator
+    - [ ] Daily Picks → Parlay Generator → Notification System
+    - [ ] API Integrations → OddsCache → Request Orchestrator
+    - [ ] Dashboard → Backend → Database
+    - [ ] Agents → Swarms → Orchestrator
+  - [ ] Verify configuration consistency:
+    - [ ] API keys loaded correctly across all components
+    - [ ] Model paths consistent between training and inference
+    - [ ] Database schemas match code expectations
+    - [ ] Cache invalidation working correctly
+  - [ ] Check for orphaned components:
+    - [ ] Features generated but not used
+    - [ ] Models trained but not deployed
+    - [ ] Strategies discovered but not integrated
+    - [ ] APIs called but results not consumed
+  - [ ] Validate data consistency:
+    - [ ] Same game data across all components
+    - [ ] Odds data synchronized between cache and live
+    - [ ] Model predictions match feature inputs
+    - [ ] Bet recommendations match model outputs
+  - [ ] Monitor integration health:
+    - [ ] Component dependencies (A → B → C chain)
+    - [ ] Message passing between agents
+    - [ ] Swarm consensus mechanisms
+    - [ ] Self-healing system triggers
+  - [ ] Detect silent failures:
+    - [ ] Components running but not producing output
+    - [ ] Errors logged but not handled
+    - [ ] Fallbacks not triggered when needed
+    - [ ] Cache hits when fresh data needed
+  - [ ] Generate disconnect reports:
+    - [ ] Daily automated audit report
+    - [ ] Real-time alerts for critical disconnects
+    - [ ] Historical trend analysis
+    - [ ] Recommendations for fixes
+  - [ ] Auto-remediation for common disconnects:
+    - [ ] Restart failed components
+    - [ ] Clear stale caches
+    - [ ] Re-sync data sources
+    - [ ] Re-establish agent connections
+  - [ ] Integration testing suite:
+    - [ ] Test each component integration point
+    - [ ] Simulate failures and verify recovery
+    - [ ] Validate end-to-end workflows
+    - [ ] Performance benchmarks
+
 - [ ] **Documentation**
   - [ ] Update README with new API orchestration features
   - [ ] Add API orchestration usage examples
   - [ ] Document rate limiting strategies
   - [ ] Create troubleshooting guide
+  - [ ] Document system architecture and component dependencies
 
 - [ ] **Monitoring & Observability**
   - [ ] Add rate limit monitoring dashboard
   - [ ] Add API health dashboard
   - [ ] Add request queue visualization
   - [ ] Add performance metrics tracking
+  - [ ] Add system connectivity dashboard (show all component connections)
+  - [ ] Add disconnect alerts and notifications
 
 ---
 
@@ -308,6 +362,7 @@
   - [ ] Application metrics (API latency, error rates)
   - [ ] Business metrics (picks generated, bets placed)
   - [ ] Log aggregation (errors, warnings, debug)
+  - [ ] Component connectivity metrics (integration health)
 
 - [ ] **Anomaly Detection (AI-Powered)**
   - [ ] Create `src/self_healing/anomaly_detection.py`
@@ -315,6 +370,7 @@
   - [ ] ML models (isolation forest, autoencoder)
   - [ ] Pattern recognition (recurring issues)
   - [ ] Predictive models (forecast failures)
+  - [ ] Disconnect pattern detection (components not communicating)
 
 - [ ] **Diagnosis Engine**
   - [ ] Create `src/self_healing/diagnosis_engine.py`
@@ -322,6 +378,7 @@
   - [ ] Correlation analysis (related failures)
   - [ ] Knowledge base (past incidents)
   - [ ] AI reasoning (explain the issue)
+  - [ ] Integration point failure analysis (which connection broke)
 
 - [ ] **Auto-Remediation**
   - [ ] Create `src/self_healing/auto_remediation.py`
@@ -329,7 +386,8 @@
   - [ ] Rule 2: Database Connection Lost (switch backup, retry)
   - [ ] Rule 3: Strategy Performance Degradation (reduce bet size, flag review)
   - [ ] Rule 4: Memory Leak Detected (clear cache, restart service)
-  - [ ] Actions: Restart services, scale resources, clear caches, retry requests, activate circuit breakers, fallback to cache, notify human
+  - [ ] Rule 5: Component Disconnect Detected (re-establish connection, restart component)
+  - [ ] Actions: Restart services, scale resources, clear caches, retry requests, activate circuit breakers, fallback to cache, notify human, reconnect components
 
 - [ ] **Learning Loop**
   - [ ] Create `src/self_healing/learning_loop.py`
@@ -337,6 +395,7 @@
   - [ ] Update playbooks
   - [ ] Improve detection models
   - [ ] Share learnings across agents
+  - [ ] Learn common disconnect patterns and prevent them
 
 ### **Success Criteria**
 
@@ -347,6 +406,9 @@ System is truly autonomous when:
 - [ ] Self-heals from 95%+ of failures
 - [ ] Continuously improves performance
 - [ ] Achieves >55% win rate & >10% ROI
+- [ ] **Zero disconnects between components (fully integrated living system)**
+- [ ] **All components communicate seamlessly**
+- [ ] **Disconnect auditing runs continuously and auto-remediates**
 
 ---
 
