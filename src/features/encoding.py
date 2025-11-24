@@ -3,10 +3,12 @@
 Encodes categorical features like roof type, surface, weather conditions.
 """
 
-from .base import FeatureBuilder
-import pandas as pd
-from typing import List
 import logging
+from typing import List
+
+import pandas as pd
+
+from .base import FeatureBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,9 @@ class CategoricalEncodingFeatures(FeatureBuilder):
 
         # Surface type encoding
         if "surface" in df.columns:
-            surface_dummies = pd.get_dummies(df["surface"], prefix="surface", dummy_na=False)
+            surface_dummies = pd.get_dummies(
+                df["surface"], prefix="surface", dummy_na=False
+            )
             # Ensure we have standard columns
             for surface_type in ["grass", "turf", "fieldturf"]:
                 col_name = f"surface_{surface_type}"
@@ -87,7 +91,9 @@ class CategoricalEncodingFeatures(FeatureBuilder):
             df["wind_low"] = 1
             df["wind_missing"] = 1
 
-        logger.info(f"✓ Categorical encoding features created: {len(self.get_feature_names())} features")
+        logger.info(
+            f"✓ Categorical encoding features created: {len(self.get_feature_names())} features"
+        )
 
         return df
 
@@ -108,4 +114,3 @@ class CategoricalEncodingFeatures(FeatureBuilder):
             "wind_low",
             "wind_missing",
         ]
-

@@ -6,10 +6,11 @@ All feature builders inherit from FeatureBuilder and implement:
 - get_required_columns(): Return list of required input columns
 """
 
-from abc import ABC, abstractmethod
-import pandas as pd
-from typing import List
 import logging
+from abc import ABC, abstractmethod
+from typing import List
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 

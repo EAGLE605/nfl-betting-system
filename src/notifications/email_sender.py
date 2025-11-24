@@ -9,23 +9,23 @@ import smtplib
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Dict, List
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
 
 class EmailSender:
     """Sends email notifications via Gmail SMTP."""
-    
+
     def __init__(self, smtp_user: str, smtp_password: str, recipient: str):
         """
         Initialize email sender.
-        
+
         Args:
             smtp_user: Gmail address (e.g., yourname@gmail.com)
             smtp_password: Gmail app password (NOT regular password!)
             recipient: Email address to send notifications to
-            
+
         Note:
             Gmail app passwords: https://support.google.com/accounts/answer/185833
         """
@@ -34,70 +34,70 @@ class EmailSender:
         self.recipient = recipient
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 465  # SSL port
-    
+
     def send_bet_alert(self, analysis: Dict, parlays: Dict) -> bool:
         """
         Send bet alert email with recommendations.
-        
+
         Args:
             analysis: Pre-game analysis results (from PROD-001)
             parlays: Parlay recommendations (from PROD-002)
-        
+
         Returns:
             True if sent successfully, False otherwise
         """
         try:
             # Create message
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = self._create_subject(analysis, parlays)
-            msg['From'] = self.smtp_user
-            msg['To'] = self.recipient
-            
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = self._create_subject(analysis, parlays)
+            msg["From"] = self.smtp_user
+            msg["To"] = self.recipient
+
             # Create HTML body
             html_body = self._create_html_body(analysis, parlays)
-            
+
             # Attach HTML
-            html_part = MIMEText(html_body, 'html')
+            html_part = MIMEText(html_body, "html")
             msg.attach(html_part)
-            
+
             # Send via Gmail SMTP
             with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port) as server:
                 server.login(self.smtp_user, self.smtp_password)
                 server.send_message(msg)
-            
+
             logger.info(f"Email sent successfully to {self.recipient}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error sending email: {e}")
             return False
-    
+
     def _create_subject(self, analysis: Dict, parlays: Dict) -> str:
         """Create email subject line."""
-        num_bets = len(analysis.get('recommendations', []))
-        num_parlays = len(parlays.get('2_leg', [])) + len(parlays.get('3_leg', []))
-        
+        num_bets = len(analysis.get("recommendations", []))
+        num_parlays = len(parlays.get("2_leg", [])) + len(parlays.get("3_leg", []))
+
         if num_bets == 0 and num_parlays == 0:
             return "🏈 NFL Bets: No Recommendations Today"
-        
+
         subject = f"🏈 NFL Bets: {num_bets} Singles"
         if num_parlays > 0:
             subject += f", {num_parlays} Parlays"
-        
+
         return subject
-    
+
     def _create_html_body(self, analysis: Dict, parlays: Dict) -> str:
         """
         Create HTML email body.
-        
+
         Returns:
             HTML string with styled bet recommendations
         """
         # Get game info
-        game_info = analysis['game_info']
-        recommendations = analysis.get('recommendations', [])
-        matching_edges = analysis.get('matching_edges', [])
-        
+        game_info = analysis["game_info"]
+        recommendations = analysis.get("recommendations", [])
+        matching_edges = analysis.get("matching_edges", [])
+
         html = f"""
         <html>
           <head>
@@ -193,17 +193,19 @@ class EmailSender:
               </div>
             </div>
         """
-        
+
         # Single bets section
         if recommendations:
             html += """
             <div class="section">
               <div class="section-title">💰 Single Bet Recommendations</div>
             """
-            
+
             for rec in recommendations:
-                odds_str = f"{rec['odds']:+.0f}" if rec['odds'] else "N/A"
-                ev_str = f"{rec['expected_value']:+.1%}" if rec['expected_value'] else "N/A"
+                odds_str = f"{rec['odds']:+.0f}" if rec["odds"] else "N/A"
+                ev_str = (
+                    f"{rec['expected_value']:+.1%}" if rec["expected_value"] else "N/A"
+                )
                 html += f"""
               <div class="bet-card">
                 <div class="bet-title">
@@ -217,71 +219,71 @@ class EmailSender:
                 <span class="edge-badge">{rec['edge_name']}</span>
               </div>
                 """
-            
+
             html += "</div>"
-        
+
         # Parlays section
-        if parlays.get('2_leg') or parlays.get('3_leg'):
+        if parlays.get("2_leg") or parlays.get("3_leg"):
             html += """
             <div class="section">
               <div class="section-title">🎲 Parlay Recommendations</div>
             """
-            
+
             # 2-leg parlays
-            for i, parlay in enumerate(parlays.get('2_leg', [])[:3], 1):
+            for i, parlay in enumerate(parlays.get("2_leg", [])[:3], 1):
                 html += f"""
               <div class="bet-card">
                 <div class="bet-title">2-Leg Parlay #{i}</div>
                 """
-                
-                for j, leg in enumerate(parlay['legs'], 1):
-                    odds_str = f"{leg['odds']:+.0f}" if leg['odds'] else "N/A"
+
+                for j, leg in enumerate(parlay["legs"], 1):
+                    odds_str = f"{leg['odds']:+.0f}" if leg["odds"] else "N/A"
                     html += f"""
                 <div class="bet-detail">
                   <strong>Leg {j}:</strong> {leg['team']} {leg['bet_type']} ({odds_str})
                   <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{leg['game']}
                 </div>
                     """
-                
+
                 html += f"""
                 <div class="bet-detail"><strong>Combined Odds:</strong> {parlay['parlay_odds']:+.0f}</div>
                 <div class="bet-detail"><strong>Win Probability:</strong> {parlay['combined_probability']:.1%}</div>
                 <div class="bet-detail"><strong>Expected ROI:</strong> {parlay['expected_roi']:+.1%}</div>
               </div>
                 """
-            
+
             # 3-leg parlays
-            for i, parlay in enumerate(parlays.get('3_leg', [])[:2], 1):
+            for i, parlay in enumerate(parlays.get("3_leg", [])[:2], 1):
                 html += f"""
               <div class="bet-card">
                 <div class="bet-title">3-Leg Parlay #{i}</div>
                 """
-                
-                for j, leg in enumerate(parlay['legs'], 1):
-                    odds_str = f"{leg['odds']:+.0f}" if leg['odds'] else "N/A"
+
+                for j, leg in enumerate(parlay["legs"], 1):
+                    odds_str = f"{leg['odds']:+.0f}" if leg["odds"] else "N/A"
                     html += f"""
                 <div class="bet-detail">
                   <strong>Leg {j}:</strong> {leg['team']} {leg['bet_type']} ({odds_str})
                   <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{leg['game']}
                 </div>
                     """
-                
+
                 html += f"""
                 <div class="bet-detail"><strong>Combined Odds:</strong> {parlay['parlay_odds']:+.0f}</div>
                 <div class="bet-detail"><strong>Win Probability:</strong> {parlay['combined_probability']:.1%}</div>
                 <div class="bet-detail"><strong>Expected ROI:</strong> {parlay['expected_roi']:+.1%}</div>
               </div>
                 """
-            
+
             html += "</div>"
-        
+
         # Matching edges section
         if matching_edges:
             html += """
             <div class="section">
               <div class="section-title">✅ Discovered Edges</div>
             """
-            
+
             for edge in matching_edges:
                 html += f"""
               <div class="bet-detail">
@@ -290,11 +292,11 @@ class EmailSender:
                 ({edge['sample_size']} games)
               </div>
                 """
-            
+
             html += "</div>"
-        
+
         # Footer
-        timestamp = datetime.now().strftime('%Y-%m-%d %I:%M %p')
+        timestamp = datetime.now().strftime("%Y-%m-%d %I:%M %p")
         html += f"""
             <div class="footer">
               ⚠️ This is a research tool. Bet responsibly.<br>
@@ -303,6 +305,5 @@ class EmailSender:
           </body>
         </html>
         """
-        
-        return html
 
+        return html

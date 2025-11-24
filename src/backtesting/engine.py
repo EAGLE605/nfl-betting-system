@@ -3,10 +3,12 @@
 Simulates betting on historical games with realistic constraints.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, Tuple
 import logging
+from typing import Dict, Tuple
+
+import numpy as np
+import pandas as pd
+
 from src.betting.kelly import KellyCriterion
 
 logger = logging.getLogger(__name__)

@@ -81,7 +81,7 @@ class TestNFLDataPipeline:
     def test_init_creates_directories(self, temp_data_dir):
         """Test that initialization creates necessary directories."""
         NFLDataPipeline(data_dir=temp_data_dir)
-        
+
         assert Path(temp_data_dir).exists()
         assert (Path(temp_data_dir) / "raw").exists()
 

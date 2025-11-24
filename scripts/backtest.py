@@ -41,17 +41,19 @@ def prepare_predictions(model, feature_cols):
     # Ensure we have all required features (fill missing with 0)
     available_features = [f for f in feature_cols if f in df.columns]
     missing_features = [f for f in feature_cols if f not in df.columns]
-    
+
     if missing_features:
-        logger.warning(f"Missing {len(missing_features)} features, filling with 0: {missing_features[:5]}...")
+        logger.warning(
+            f"Missing {len(missing_features)} features, filling with 0: {missing_features[:5]}..."
+        )
         for feat in missing_features:
             df[feat] = 0
 
     # Generate predictions
     X = df[feature_cols].fillna(0)
-    
+
     # Handle different model interfaces
-    if hasattr(model, 'predict_proba'):
+    if hasattr(model, "predict_proba"):
         proba = model.predict_proba(X)
         if proba.ndim == 1:
             df["pred_prob"] = proba
@@ -88,22 +90,24 @@ def prepare_predictions(model, feature_cols):
 def filter_favorites_only(df: pd.DataFrame) -> pd.DataFrame:
     """
     Filter to favorites only (odds < 2.0, odds > 1.3).
-    
+
     This is our proven strategy: 77% win rate, +12% ROI on favorites.
     """
     initial_count = len(df)
-    
+
     if initial_count == 0:
         logger.info("Favorites filter: 0 games (empty dataframe)")
         return df.copy()
-    
+
     # Filter to favorites (odds < 2.0) but not too heavy (odds > 1.3)
     df_filtered = df[(df["odds"] < 2.0) & (df["odds"] > 1.3)].copy()
-    
+
     filtered_count = len(df_filtered)
     pct = (filtered_count / initial_count * 100) if initial_count > 0 else 0.0
-    logger.info(f"Favorites filter: {initial_count} → {filtered_count} games ({pct:.1f}%)")
-    
+    logger.info(
+        f"Favorites filter: {initial_count} → {filtered_count} games ({pct:.1f}%)"
+    )
+
     return df_filtered
 
 
@@ -172,7 +176,7 @@ def main():
     try:
         temp_df = pd.read_parquet("data/processed/features_2016_2024_improved.parquet")
         logger.info("Using improved features file")
-        
+
         # Try to load recommended features list
         recommended_path = Path("reports/recommended_features.csv")
         if recommended_path.exists():
@@ -181,38 +185,116 @@ def main():
         else:
             # Fall back to excluding metadata columns
             exclude = [
-                "game_id", "gameday", "home_team", "away_team", "season", "week",
-                "home_score", "away_score", "result", "total", "game_type",
-                "weekday", "gametime", "location", "overtime", "old_game_id", "gsis",
-                "nfl_detail_id", "pfr", "pff", "espn", "ftn", "away_qb_id", "home_qb_id",
-                "away_qb_name", "home_qb_name", "away_coach", "home_coach", "referee",
-                "stadium_id", "stadium", "roof", "surface",
+                "game_id",
+                "gameday",
+                "home_team",
+                "away_team",
+                "season",
+                "week",
+                "home_score",
+                "away_score",
+                "result",
+                "total",
+                "game_type",
+                "weekday",
+                "gametime",
+                "location",
+                "overtime",
+                "old_game_id",
+                "gsis",
+                "nfl_detail_id",
+                "pfr",
+                "pff",
+                "espn",
+                "ftn",
+                "away_qb_id",
+                "home_qb_id",
+                "away_qb_name",
+                "home_qb_name",
+                "away_coach",
+                "home_coach",
+                "referee",
+                "stadium_id",
+                "stadium",
+                "roof",
+                "surface",
                 # CRITICAL: Exclude ALL betting line features (data leakage)
-                "home_moneyline", "away_moneyline", "spread_line", "home_spread_odds",
-                "away_spread_odds", "total_line", "over_odds", "under_odds",
-                "line_movement", "total_movement", "home_favorite"  # Derived from betting lines
+                "home_moneyline",
+                "away_moneyline",
+                "spread_line",
+                "home_spread_odds",
+                "away_spread_odds",
+                "total_line",
+                "over_odds",
+                "under_odds",
+                "line_movement",
+                "total_movement",
+                "home_favorite",  # Derived from betting lines
             ]
             feature_cols = [col for col in temp_df.columns if col not in exclude]
-            feature_cols = [col for col in feature_cols if temp_df[col].dtype in ["float64", "int64"]]
+            feature_cols = [
+                col
+                for col in feature_cols
+                if temp_df[col].dtype in ["float64", "int64"]
+            ]
             logger.info(f"Using {len(feature_cols)} features from improved file")
     except FileNotFoundError:
         # Fall back to old features
         temp_df = pd.read_parquet("data/processed/features_2016_2024.parquet")
         logger.info("Using original features file")
         exclude = [
-            "game_id", "gameday", "home_team", "away_team", "season", "week",
-            "home_score", "away_score", "target", "result", "total", "game_type",
-            "weekday", "gametime", "location", "overtime", "old_game_id", "gsis",
-            "nfl_detail_id", "pfr", "pff", "espn", "ftn", "away_qb_id", "home_qb_id",
-            "away_qb_name", "home_qb_name", "away_coach", "home_coach", "referee",
-            "stadium_id", "stadium", "roof", "surface", "div_game",
+            "game_id",
+            "gameday",
+            "home_team",
+            "away_team",
+            "season",
+            "week",
+            "home_score",
+            "away_score",
+            "target",
+            "result",
+            "total",
+            "game_type",
+            "weekday",
+            "gametime",
+            "location",
+            "overtime",
+            "old_game_id",
+            "gsis",
+            "nfl_detail_id",
+            "pfr",
+            "pff",
+            "espn",
+            "ftn",
+            "away_qb_id",
+            "home_qb_id",
+            "away_qb_name",
+            "home_qb_name",
+            "away_coach",
+            "home_coach",
+            "referee",
+            "stadium_id",
+            "stadium",
+            "roof",
+            "surface",
+            "div_game",
             # CRITICAL: Exclude ALL betting line features (data leakage)
-            "home_moneyline", "away_moneyline", "spread_line", "home_spread_odds",
-            "away_spread_odds", "total_line", "over_odds", "under_odds",
-            "line_movement", "total_movement", "home_favorite"  # Derived from betting lines
+            "home_moneyline",
+            "away_moneyline",
+            "spread_line",
+            "home_spread_odds",
+            "away_spread_odds",
+            "total_line",
+            "over_odds",
+            "under_odds",
+            "line_movement",
+            "total_movement",
+            "home_favorite",  # Derived from betting lines
         ]
         feature_cols = [col for col in temp_df.columns if col not in exclude]
-        feature_cols = [col for col in feature_cols if temp_df[col].dtype in ["float64", "int64"]]
+        feature_cols = [
+            col for col in feature_cols if temp_df[col].dtype in ["float64", "int64"]
+        ]
         logger.info(f"Using {len(feature_cols)} features from original file")
 
     # Prepare predictions - use appropriate model interface
@@ -220,7 +302,7 @@ def main():
         predictions_df = prepare_predictions(model, feature_cols)
     else:
         predictions_df = prepare_predictions(calibrator, feature_cols)
-    
+
     # CRITICAL: Filter to favorites only if using favorites-only model
     if favorites_only:
         logger.info("\nApplying favorites-only filter (odds 1.3-2.0)...")

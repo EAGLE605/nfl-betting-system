@@ -197,7 +197,7 @@ class NFLDataPipeline:
             raise ValueError("Failed to download schedules after all retries")
 
         # Convert Polars to Pandas
-        if hasattr(df, 'to_pandas'):
+        if hasattr(df, "to_pandas"):
             df = df.to_pandas()
 
         # Validate
@@ -244,7 +244,7 @@ class NFLDataPipeline:
             raise ValueError("Failed to download play-by-play data after all retries")
 
         # Convert Polars to Pandas
-        if hasattr(df, 'to_pandas'):
+        if hasattr(df, "to_pandas"):
             df = df.to_pandas()
 
         # Validate
@@ -300,7 +300,7 @@ class NFLDataPipeline:
             )
 
         # Convert Polars to Pandas
-        if hasattr(df, 'to_pandas'):
+        if hasattr(df, "to_pandas"):
             df = df.to_pandas()
 
         # Validate
@@ -339,7 +339,7 @@ class NFLDataPipeline:
             raise ValueError("Failed to download team descriptions after all retries")
 
         # Convert Polars to Pandas
-        if hasattr(df, 'to_pandas'):
+        if hasattr(df, "to_pandas"):
             df = df.to_pandas()
 
         df.to_parquet(filepath, index=False)

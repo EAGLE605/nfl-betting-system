@@ -6,10 +6,12 @@ K-factor: 20
 Home advantage: +65 points
 """
 
-from .base import FeatureBuilder
-import pandas as pd
-from typing import List, Dict
 import logging
+from typing import Dict, List
+
+import pandas as pd
+
+from .base import FeatureBuilder
 
 logger = logging.getLogger(__name__)
 

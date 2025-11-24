@@ -1,7 +1,8 @@
 """Tests for feature base class."""
 
-import pytest
 import pandas as pd
+import pytest
+
 from src.features.base import FeatureBuilder
 
 

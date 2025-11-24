@@ -1,8 +1,9 @@
 """Tests for Elo rating features."""
 
-import pytest
 import pandas as pd
-from src.features.elo import EloRating, EloFeatures
+import pytest
+
+from src.features.elo import EloFeatures, EloRating
 
 
 def test_elo_rating_initialization():

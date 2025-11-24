@@ -44,7 +44,11 @@ class KellyCriterion:
         self.aggressive_mode = aggressive_mode
 
     def calculate_bet_size(
-        self, prob_win: float, odds: float, bankroll: float, recent_performance: dict = None
+        self,
+        prob_win: float,
+        odds: float,
+        bankroll: float,
+        recent_performance: dict = None,
     ) -> float:
         """
         Calculate optimal bet size with aggressive sizing for favorites.
@@ -80,24 +84,33 @@ class KellyCriterion:
         # AGGRESSIVE SIZING FOR FAVORITES (our proven strength!)
         if self.aggressive_mode:
             multiplier = 1.0
-            
+
             # Heavy favorite (1.3-1.7 odds) + high confidence = THROTTLE UP!
             if 1.3 < odds < 1.7 and prob_win > 0.70:
                 # We win these 79% of the time! ROI: +10.8%
                 multiplier = 2.5  # Very aggressive!
-                logger.debug(f"Aggressive sizing: Heavy favorite (odds {odds:.2f}, prob {prob_win:.2%})")
-            
+                logger.debug(
+                    f"Aggressive sizing: Heavy favorite (odds {odds:.2f}, prob {prob_win:.2%})"
+                )
+
             # Small favorite (1.7-2.0) + confidence = BEST ROI!
             elif 1.7 < odds < 2.0 and prob_win > 0.65:
                 # We win 67% of the time! ROI: +20.4% (BEST!)
                 multiplier = 1.5  # Aggressive!
-                logger.debug(f"Aggressive sizing: Small favorite (odds {odds:.2f}, prob {prob_win:.2%})")
-            
+                logger.debug(
+                    f"Aggressive sizing: Small favorite (odds {odds:.2f}, prob {prob_win:.2%})"
+                )
+
             # Hot streak bonus
-            if recent_performance and recent_performance.get('win_rate_last_10', 0) > 0.75:
+            if (
+                recent_performance
+                and recent_performance.get("win_rate_last_10", 0) > 0.75
+            ):
                 multiplier *= 1.2  # 20% bonus on hot streak
-                logger.debug(f"Hot streak bonus: {recent_performance['win_rate_last_10']:.1%} win rate")
-            
+                logger.debug(
+                    f"Hot streak bonus: {recent_performance['win_rate_last_10']:.1%} win rate"
+                )
+
             kelly_bet *= multiplier
 
         # Cap at maximum (10% for aggressive, 2% for conservative)

@@ -5,14 +5,14 @@ Generate all required markdown reports from backtest results.
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import pandas as pd
-import numpy as np
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List
+
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,71 +25,81 @@ def df_to_markdown(df: pd.DataFrame, index: bool = False) -> str:
     """Convert DataFrame to markdown table."""
     if len(df) == 0:
         return ""
-    
+
     # Format numeric columns
     df_formatted = df.copy()
     for col in df_formatted.columns:
-        if df_formatted[col].dtype in ['float64', 'float32']:
-            df_formatted[col] = df_formatted[col].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
-        elif df_formatted[col].dtype in ['int64', 'int32']:
-            df_formatted[col] = df_formatted[col].apply(lambda x: f"{int(x)}" if pd.notna(x) else "")
-    
+        if df_formatted[col].dtype in ["float64", "float32"]:
+            df_formatted[col] = df_formatted[col].apply(
+                lambda x: f"{x:.2f}" if pd.notna(x) else ""
+            )
+        elif df_formatted[col].dtype in ["int64", "int32"]:
+            df_formatted[col] = df_formatted[col].apply(
+                lambda x: f"{int(x)}" if pd.notna(x) else ""
+            )
+
     # Create markdown table
     lines = []
-    
+
     # Header
     headers = list(df_formatted.columns)
     if index:
-        headers = [''] + headers
+        headers = [""] + headers
     lines.append("| " + " | ".join(headers) + " |")
     lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
-    
+
     # Rows
     for idx, row in df_formatted.iterrows():
         values = [str(v) for v in row.values]
         if index:
             values = [str(idx)] + values
         lines.append("| " + " | ".join(values) + " |")
-    
+
     return "\n".join(lines) + "\n"
 
 
 class BulldogReports:
     """Generate all Bulldog Mode reports."""
-    
+
     def __init__(self):
         """Initialize report generator."""
         # Load data
-        self.results_df = pd.read_csv(OUTPUT_DIR / "data" / "bulldog_performance_by_segment.csv")
+        self.results_df = pd.read_csv(
+            OUTPUT_DIR / "data" / "bulldog_performance_by_segment.csv"
+        )
         self.bets_df = pd.read_csv(OUTPUT_DIR / "data" / "bulldog_backtest_results.csv")
-        
+
         # Load analysis results
         analysis_path = OUTPUT_DIR / "data" / "bulldog_analysis_results.json"
         if analysis_path.exists():
-            with open(analysis_path, 'r') as f:
+            with open(analysis_path, "r") as f:
                 self.analysis = json.load(f)
         else:
             self.analysis = {}
-        
+
         # Load feature importance
         feature_path = OUTPUT_DIR / "data" / "bulldog_feature_importance.csv"
         if feature_path.exists():
             self.feature_importance = pd.read_csv(feature_path)
         else:
             self.feature_importance = pd.DataFrame()
-    
+
     def generate_executive_summary(self) -> str:
         """Generate executive summary report."""
         logger.info("Generating executive summary...")
-        
+
         # Get main results (full period)
-        main_result = self.results_df[
-            self.results_df['name'] == 'Full Period (2020-2024)'
-        ].iloc[0] if len(self.results_df) > 0 else None
-        
+        main_result = (
+            self.results_df[self.results_df["name"] == "Full Period (2020-2024)"].iloc[
+                0
+            ]
+            if len(self.results_df) > 0
+            else None
+        )
+
         if main_result is None:
             main_result = self.results_df.iloc[0] if len(self.results_df) > 0 else None
-        
+
         report = f"""# 🐕 BULLDOG MODE BACKTEST - EXECUTIVE SUMMARY
 
 **Date**: {datetime.now().strftime('%B %d, %Y')}  
@@ -102,7 +112,7 @@ class BulldogReports:
 ## 📊 KEY METRICS
 
 """
-        
+
         if main_result is not None:
             report += f"""| Metric | Result | Target | Status |
 |--------|--------|--------|--------|
@@ -115,7 +125,7 @@ class BulldogReports:
 | Avg CLV | {main_result['avg_clv']:.2f}% | >0% | {'✅' if main_result['avg_clv'] > 0 else '❌'} |
 
 """
-        
+
         # Top 3 findings
         report += """## 🎯 TOP 3 FINDINGS
 
@@ -143,13 +153,13 @@ class BulldogReports:
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
-        
+
         return report
-    
+
     def generate_full_report(self) -> str:
         """Generate full backtest report."""
         logger.info("Generating full report...")
-        
+
         report = f"""# 🐕 BULLDOG MODE BACKTEST - FULL REPORT
 
 **Date**: {datetime.now().strftime('%B %d, %Y')}  
@@ -170,12 +180,16 @@ class BulldogReports:
 ### Overall Performance
 
 """
-        
+
         # Main metrics table
-        main_result = self.results_df[
-            self.results_df['name'] == 'Full Period (2020-2024)'
-        ].iloc[0] if len(self.results_df) > 0 else None
-        
+        main_result = (
+            self.results_df[self.results_df["name"] == "Full Period (2020-2024)"].iloc[
+                0
+            ]
+            if len(self.results_df) > 0
+            else None
+        )
+
         if main_result is not None:
             report += f"""
 | Metric | Result |
@@ -195,48 +209,55 @@ class BulldogReports:
 | Positive CLV | {main_result['positive_clv_pct']:.1f}% |
 
 """
-        
+
         # By-segment performance
         report += """## C. BY-SEGMENT PERFORMANCE
 
 ### Time Period Breakdown
 
 """
-        
+
         time_periods = self.results_df[
-            self.results_df['name'].str.contains('Season|Period|Early|Late|Regular|Playoff', na=False)
+            self.results_df["name"].str.contains(
+                "Season|Period|Early|Late|Regular|Playoff", na=False
+            )
         ]
-        
+
         if len(time_periods) > 0:
-            report += df_to_markdown(time_periods[['name', 'total_bets', 'win_rate', 'roi', 'sharpe_ratio']])
+            report += df_to_markdown(
+                time_periods[["name", "total_bets", "win_rate", "roi", "sharpe_ratio"]]
+            )
             report += "\n\n"
-        
+
         # Game characteristics
         report += """### Game Characteristics Breakdown
 
 """
-        
+
         game_chars = self.results_df[
-            self.results_df['name'].str.contains('Favorite|Underdog|Scoring|Divisional|Weather|Dome', na=False)
+            self.results_df["name"].str.contains(
+                "Favorite|Underdog|Scoring|Divisional|Weather|Dome", na=False
+            )
         ]
-        
+
         if len(game_chars) > 0:
-            report += df_to_markdown(game_chars[['name', 'total_bets', 'win_rate', 'roi', 'sharpe_ratio']])
+            report += df_to_markdown(
+                game_chars[["name", "total_bets", "win_rate", "roi", "sharpe_ratio"]]
+            )
             report += "\n\n"
-        
+
         # Edge discovery
         report += """## D. EDGE DISCOVERY
 
 ### Discovered Edges
 
 """
-        
+
         # Find profitable edges
         profitable = self.results_df[
-            (self.results_df['roi'] > 5) & 
-            (self.results_df['total_bets'] > 20)
-        ].sort_values('roi', ascending=False)
-        
+            (self.results_df["roi"] > 5) & (self.results_df["total_bets"] > 20)
+        ].sort_values("roi", ascending=False)
+
         if len(profitable) > 0:
             for idx, edge in profitable.head(10).iterrows():
                 report += f"""
@@ -247,16 +268,16 @@ class BulldogReports:
 - Sharpe Ratio: {edge['sharpe_ratio']:.2f}
 
 """
-        
+
         # Risk analysis
         report += """## E. RISK ANALYSIS
 
 ### Drawdown Analysis
 
 """
-        
-        if 'drawdown' in self.analysis:
-            dd = self.analysis['drawdown']
+
+        if "drawdown" in self.analysis:
+            dd = self.analysis["drawdown"]
             report += f"""
 - Max Drawdown: {dd.get('max_drawdown', 0):.2f}%
 - Number of Drawdown Periods: {dd.get('num_drawdown_periods', 0)}
@@ -264,20 +285,20 @@ class BulldogReports:
 - Worst Drawdown: {dd.get('worst_drawdown', 0):.2f}%
 
 """
-        
+
         report += f"""
 
 ---
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
-        
+
         return report
-    
+
     def generate_feature_analysis(self) -> str:
         """Generate feature analysis report."""
         logger.info("Generating feature analysis report...")
-        
+
         report = f"""# 🐕 BULLDOG MODE - FEATURE ANALYSIS REPORT
 
 **Date**: {datetime.now().strftime('%B %d, %Y')}
@@ -289,12 +310,14 @@ class BulldogReports:
 ### Top 20 Features
 
 """
-        
+
         if len(self.feature_importance) > 0:
             top_20 = self.feature_importance.head(20)
-            report += df_to_markdown(top_20[['feature', 'importance_pct', 'cumulative_pct']])
+            report += df_to_markdown(
+                top_20[["feature", "importance_pct", "cumulative_pct"]]
+            )
             report += "\n\n"
-        
+
         report += """## B. FEATURE INTERACTIONS
 
 [Feature interaction analysis to be added]
@@ -319,13 +342,13 @@ class BulldogReports:
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
-        
+
         return report
-    
+
     def generate_optimization_report(self) -> str:
         """Generate optimization report."""
         logger.info("Generating optimization report...")
-        
+
         report = f"""# 🐕 BULLDOG MODE - OPTIMIZATION REPORT
 
 **Date**: {datetime.now().strftime('%B %d, %Y')}
@@ -337,15 +360,26 @@ class BulldogReports:
 ### Kelly Fraction Comparison
 
 """
-        
+
         kelly_results = self.results_df[
-            self.results_df['name'].str.contains('Kelly', na=False)
+            self.results_df["name"].str.contains("Kelly", na=False)
         ]
-        
+
         if len(kelly_results) > 0:
-            report += df_to_markdown(kelly_results[['name', 'total_bets', 'win_rate', 'roi', 'sharpe_ratio', 'max_drawdown']])
+            report += df_to_markdown(
+                kelly_results[
+                    [
+                        "name",
+                        "total_bets",
+                        "win_rate",
+                        "roi",
+                        "sharpe_ratio",
+                        "max_drawdown",
+                    ]
+                ]
+            )
             report += "\n\n"
-        
+
         report += """### Recommended Bet Sizing
 
 [Recommendation based on analysis]
@@ -357,15 +391,17 @@ class BulldogReports:
 ### Confidence Level Comparison
 
 """
-        
+
         conf_results = self.results_df[
-            self.results_df['name'].str.contains('Confidence', na=False)
+            self.results_df["name"].str.contains("Confidence", na=False)
         ]
-        
+
         if len(conf_results) > 0:
-            report += df_to_markdown(conf_results[['name', 'total_bets', 'win_rate', 'roi', 'sharpe_ratio']])
+            report += df_to_markdown(
+                conf_results[["name", "total_bets", "win_rate", "roi", "sharpe_ratio"]]
+            )
             report += "\n\n"
-        
+
         report += """### Recommended Confidence Threshold
 
 [Recommendation based on analysis]
@@ -380,13 +416,13 @@ class BulldogReports:
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
-        
+
         return report
-    
+
     def generate_edge_playbook(self) -> str:
         """Generate edge playbook."""
         logger.info("Generating edge playbook...")
-        
+
         report = f"""# 🐕 BULLDOG MODE - EDGE PLAYBOOK
 
 **Date**: {datetime.now().strftime('%B %d, %Y')}
@@ -396,13 +432,12 @@ class BulldogReports:
 ## DISCOVERED EDGES
 
 """
-        
+
         # Find all profitable edges
         profitable = self.results_df[
-            (self.results_df['roi'] > 0) & 
-            (self.results_df['total_bets'] > 10)
-        ].sort_values('roi', ascending=False)
-        
+            (self.results_df["roi"] > 0) & (self.results_df["total_bets"] > 10)
+        ].sort_values("roi", ascending=False)
+
         for idx, edge in profitable.iterrows():
             report += f"""
 ### EDGE #{idx+1}: {edge['name']}
@@ -419,18 +454,18 @@ class BulldogReports:
 ---
 
 """
-        
+
         report += f"""
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
-        
+
         return report
-    
+
     def generate_statistical_validation(self) -> str:
         """Generate statistical validation report."""
         logger.info("Generating statistical validation report...")
-        
+
         report = f"""# 🐕 BULLDOG MODE - STATISTICAL VALIDATION REPORT
 
 **Date**: {datetime.now().strftime('%B %d, %Y')}
@@ -442,9 +477,9 @@ class BulldogReports:
 ### Win Rate Significance Test
 
 """
-        
-        if 'statistical_significance' in self.analysis:
-            ss = self.analysis['statistical_significance']
+
+        if "statistical_significance" in self.analysis:
+            ss = self.analysis["statistical_significance"]
             report += f"""
 - **H0**: Win rate = 50% (random)
 - **H1**: Win rate > 50% (skill)
@@ -456,13 +491,13 @@ class BulldogReports:
 - **95% Confidence Interval**: [{ss.get('ci_95_lower', 0):.2f}%, {ss.get('ci_95_upper', 100):.2f}%]
 
 """
-        
+
         report += """## B. VARIANCE ANALYSIS
 
 """
-        
-        if 'variance' in self.analysis:
-            var = self.analysis['variance']
+
+        if "variance" in self.analysis:
+            var = self.analysis["variance"]
             report += f"""
 - **Actual Profit**: ${var.get('actual_profit', 0):,.2f}
 - **Simulated Mean**: ${var.get('simulated_mean_profit', 0):,.2f}
@@ -471,7 +506,7 @@ class BulldogReports:
 - **Probability of Positive**: {var.get('probability_positive', 0):.1%}
 
 """
-        
+
         report += """## C. SHARPE RATIO ANALYSIS
 
 [Sharpe ratio analysis to be added]
@@ -480,13 +515,13 @@ class BulldogReports:
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
-        
+
         return report
-    
+
     def generate_model_comparison(self) -> str:
         """Generate model comparison report."""
         logger.info("Generating model comparison report...")
-        
+
         report = f"""# 🐕 BULLDOG MODE - MODEL COMPARISON REPORT
 
 **Date**: {datetime.now().strftime('%B %d, %Y')}
@@ -501,34 +536,34 @@ class BulldogReports:
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
-        
+
         return report
-    
+
     def generate_all_reports(self):
         """Generate all reports."""
-        logger.info("="*80)
+        logger.info("=" * 80)
         logger.info("GENERATING ALL BULLDOG MODE REPORTS")
-        logger.info("="*80)
-        
+        logger.info("=" * 80)
+
         reports = {
-            'BULLDOG_BACKTEST_EXECUTIVE_SUMMARY.md': self.generate_executive_summary(),
-            'BULLDOG_BACKTEST_FULL_REPORT.md': self.generate_full_report(),
-            'BULLDOG_FEATURE_ANALYSIS.md': self.generate_feature_analysis(),
-            'BULLDOG_OPTIMIZATION_REPORT.md': self.generate_optimization_report(),
-            'BULLDOG_EDGE_PLAYBOOK.md': self.generate_edge_playbook(),
-            'BULLDOG_STATISTICAL_VALIDATION.md': self.generate_statistical_validation(),
-            'BULLDOG_MODEL_COMPARISON.md': self.generate_model_comparison()
+            "BULLDOG_BACKTEST_EXECUTIVE_SUMMARY.md": self.generate_executive_summary(),
+            "BULLDOG_BACKTEST_FULL_REPORT.md": self.generate_full_report(),
+            "BULLDOG_FEATURE_ANALYSIS.md": self.generate_feature_analysis(),
+            "BULLDOG_OPTIMIZATION_REPORT.md": self.generate_optimization_report(),
+            "BULLDOG_EDGE_PLAYBOOK.md": self.generate_edge_playbook(),
+            "BULLDOG_STATISTICAL_VALIDATION.md": self.generate_statistical_validation(),
+            "BULLDOG_MODEL_COMPARISON.md": self.generate_model_comparison(),
         }
-        
+
         for filename, content in reports.items():
             filepath = OUTPUT_DIR / filename
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(content)
             logger.info(f"✓ Generated {filename}")
-        
-        logger.info("\n" + "="*80)
+
+        logger.info("\n" + "=" * 80)
         logger.info("ALL REPORTS GENERATED")
-        logger.info("="*80)
+        logger.info("=" * 80)
         logger.info(f"Reports saved to: {OUTPUT_DIR}")
 
 
@@ -540,4 +575,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

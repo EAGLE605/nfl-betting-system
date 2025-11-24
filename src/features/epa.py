@@ -3,11 +3,12 @@
 Aggregates EPA from play-by-play data to create team performance metrics.
 """
 
-from .base import FeatureBuilder
-import pandas as pd
-import numpy as np
-from typing import List, Optional
 import logging
+from typing import List, Optional
+
+import pandas as pd
+
+from .base import FeatureBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -76,29 +77,50 @@ class EPAFeatures(FeatureBuilder):
         pbp = pbp.dropna(subset=["epa", "posteam", "defteam"])
 
         # Offensive metrics: when team has the ball
-        off_metrics = pbp.groupby(["game_id", "posteam"]).agg(
-            epa_mean=("epa", "mean"),
-            epa_sum=("epa", "sum"),
-            plays=("epa", "count"),
-            success_rate=("epa", lambda x: (x > 0).mean()),
-            explosive_rate=("epa", lambda x: (x > 1.5).mean()),
-        ).reset_index()
+        off_metrics = (
+            pbp.groupby(["game_id", "posteam"])
+            .agg(
+                epa_mean=("epa", "mean"),
+                epa_sum=("epa", "sum"),
+                plays=("epa", "count"),
+                success_rate=("epa", lambda x: (x > 0).mean()),
+                explosive_rate=("epa", lambda x: (x > 1.5).mean()),
+            )
+            .reset_index()
+        )
         off_metrics.columns = [
-            "game_id", "team", "epa_offense", "epa_offense_total",
-            "plays_offense", "success_rate_offense", "explosive_rate_offense"
+            "game_id",
+            "team",
+            "epa_offense",
+            "epa_offense_total",
+            "plays_offense",
+            "success_rate_offense",
+            "explosive_rate_offense",
         ]
 
         # Defensive metrics: when team is on defense (negative EPA is good)
-        def_metrics = pbp.groupby(["game_id", "defteam"]).agg(
-            epa_mean=("epa", "mean"),
-            epa_sum=("epa", "sum"),
-            plays=("epa", "count"),
-            success_rate=("epa", lambda x: (x > 0).mean()),  # Offense success = defense failure
-            explosive_rate=("epa", lambda x: (x > 1.5).mean()),
-        ).reset_index()
+        def_metrics = (
+            pbp.groupby(["game_id", "defteam"])
+            .agg(
+                epa_mean=("epa", "mean"),
+                epa_sum=("epa", "sum"),
+                plays=("epa", "count"),
+                success_rate=(
+                    "epa",
+                    lambda x: (x > 0).mean(),
+                ),  # Offense success = defense failure
+                explosive_rate=("epa", lambda x: (x > 1.5).mean()),
+            )
+            .reset_index()
+        )
         def_metrics.columns = [
-            "game_id", "team", "epa_defense", "epa_defense_total",
-            "plays_defense", "success_rate_defense", "explosive_rate_defense"
+            "game_id",
+            "team",
+            "epa_defense",
+            "epa_defense_total",
+            "plays_defense",
+            "success_rate_defense",
+            "explosive_rate_defense",
         ]
 
         # Merge offensive and defensive metrics
@@ -108,11 +130,15 @@ class EPAFeatures(FeatureBuilder):
 
         return metrics
 
-    def _add_rolling_features(self, df: pd.DataFrame, epa_metrics: pd.DataFrame) -> pd.DataFrame:
+    def _add_rolling_features(
+        self, df: pd.DataFrame, epa_metrics: pd.DataFrame
+    ) -> pd.DataFrame:
         """Add rolling EPA features for home and away teams."""
         # Merge game dates into metrics
-        game_dates = df[["game_id", "gameday", "season", "home_team", "away_team"]].copy()
-        
+        game_dates = df[
+            ["game_id", "gameday", "season", "home_team", "away_team"]
+        ].copy()
+
         # Create team-game level dataframe with all metrics
         team_games_list = []
         for _, row in game_dates.iterrows():
@@ -120,44 +146,61 @@ class EPAFeatures(FeatureBuilder):
             home_metrics = epa_metrics[epa_metrics["game_id"] == row["game_id"]]
             home_metrics = home_metrics[home_metrics["team"] == row["home_team"]]
             if not home_metrics.empty:
-                team_games_list.append({
-                    "game_id": row["game_id"],
-                    "gameday": row["gameday"],
-                    "season": row["season"],
-                    "team": row["home_team"],
-                    "epa_offense": home_metrics.iloc[0]["epa_offense"],
-                    "epa_defense": home_metrics.iloc[0]["epa_defense"],
-                    "success_rate_offense": home_metrics.iloc[0]["success_rate_offense"],
-                    "explosive_rate_offense": home_metrics.iloc[0]["explosive_rate_offense"],
-                })
-            
+                team_games_list.append(
+                    {
+                        "game_id": row["game_id"],
+                        "gameday": row["gameday"],
+                        "season": row["season"],
+                        "team": row["home_team"],
+                        "epa_offense": home_metrics.iloc[0]["epa_offense"],
+                        "epa_defense": home_metrics.iloc[0]["epa_defense"],
+                        "success_rate_offense": home_metrics.iloc[0][
+                            "success_rate_offense"
+                        ],
+                        "explosive_rate_offense": home_metrics.iloc[0][
+                            "explosive_rate_offense"
+                        ],
+                    }
+                )
+
             # Away team metrics
             away_metrics = epa_metrics[epa_metrics["game_id"] == row["game_id"]]
             away_metrics = away_metrics[away_metrics["team"] == row["away_team"]]
             if not away_metrics.empty:
-                team_games_list.append({
-                    "game_id": row["game_id"],
-                    "gameday": row["gameday"],
-                    "season": row["season"],
-                    "team": row["away_team"],
-                    "epa_offense": away_metrics.iloc[0]["epa_offense"],
-                    "epa_defense": away_metrics.iloc[0]["epa_defense"],
-                    "success_rate_offense": away_metrics.iloc[0]["success_rate_offense"],
-                    "explosive_rate_offense": away_metrics.iloc[0]["explosive_rate_offense"],
-                })
-        
+                team_games_list.append(
+                    {
+                        "game_id": row["game_id"],
+                        "gameday": row["gameday"],
+                        "season": row["season"],
+                        "team": row["away_team"],
+                        "epa_offense": away_metrics.iloc[0]["epa_offense"],
+                        "epa_defense": away_metrics.iloc[0]["epa_defense"],
+                        "success_rate_offense": away_metrics.iloc[0][
+                            "success_rate_offense"
+                        ],
+                        "explosive_rate_offense": away_metrics.iloc[0][
+                            "explosive_rate_offense"
+                        ],
+                    }
+                )
+
         team_games = pd.DataFrame(team_games_list)
         if team_games.empty:
             logger.warning("No team-game metrics found, returning zeros")
             for col in self.get_feature_names():
                 df[col] = 0.0
             return df
-        
+
         # Sort by team, season, and date
         team_games = team_games.sort_values(["team", "season", "gameday"])
-        
+
         # Calculate rolling averages per team per season (shift to avoid lookahead)
-        for metric in ["epa_offense", "epa_defense", "success_rate_offense", "explosive_rate_offense"]:
+        for metric in [
+            "epa_offense",
+            "epa_defense",
+            "success_rate_offense",
+            "explosive_rate_offense",
+        ]:
             team_games[f"{metric}_rolling"] = (
                 team_games.groupby(["team", "season"])[metric]
                 .shift(1)  # Avoid lookahead bias
@@ -165,40 +208,60 @@ class EPAFeatures(FeatureBuilder):
                 .mean()
                 .reset_index(0, drop=True)
             )
-        
+
         # Merge rolling features back to main dataframe
         # Home team features
-        home_rolling = team_games[["game_id", "team", "epa_offense_rolling", "epa_defense_rolling",
-                                  "success_rate_offense_rolling", "explosive_rate_offense_rolling"]]
-        home_rolling = home_rolling.rename(columns={
-            "epa_offense_rolling": "epa_offense_home",
-            "epa_defense_rolling": "epa_defense_home",
-            "success_rate_offense_rolling": "epa_success_rate_home",
-            "explosive_rate_offense_rolling": "epa_explosive_rate_home",
-        })
+        home_rolling = team_games[
+            [
+                "game_id",
+                "team",
+                "epa_offense_rolling",
+                "epa_defense_rolling",
+                "success_rate_offense_rolling",
+                "explosive_rate_offense_rolling",
+            ]
+        ]
+        home_rolling = home_rolling.rename(
+            columns={
+                "epa_offense_rolling": "epa_offense_home",
+                "epa_defense_rolling": "epa_defense_home",
+                "success_rate_offense_rolling": "epa_success_rate_home",
+                "explosive_rate_offense_rolling": "epa_explosive_rate_home",
+            }
+        )
         df = df.merge(
             home_rolling,
             left_on=["game_id", "home_team"],
             right_on=["game_id", "team"],
-            how="left"
+            how="left",
         ).drop(columns=["team"])
-        
+
         # Away team features
-        away_rolling = team_games[["game_id", "team", "epa_offense_rolling", "epa_defense_rolling",
-                                  "success_rate_offense_rolling", "explosive_rate_offense_rolling"]]
-        away_rolling = away_rolling.rename(columns={
-            "epa_offense_rolling": "epa_offense_away",
-            "epa_defense_rolling": "epa_defense_away",
-            "success_rate_offense_rolling": "epa_success_rate_away",
-            "explosive_rate_offense_rolling": "epa_explosive_rate_away",
-        })
+        away_rolling = team_games[
+            [
+                "game_id",
+                "team",
+                "epa_offense_rolling",
+                "epa_defense_rolling",
+                "success_rate_offense_rolling",
+                "explosive_rate_offense_rolling",
+            ]
+        ]
+        away_rolling = away_rolling.rename(
+            columns={
+                "epa_offense_rolling": "epa_offense_away",
+                "epa_defense_rolling": "epa_defense_away",
+                "success_rate_offense_rolling": "epa_success_rate_away",
+                "explosive_rate_offense_rolling": "epa_explosive_rate_away",
+            }
+        )
         df = df.merge(
             away_rolling,
             left_on=["game_id", "away_team"],
             right_on=["game_id", "team"],
-            how="left"
+            how="left",
         ).drop(columns=["team"])
-        
+
         return df
 
     def get_feature_names(self) -> List[str]:

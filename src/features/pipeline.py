@@ -208,10 +208,11 @@ def create_features(
 
     if pbp is not None:
         pipeline.add_builder(EPAFeatures(pbp_data=pbp))
-    
+
     # Try to load injury data
     try:
         import nflreadpy as nfl
+
         injury_data = nfl.import_injuries(list(range(min(seasons), max(seasons) + 1)))
         if injury_data is not None and len(injury_data) > 0:
             pipeline.add_builder(InjuryFeatures(injury_data=injury_data))
