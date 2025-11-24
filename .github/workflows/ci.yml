@@ -1,176 +1,87 @@
-name: NFL Betting System CI/CD
-
-# REQUIRED SECRETS (add in GitHub Settings → Secrets → Actions):
-# - XAI_API_KEY: Your xAI Grok API key (for AI-powered edge discovery)
-# - ODDS_API_KEY: Your The Odds API key (for live betting lines)
-# 
-# To add secrets: https://github.com/EAGLE605/nfl-betting-system/settings/secrets/actions
-# Edge discovery job will be skipped if secrets are not configured.
-#
-# LINTER NOTE: Warnings about "Context access might be invalid" for secrets are FALSE POSITIVES.
-# The syntax ${{ secrets.XAI_API_KEY }} is the CORRECT and STANDARD way to access secrets
-# in GitHub Actions workflows. These warnings can be safely ignored.
-# Reference: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsenv
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, develop ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, main, develop ]
   schedule:
-    # Run weekly edge discovery every Monday at 6 AM UTC
-    - cron: '0 6 * * 1'
+    # Run tests daily at 9 AM UTC
+    - cron: '0 9 * * *'
 
 jobs:
   test:
-    name: Run Tests
-    runs-on: ubuntu-latest
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.10', '3.11', '3.12']
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
-        
-    - name: Cache pip packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov
+        pip install pytest pytest-cov pytest-mock
     
-    - name: Run tests
+    - name: Run tests with coverage
       run: |
-        pytest tests/ --cov=src --cov-report=xml --cov-report=term
-      continue-on-error: true
+        pytest --cov=src --cov-report=xml --cov-report=html tests/
     
-    - name: Upload coverage
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
         fail_ci_if_error: false
 
   lint:
-    name: Code Quality
+    name: Code Quality Checks
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
+        cache: 'pip'
     
     - name: Install linting tools
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8 black isort
+        pip install black ruff mypy isort
     
-    - name: Run flake8
-      run: |
-        flake8 src/ scripts/ --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Run Black
+      run: black --check src/ scripts/ tests/
+    
+    - name: Run Ruff
+      run: ruff check src/ scripts/ tests/
+    
+    - name: Run isort
+      run: isort --check-only --profile black src/ scripts/ tests/
+    
+    - name: Run mypy
+      run: mypy src/ --ignore-missing-imports --no-strict-optional
       continue-on-error: true
-    
-    - name: Check code formatting
-      run: |
-        black --check src/ scripts/
-      continue-on-error: true
-
-  edge-discovery:
-    name: Weekly Edge Discovery
-    runs-on: ubuntu-latest
-    # Only run on schedule
-    # Note: Secrets are checked within steps (secrets.XAI_API_KEY and secrets.ODDS_API_KEY)
-    if: github.event_name == 'schedule'
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Validate API keys
-      id: validate-keys
-      env:
-        # Set secrets as env vars to check them
-        # Note: Linter warnings about secrets.XAI_API_KEY are false positives
-        # The syntax ${{ secrets.XAI_API_KEY }} is correct for GitHub Actions
-        XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-        ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-      run: |
-        if [ -z "$XAI_API_KEY" ]; then
-          echo "xai_configured=false" >> $GITHUB_OUTPUT
-          echo "::warning::XAI_API_KEY secret not configured. Edge discovery will be skipped."
-        else
-          echo "xai_configured=true" >> $GITHUB_OUTPUT
-        fi
-        if [ -z "$ODDS_API_KEY" ]; then
-          echo "odds_configured=false" >> $GITHUB_OUTPUT
-          echo "::warning::ODDS_API_KEY secret not configured."
-        else
-          echo "odds_configured=true" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Download latest data
-      if: steps.validate-keys.outputs.xai_configured == 'true'
-      run: |
-        python scripts/download_data.py
-      continue-on-error: true
-      
-    - name: Run edge discovery
-      if: steps.validate-keys.outputs.xai_configured == 'true'
-      env:
-        # These secrets are required - configure them in GitHub Settings → Secrets → Actions
-        # Note: Linter warnings here are false positives - this is the correct syntax for GitHub Actions
-        XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-        ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-      run: |
-        python scripts/bulldog_edge_discovery.py
-      continue-on-error: true
-    
-    - name: Run self-improving discovery
-      if: steps.validate-keys.outputs.xai_configured == 'true'
-      env:
-        # This secret is required - configure it in GitHub Settings → Secrets → Actions
-        # Note: Linter warnings here are false positives - this is the correct syntax for GitHub Actions
-        XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-      run: |
-        python scripts/self_improving_bulldog.py
-      continue-on-error: true
-    
-    - name: Upload results
-      uses: actions/upload-artifact@v3
-      with:
-        name: edge-discovery-results
-        path: |
-          reports/bulldog_edges_discovered.csv
-          data/edges_database.json
-        if-no-files-found: ignore
-      if: always()  # Always upload results if they exist
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
@@ -180,25 +91,79 @@ jobs:
         format: 'sarif'
         output: 'trivy-results.sarif'
     
-    - name: Upload Trivy results
-      uses: github/codeql-action/upload-sarif@v2
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
+    
+    - name: Run Bandit security linter
+      run: |
+        pip install bandit
+        bandit -r src/ scripts/ -f json -o bandit-report.json
       continue-on-error: true
+    
+    - name: Check for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
 
-  deploy-docs:
-    name: Deploy Documentation
+  performance:
+    name: Performance Benchmarks
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request'
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs
-        enable_jekyll: true
+        python-version: '3.12'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pytest-benchmark
+    
+    - name: Run performance benchmarks
+      run: |
+        pytest tests/benchmarks/ --benchmark-only --benchmark-json=benchmark.json
       continue-on-error: true
+    
+    - name: Store benchmark result
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'pytest'
+        output-file-path: benchmark.json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: true
 
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install build tools
+      run: |
+        pip install build wheel
+    
+    - name: Build package
+      run: |
+        python -m build
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/

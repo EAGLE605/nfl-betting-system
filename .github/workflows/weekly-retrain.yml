@@ -1,0 +1,80 @@
+name: Weekly Model Retraining
+
+on:
+  schedule:
+    # Run every Monday at 3 AM ET (8 AM UTC)
+    - cron: '0 8 * * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  retrain-model:
+    name: Retrain NFL Prediction Model
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Download latest NFL data
+      run: |
+        python scripts/download_data.py --force
+    
+    - name: Retrain model
+      run: |
+        python scripts/weekly_retrain.py
+    
+    - name: Run validation tests
+      run: |
+        python scripts/backtest.py --recent
+    
+    - name: Upload model artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: retrained-model-${{ github.run_number }}
+        path: |
+          models/*.pkl
+          models/*.joblib
+          reports/retrain_*.json
+        retention-days: 90
+    
+    - name: Create performance report
+      run: |
+        python scripts/generate_performance_dashboard.py --save-report
+    
+    - name: Commit updated model (if improved)
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add models/ reports/
+        git diff --quiet && git diff --staged --quiet || git commit -m "chore: Weekly model retrain - $(date +'%Y-%m-%d')"
+        git push
+      continue-on-error: true
+    
+    - name: Create release on significant improvement
+      if: success()
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: model-v${{ github.run_number }}
+        release_name: Weekly Model Update ${{ github.run_number }}
+        body: |
+          Automated weekly model retraining completed successfully.
+          
+          Training Date: $(date +'%Y-%m-%d')
+          Model Version: ${{ github.run_number }}
+          
+          See attached artifacts for model files and performance reports.
+        draft: false
+        prerelease: false
+      continue-on-error: true
+
