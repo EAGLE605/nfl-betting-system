@@ -18,6 +18,7 @@ Usage:
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
@@ -438,7 +439,7 @@ def main():
         json.dump(parlays, f, indent=2, default=str)
     
     logger.info(f"\n{'='*80}")
-    logger.info(f"✅ PARLAY GENERATION COMPLETE")
+    logger.info(f"[SUCCESS] PARLAY GENERATION COMPLETE")
     logger.info(f"{'='*80}")
     logger.info(f"Results saved to: {args.output}")
     logger.info(f"2-leg parlays: {len(parlays['2_leg'])}")
