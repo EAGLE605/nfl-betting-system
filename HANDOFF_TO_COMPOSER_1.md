@@ -17,7 +17,8 @@ I am the system architect. I have designed a complete NFL betting automation sys
 
 ## 🎯 **WHAT NEEDS TO BE BUILT**
 
-### **Component 1: Pre-Game Prediction Engine** 
+### **Component 1: Pre-Game Prediction Engine**
+
 **File**: `scripts/pregame_prediction_engine.py`  
 **Specification**: `COMPOSER_TASK_PROD_001.md`  
 **Lines of Code**: ~400-500  
@@ -25,7 +26,8 @@ I am the system architect. I have designed a complete NFL betting automation sys
 **Priority**: CRITICAL  
 **Dependencies**: NONE (start here)
 
-**What it does**:
+#### **What it does**
+
 - Fetches live odds from The Odds API
 - Loads trained ML model
 - Generates predictions for upcoming games
@@ -36,6 +38,7 @@ I am the system architect. I have designed a complete NFL betting automation sys
 ---
 
 ### **Component 2: Smart Parlay Generator**
+
 **File**: `scripts/parlay_generator.py`  
 **Specification**: `COMPOSER_TASK_PROD_002.md`  
 **Lines of Code**: ~300-400  
@@ -43,7 +46,8 @@ I am the system architect. I have designed a complete NFL betting automation sys
 **Priority**: HIGH  
 **Dependencies**: Component 1 must be complete
 
-**What it does**:
+#### **Component 2 Functionality**
+
 - Takes individual bet recommendations as input
 - Filters for highest confidence bets (Tier S)
 - Checks for correlation between games
@@ -54,7 +58,9 @@ I am the system architect. I have designed a complete NFL betting automation sys
 ---
 
 ### **Component 3: Multi-Channel Notifications**
-**Files**: 
+
+#### **Files**
+
 - `scripts/send_bet_notifications.py` (main)
 - `src/notifications/email_sender.py`
 - `src/notifications/sms_sender.py` (optional)
@@ -66,7 +72,8 @@ I am the system architect. I have designed a complete NFL betting automation sys
 **Priority**: HIGH  
 **Dependencies**: Components 1 & 2 must be complete
 
-**What it does**:
+#### **Component 3 Functionality**
+
 - Sends HTML-formatted emails (Gmail SMTP)
 - Optionally sends SMS alerts (Twilio)
 - Optionally sends desktop notifications (Windows)
@@ -76,6 +83,7 @@ I am the system architect. I have designed a complete NFL betting automation sys
 ---
 
 ### **Component 4: Full Pipeline Orchestration**
+
 **File**: `scripts/full_betting_pipeline.py`  
 **Specification**: See `COMPOSER_MASTER_PLAN.md` (PROD-004 section)  
 **Lines of Code**: ~200-300  
@@ -83,7 +91,8 @@ I am the system architect. I have designed a complete NFL betting automation sys
 **Priority**: MEDIUM  
 **Dependencies**: All above components must be complete
 
-**What it does**:
+#### **Component 4 Functionality**
+
 - Runs 24/7 during NFL season
 - Fetches daily NFL schedule
 - Waits until 1 hour before each game
@@ -95,18 +104,21 @@ I am the system architect. I have designed a complete NFL betting automation sys
 
 ## 📚 **WHERE TO FIND EVERYTHING**
 
-### **Your Task Specifications**:
+### **Your Task Specifications**
+
 1. **`COMPOSER_TASK_PROD_001.md`** - Pre-Game Engine (READ THIS FIRST)
 2. **`COMPOSER_TASK_PROD_002.md`** - Parlay Generator
 3. **`COMPOSER_TASK_PROD_003.md`** - Notifications
 4. **`COMPOSER_MASTER_PLAN.md`** - Overall execution plan
 
-### **Supporting Documentation**:
+### **Supporting Documentation**
+
 - `PRODUCTION_DEPLOYMENT_PLAN.md` - Complete workflow overview
 - `BULLDOG_FINAL_SUMMARY.md` - System capabilities
 - `START_HERE_BULLDOG_RESULTS.md` - Edge discovery results
 
-### **Existing Code to Integrate With**:
+### **Existing Code to Integrate With**
+
 - `src/betting/kelly.py` - Kelly Criterion (already exists)
 - `src/features/pipeline.py` - Feature generation (already exists)
 - `reports/bulldog_edges_discovered.csv` - Discovered edges (already exists)
@@ -117,7 +129,8 @@ I am the system architect. I have designed a complete NFL betting automation sys
 
 ## ✅ **ACCEPTANCE CRITERIA**
 
-### **For EACH Component**:
+### **For EACH Component**
+
 1. ✅ Code runs without errors
 2. ✅ All tests pass
 3. ✅ Handles errors gracefully
@@ -126,7 +139,8 @@ I am the system architect. I have designed a complete NFL betting automation sys
 6. ✅ Integrates with existing code
 7. ✅ Documentation is complete
 
-### **For OVERALL System**:
+### **For OVERALL System**
+
 1. ✅ User receives alert 1 hour before game
 2. ✅ Alert contains valid bet recommendations
 3. ✅ Recommendations apply discovered edges
@@ -138,8 +152,9 @@ I am the system architect. I have designed a complete NFL betting automation sys
 
 ## 🚀 **EXECUTION ORDER**
 
-### **Step 1**: Read All Specifications (30 min)
-```
+### **Step 1: Read All Specifications** (30 min)
+
+```text
 READ:
 - COMPOSER_TASK_PROD_001.md (complete)
 - COMPOSER_TASK_PROD_002.md (complete)
@@ -147,8 +162,9 @@ READ:
 - COMPOSER_MASTER_PLAN.md (skim)
 ```
 
-### **Step 2**: Build Component 1 (2-3 hours)
-```
+### **Step 2: Build Component 1** (2-3 hours)
+
+```text
 IMPLEMENT:
 - OddsAPIClient class
 - EdgeFilter class
@@ -164,8 +180,9 @@ VERIFY:
 - Logs show successful execution
 ```
 
-### **Step 3**: Build Component 2 (2 hours)
-```
+### **Step 3: Build Component 2** (2 hours)
+
+```text
 IMPLEMENT:
 - ParlayCalculator class
 - CorrelationChecker class
@@ -181,8 +198,9 @@ VERIFY:
 - Parlays have positive EV
 ```
 
-### **Step 4**: Build Component 3 (2-3 hours)
-```
+### **Step 4: Build Component 3** (2-3 hours)
+
+```text
 IMPLEMENT:
 - EmailSender class
 - SMSSender class (optional)
@@ -205,8 +223,9 @@ VERIFY:
 - Contains all bet details
 ```
 
-### **Step 5**: Build Component 4 (1-2 hours)
-```
+### **Step 5: Build Component 4** (1-2 hours)
+
+```text
 IMPLEMENT:
 - Schedule fetching
 - Wait logic
@@ -227,7 +246,8 @@ VERIFY:
 
 ## 🧪 **TESTING REQUIREMENTS**
 
-### **Unit Tests** (Optional but Recommended):
+### **Unit Tests** (Optional but Recommended)
+
 ```python
 # tests/test_pregame_engine.py
 def test_odds_api_client():
@@ -240,7 +260,8 @@ def test_pregame_engine():
     # Test predictions
 ```
 
-### **Integration Tests** (REQUIRED):
+### **Integration Tests** (REQUIRED)
+
 ```bash
 # Test with real data
 python scripts/pregame_prediction_engine.py --all-today
@@ -255,15 +276,17 @@ ls -la reports/
 
 ## 📦 **DEPENDENCIES**
 
-### **Python Packages** (Add to requirements.txt if missing):
-```
+### **Python Packages** (Add to requirements.txt if missing)
+
+```text
 requests>=2.31.0
 pytz>=2024.1
 twilio>=8.0.0  # Optional (SMS)
 plyer>=2.1.0   # Optional (desktop notifications)
 ```
 
-### **External APIs**:
+### **External APIs**
+
 - **The Odds API**: Already configured (ODDS_API_KEY in environment)
 - **Gmail SMTP**: User needs to configure (EMAIL_USER, EMAIL_PASSWORD)
 - **Twilio** (Optional): User needs to configure
@@ -272,18 +295,21 @@ plyer>=2.1.0   # Optional (desktop notifications)
 
 ## ⚠️ **IMPORTANT NOTES**
 
-### **API Key Management**:
+### **API Key Management**
+
 - ALL API keys should come from environment variables
 - NEVER hardcode API keys in code
 - Handle missing API keys gracefully (log warning, skip feature)
 
-### **Error Handling**:
+### **Error Handling**
+
 - Every API call should have try/except
 - Log all errors with full context
 - Don't crash - degrade gracefully
 - Return empty results rather than raising exceptions
 
-### **Logging**:
+### **Logging**
+
 ```python
 # Use this pattern everywhere
 import logging
@@ -294,7 +320,8 @@ logger.warning("API key not set - skipping feature")
 logger.error(f"Error occurred: {e}", exc_info=True)
 ```
 
-### **Code Style**:
+### **Code Style**
+
 - Follow PEP 8
 - Type hints on all functions
 - Docstrings on all classes and functions
@@ -304,32 +331,37 @@ logger.error(f"Error occurred: {e}", exc_info=True)
 
 ## 🎓 **RESOURCES FOR YOU**
 
-### **API Documentation**:
-- The Odds API: https://the-odds-api.com/liveapi/guides/v4/
-- Gmail SMTP: https://support.google.com/mail/answer/7126229
-- Twilio: https://www.twilio.com/docs/sms/quickstart/python
+### **API Documentation**
 
-### **Python Documentation**:
-- Email: https://docs.python.org/3/library/email.html
-- SMTP: https://docs.python.org/3/library/smtplib.html
-- Requests: https://requests.readthedocs.io/
-- Logging: https://docs.python.org/3/library/logging.html
+- The Odds API: <https://the-odds-api.com/liveapi/guides/v4/>
+- Gmail SMTP: <https://support.google.com/mail/answer/7126229>
+- Twilio: <https://www.twilio.com/docs/sms/quickstart/python>
 
-### **Example Code**:
+### **Python Documentation**
+
+- Email: <https://docs.python.org/3/library/email.html>
+- SMTP: <https://docs.python.org/3/library/smtplib.html>
+- Requests: <https://requests.readthedocs.io/>
+- Logging: <https://docs.python.org/3/library/logging.html>
+
+### **Example Code**
+
 All specifications include complete example code. You can copy/paste and adapt as needed.
 
 ---
 
 ## 🤝 **COMMUNICATION**
 
-### **When to Ask for Help**:
+### **When to Ask for Help**
+
 - Unclear specifications
 - API access issues
 - Integration problems
 - Design decisions
 
-### **How to Report Progress**:
-```
+### **How to Report Progress**
+
+```text
 ✅ Component 1: COMPLETE
    - All tests passing
    - Output verified
@@ -373,6 +405,7 @@ python scripts/full_betting_pipeline.py
 ## 📊 **METRICS TO TRACK**
 
 While building, track these:
+
 - Lines of code written: 0 / ~1,500
 - Functions implemented: 0 / ~25
 - Classes implemented: 0 / ~8
@@ -411,4 +444,3 @@ Now go build something amazing!
 **START WITH**: `COMPOSER_TASK_PROD_001.md`  
 
 **GO!** 💪🏈💰
-

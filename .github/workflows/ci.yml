@@ -7,8 +7,10 @@ name: NFL Betting System CI/CD
 # To add secrets: https://github.com/EAGLE605/nfl-betting-system/settings/secrets/actions
 # Edge discovery job will be skipped if secrets are not configured.
 #
-# Note: Linter warnings about "Context access might be invalid" for secrets are false positives.
-# The syntax ${{ secrets.XAI_API_KEY }} is correct for GitHub Actions env context.
+# LINTER NOTE: Warnings about "Context access might be invalid" for secrets are FALSE POSITIVES.
+# The syntax ${{ secrets.XAI_API_KEY }} is the CORRECT and STANDARD way to access secrets
+# in GitHub Actions workflows. These warnings can be safely ignored.
+# Reference: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsenv
 
 on:
   push:
