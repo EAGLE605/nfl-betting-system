@@ -16,7 +16,8 @@ setup(
     package_dir={"": "src"},
     python_requires=">=3.10",
     install_requires=[
-        "nfl-data-py>=0.3.0",
+        "nflreadpy>=0.1.0",
+        "polars>=0.20.0",
         "pandas>=2.0.0",
         "pyarrow>=12.0.0",
         "numpy>=1.24.0",  # Python 3.13+ uses numpy 2.x

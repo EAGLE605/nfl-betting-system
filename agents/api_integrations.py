@@ -321,24 +321,24 @@ class NFLVerseAPI:
     """
     nflverse Data - Best free NFL data source
     
-    ✅ VERIFIED: nfl_data_py package working
+    ✅ VERIFIED: nflreadpy package working
     ✅ FREE: No limits
     ✅ UPDATED: Nightly during season
     
     Installation:
-        pip install nfl_data_py
+        pip install nflreadpy
     
     Documentation:
-        https://github.com/nflverse/nflverse-data
+        https://github.com/nflverse/nflreadpy
     """
     
     def __init__(self):
         try:
-            import nfl_data_py as nfl
+            import nflreadpy as nfl
             self.nfl = nfl
-            logger.info("[OK] nfl_data_py imported successfully")
+            logger.info("[OK] nflreadpy imported successfully")
         except ImportError:
-            logger.error("[ERROR] nfl_data_py not installed. Run: pip install nfl_data_py")
+            logger.error("[ERROR] nflreadpy not installed. Run: pip install nflreadpy")
             self.nfl = None
     
     def get_play_by_play(self, seasons: List[int]) -> pd.DataFrame:
@@ -362,7 +362,10 @@ class NFLVerseAPI:
         
         try:
             logger.info(f"Downloading play-by-play data for {seasons}...")
-            pbp = self.nfl.import_pbp_data(seasons)
+            pbp = self.nfl.load_pbp(seasons)
+            # Convert Polars to Pandas
+            if hasattr(pbp, 'to_pandas'):
+                pbp = pbp.to_pandas()
             logger.info(f"[OK] Downloaded {len(pbp)} plays")
             return pbp
         
@@ -376,7 +379,10 @@ class NFLVerseAPI:
             return pd.DataFrame()
         
         try:
-            schedules = self.nfl.import_schedules(seasons)
+            schedules = self.nfl.load_schedules(seasons)
+            # Convert Polars to Pandas
+            if hasattr(schedules, 'to_pandas'):
+                schedules = schedules.to_pandas()
             return schedules
         except Exception as e:
             logger.error(f"nflverse schedules error: {e}")
@@ -388,7 +394,10 @@ class NFLVerseAPI:
             return pd.DataFrame()
         
         try:
-            injuries = self.nfl.import_injuries(seasons)
+            injuries = self.nfl.load_injuries(seasons)
+            # Convert Polars to Pandas
+            if hasattr(injuries, 'to_pandas'):
+                injuries = injuries.to_pandas()
             return injuries
         except Exception as e:
             logger.error(f"nflverse injuries error: {e}")
@@ -414,7 +423,10 @@ class NFLVerseAPI:
             return pd.DataFrame()
         
         try:
-            ngs = self.nfl.import_ngs_data(stat_type, seasons)
+            ngs = self.nfl.load_nextgen_stats(stat_type, seasons)
+            # Convert Polars to Pandas
+            if hasattr(ngs, 'to_pandas'):
+                ngs = ngs.to_pandas()
             return ngs
         except Exception as e:
             logger.error(f"nflverse NGS error: {e}")

@@ -168,7 +168,7 @@ class TestNFLDataPipeline:
         # Should warn but not raise exception
         pipeline.validate_data(df, required_columns, "test")
 
-    @patch("data_pipeline.nfl.import_schedules")
+    @patch("data_pipeline.nfl.load_schedules")
     def test_get_schedules_download(self, mock_import, pipeline, sample_schedules_df):
         """Test downloading schedules."""
         mock_import.return_value = sample_schedules_df
@@ -187,7 +187,7 @@ class TestNFLDataPipeline:
         filepath = pipeline.raw_dir / "schedules_2023_2023.parquet"
         assert filepath.exists()
 
-    @patch("data_pipeline.nfl.import_schedules")
+    @patch("data_pipeline.nfl.load_schedules")
     def test_get_schedules_uses_cache(self, mock_import, pipeline, sample_schedules_df):
         """Test that cached schedules are used."""
         # First download
@@ -204,7 +204,7 @@ class TestNFLDataPipeline:
         mock_import.assert_not_called()
         assert len(result) == len(sample_schedules_df)
 
-    @patch("data_pipeline.nfl.import_pbp_data")
+    @patch("data_pipeline.nfl.load_pbp")
     def test_get_play_by_play(self, mock_import, pipeline, sample_pbp_df):
         """Test downloading play-by-play data."""
         mock_import.return_value = sample_pbp_df
@@ -216,7 +216,7 @@ class TestNFLDataPipeline:
         assert len(result) == len(sample_pbp_df)
         assert "epa" in result.columns
 
-    @patch("data_pipeline.nfl.import_weekly_data")
+    @patch("data_pipeline.nfl.load_player_stats")
     def test_get_weekly_stats(self, mock_import, pipeline):
         """Test downloading weekly stats."""
         sample_weekly = pd.DataFrame(
@@ -235,7 +235,7 @@ class TestNFLDataPipeline:
         mock_import.assert_called_once_with(years=seasons)
         assert len(result) == len(sample_weekly)
 
-    @patch("data_pipeline.nfl.import_schedules")
+    @patch("data_pipeline.nfl.load_schedules")
     def test_retry_download_success_after_failure(
         self, mock_import, pipeline, sample_schedules_df
     ):
@@ -250,7 +250,7 @@ class TestNFLDataPipeline:
         assert mock_import.call_count == 2
         assert len(result) == len(sample_schedules_df)
 
-    @patch("data_pipeline.nfl.import_schedules")
+    @patch("data_pipeline.nfl.load_schedules")
     def test_retry_download_all_failures(self, mock_import, pipeline):
         """Test retry logic fails after all attempts."""
         # Fail all attempts
@@ -264,10 +264,10 @@ class TestNFLDataPipeline:
         # Should have tried max_retries times
         assert mock_import.call_count == pipeline.max_retries
 
-    @patch("data_pipeline.nfl.import_schedules")
-    @patch("data_pipeline.nfl.import_team_desc")
-    @patch("data_pipeline.nfl.import_weekly_data")
-    @patch("data_pipeline.nfl.import_pbp_data")
+    @patch("data_pipeline.nfl.load_schedules")
+    @patch("data_pipeline.nfl.load_teams")
+    @patch("data_pipeline.nfl.load_player_stats")
+    @patch("data_pipeline.nfl.load_pbp")
     def test_download_all(
         self,
         mock_pbp,
@@ -311,8 +311,8 @@ class TestNFLDataPipeline:
         assert metadata["seasons"] == seasons
         assert "schedules" in metadata["data_types"]
 
-    @patch("data_pipeline.nfl.import_schedules")
-    @patch("data_pipeline.nfl.import_team_desc")
+    @patch("data_pipeline.nfl.load_schedules")
+    @patch("data_pipeline.nfl.load_teams")
     def test_download_all_skip_pbp(
         self, mock_teams, mock_schedules, pipeline, sample_schedules_df
     ):
