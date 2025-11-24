@@ -282,13 +282,13 @@ def main_dashboard():
         if user['is_admin']:
             page = st.radio(
                 "Navigation",
-                ["🎯 My Picks", "📊 Performance", "💰 Bankroll", "⚙️ Settings", "🔧 Admin Panel"],
+                ["🎯 My Picks", "🎰 Parlay Builder", "📊 Performance", "💰 Bankroll", "⚙️ Settings", "🔧 Admin Panel"],
                 label_visibility="collapsed"
             )
         else:
             page = st.radio(
                 "Navigation",
-                ["🎯 My Picks", "📊 Performance", "💰 Bankroll", "⚙️ Settings"],
+                ["🎯 My Picks", "🎰 Parlay Builder", "📊 Performance", "💰 Bankroll", "⚙️ Settings"],
                 label_visibility="collapsed"
             )
         
@@ -302,6 +302,8 @@ def main_dashboard():
     # Route to correct page
     if page == "🎯 My Picks":
         show_picks_page(user)
+    elif page == "🎰 Parlay Builder":
+        show_parlay_builder()
     elif page == "📊 Performance":
         show_performance_page(user)
     elif page == "💰 Bankroll":

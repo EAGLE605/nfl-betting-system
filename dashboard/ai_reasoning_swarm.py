@@ -8,15 +8,15 @@ Uses OpenAI, Anthropic, and Google AI for intelligent analysis.
 SECURITY: Refuses all codebase/system questions.
 """
 
+import json
 import os
 from pathlib import Path
 from typing import Dict, List, Optional
-import json
 
 import streamlit as st
-
 # Load environment variables
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).parent.parent / "config" / "api_keys.env")
 
 # =============================================================================
