@@ -8,19 +8,23 @@ NFL Edge Finder - Complete Authentication System
 - Clean, simple, logical UI
 """
 
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
+
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from dashboard.admin_panel import advanced_settings_panel
+from dashboard.ai_reasoning_swarm import (AIReasoningSwarm,
+                                          show_ai_chat_assistant,
+                                          show_ai_reasoning_widget)
 # Import auth system
 from dashboard.auth_system import *
-from dashboard.admin_panel import advanced_settings_panel
 
 # =============================================================================
 # PAGE CONFIG
@@ -316,6 +320,23 @@ def show_picks_page(user):
     st.title("🎯 Today's Best Bets")
     st.caption(f"Personalized for your {get_user_settings(user['id'])['risk_profile']} bankroll profile")
     
+    # AI Status Check
+    show_ai_status_simple()
+    
+    st.divider()
+    
+    # Help widgets in tabs
+    tab1, tab2, tab3 = st.tabs(["💬 Ask Questions", "🎓 Learn the Basics", "🤖 AI Setup"])
+    
+    with tab1:
+        show_rag_qa_widget()
+    
+    with tab2:
+        show_eli10_helper()
+    
+    with tab3:
+        show_simple_ai_setup()
+    
     # Quick stats
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -363,7 +384,7 @@ def show_picks_page(user):
         }
     ]
     
-    for pick in picks:
+    for idx, pick in enumerate(picks):
         with st.expander(f"{'🟢' if pick['confidence']=='HIGH' else '🔵'} {pick['game']}", expanded=True):
             col1, col2, col3 = st.columns([2, 1, 1])
             
@@ -379,10 +400,46 @@ def show_picks_page(user):
                 st.metric("Bet Size", f"${pick['size']}")
                 st.metric("Best Odds", pick['odds'])
             
+            # Quality Check (Is this bet actually good?)
+            show_ai_quality_check(pick['prob'] / 100, pick['edge'] / 100)
+            
+            st.divider()
+            
+            # WHY did AI pick this? (SHAP-style explanation)
+            # Simulate feature importance (in production, comes from model)
+            feature_importance = {
+                'elo_diff': 0.25 if pick['confidence'] == 'HIGH' else 0.10,
+                'rest_days': 0.15,
+                'injury_impact': 0.20 if 'backup QB' in pick['reasoning'] else 0.05,
+                'home_advantage': 0.10,
+                'recent_form': 0.15 if 'hot' in pick['reasoning'].lower() else -0.10,
+            }
+            
+            bet_info = {
+                'bet': pick['bet'],
+                'odds': pick['odds'],
+                'win_prob': pick['prob'],
+                'edge': pick['edge']
+            }
+            
+            show_why_this_bet(bet_info, feature_importance)
+            
+            st.divider()
+            
+            # AI Reasoning Swarm (multi-AI consensus)
+            with st.expander("🤖 AI Swarm Analysis (Advanced)", expanded=False):
+                game_info = {
+                    'matchup': pick['game'],
+                    'context': pick['reasoning']
+                }
+                show_ai_reasoning_widget(game_info, bet_info)
+            
+            st.divider()
+            
             # Track bet button
             col_a, col_b = st.columns([1, 3])
             with col_a:
-                if st.button(f"✅ Track Bet", key=pick['game'], use_container_width=True):
+                if st.button(f"✅ Track Bet", key=f"track_{idx}_{pick['game']}", use_container_width=True):
                     add_tracked_bet(
                         user['id'],
                         pick['game'].replace(" ", "_"),
