@@ -2,11 +2,11 @@
 NFL Data Pipeline
 =================
 
-Downloads and validates NFL data from nfl_data_py (nflverse).
+Downloads and validates NFL data from nflreadpy (nflverse).
 Handles caching, validation, and error recovery.
 
 Author: NFL Betting System
-Date: 2025-11-23
+Date: 2025-11-24
 """
 
 import json
@@ -18,7 +18,7 @@ from typing import List, Optional, Dict
 import time
 
 import pandas as pd
-import nfl_data_py as nfl
+import nflreadpy as nfl
 from tqdm import tqdm
 
 # Per-module logging (not module-level config)
@@ -191,10 +191,14 @@ class NFLDataPipeline:
         if not force_download and not self._should_download(filepath, seasons):
             return pd.read_parquet(filepath)
 
-        df = self._retry_download(nfl.import_schedules, "schedules", years=seasons)
+        df = self._retry_download(nfl.load_schedules, "schedules", seasons=seasons)
 
         if df is None:
             raise ValueError("Failed to download schedules after all retries")
+
+        # Convert Polars to Pandas
+        if hasattr(df, 'to_pandas'):
+            df = df.to_pandas()
 
         # Validate
         self.validate_data(
@@ -234,10 +238,14 @@ class NFLDataPipeline:
         if not force_download and not self._should_download(filepath, seasons):
             return pd.read_parquet(filepath)
 
-        df = self._retry_download(nfl.import_pbp_data, "play-by-play", years=seasons)
+        df = self._retry_download(nfl.load_pbp, "play-by-play", seasons=seasons)
 
         if df is None:
             raise ValueError("Failed to download play-by-play data after all retries")
+
+        # Convert Polars to Pandas
+        if hasattr(df, 'to_pandas'):
+            df = df.to_pandas()
 
         # Validate
         self.validate_data(
@@ -283,7 +291,7 @@ class NFLDataPipeline:
             return pd.read_parquet(filepath)
 
         df = self._retry_download(
-            nfl.import_weekly_data, f"weekly {stat_type} stats", years=seasons
+            nfl.load_player_stats, f"weekly {stat_type} stats", seasons=seasons
         )
 
         if df is None:
@@ -291,10 +299,14 @@ class NFLDataPipeline:
                 f"Failed to download weekly {stat_type} stats after all retries"
             )
 
+        # Convert Polars to Pandas
+        if hasattr(df, 'to_pandas'):
+            df = df.to_pandas()
+
         # Validate
         self.validate_data(
             df,
-            required_columns=["season", "week", "player_id", "recent_team"],
+            required_columns=["season", "week", "player_id", "team"],
             data_type=f"weekly_{stat_type}",
         )
 
@@ -321,10 +333,14 @@ class NFLDataPipeline:
             logger.info(f"✓ Using cached {filepath.name}")
             return pd.read_parquet(filepath)
 
-        df = self._retry_download(nfl.import_team_desc, "team descriptions")
+        df = self._retry_download(nfl.load_teams, "team descriptions")
 
         if df is None:
             raise ValueError("Failed to download team descriptions after all retries")
+
+        # Convert Polars to Pandas
+        if hasattr(df, 'to_pandas'):
+            df = df.to_pandas()
 
         df.to_parquet(filepath, index=False)
         logger.info(f"✓ Saved team descriptions to {filepath}")
