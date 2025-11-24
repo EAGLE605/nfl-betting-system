@@ -6,6 +6,9 @@ name: NFL Betting System CI/CD
 # 
 # To add secrets: https://github.com/EAGLE605/nfl-betting-system/settings/secrets/actions
 # Edge discovery job will be skipped if secrets are not configured.
+#
+# Note: Linter warnings about "Context access might be invalid" for secrets are false positives.
+# The syntax ${{ secrets.XAI_API_KEY }} is correct for GitHub Actions env context.
 
 on:
   push:
@@ -84,8 +87,9 @@ jobs:
   edge-discovery:
     name: Weekly Edge Discovery
     runs-on: ubuntu-latest
-    # Only run on schedule AND if secrets are available
-    if: github.event_name == 'schedule' && secrets.XAI_API_KEY != ''
+    # Only run on schedule
+    # Note: Secrets are checked within steps (secrets.XAI_API_KEY and secrets.ODDS_API_KEY)
+    if: github.event_name == 'schedule'
     
     steps:
     - uses: actions/checkout@v3
@@ -100,27 +104,54 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Validate API keys
+      id: validate-keys
+      env:
+        # Set secrets as env vars to check them
+        # Note: Linter warnings about secrets.XAI_API_KEY are false positives
+        # The syntax ${{ secrets.XAI_API_KEY }} is correct for GitHub Actions
+        XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+        ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+      run: |
+        if [ -z "$XAI_API_KEY" ]; then
+          echo "xai_configured=false" >> $GITHUB_OUTPUT
+          echo "::warning::XAI_API_KEY secret not configured. Edge discovery will be skipped."
+        else
+          echo "xai_configured=true" >> $GITHUB_OUTPUT
+        fi
+        if [ -z "$ODDS_API_KEY" ]; then
+          echo "odds_configured=false" >> $GITHUB_OUTPUT
+          echo "::warning::ODDS_API_KEY secret not configured."
+        else
+          echo "odds_configured=true" >> $GITHUB_OUTPUT
+        fi
+    
     - name: Download latest data
+      if: steps.validate-keys.outputs.xai_configured == 'true'
       run: |
         python scripts/download_data.py
       continue-on-error: true
       
     - name: Run edge discovery
+      if: steps.validate-keys.outputs.xai_configured == 'true'
       env:
+        # These secrets are required - configure them in GitHub Settings → Secrets → Actions
+        # Note: Linter warnings here are false positives - this is the correct syntax for GitHub Actions
         XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
         ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
       run: |
         python scripts/bulldog_edge_discovery.py
       continue-on-error: true
-      if: success() || failure()  # Run even if previous step fails
     
     - name: Run self-improving discovery
+      if: steps.validate-keys.outputs.xai_configured == 'true'
       env:
+        # This secret is required - configure it in GitHub Settings → Secrets → Actions
+        # Note: Linter warnings here are false positives - this is the correct syntax for GitHub Actions
         XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
       run: |
         python scripts/self_improving_bulldog.py
       continue-on-error: true
-      if: success() || failure()  # Run even if previous step fails
     
     - name: Upload results
       uses: actions/upload-artifact@v3

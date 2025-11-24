@@ -4,10 +4,9 @@ CRITICAL: This uses ACTUAL model results on 2024 test data.
 GO/NO-GO decision based on real performance, not simulated.
 """
 
-import sys
-from pathlib import Path
+from src.utils.path_setup import setup_project_path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+setup_project_path()
 
 import json
 import logging
