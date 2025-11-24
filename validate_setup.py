@@ -90,7 +90,8 @@ def check_dependencies() -> bool:
     print_header("Checking Dependencies")
     
     deps = [
-        ('nfl_data_py', 'nfl-data-py'),
+        ('nflreadpy', 'nflreadpy'),
+        ('polars', 'polars'),
         ('pandas', 'pandas'),
         ('pyarrow', 'pyarrow'),
         ('numpy', 'numpy'),

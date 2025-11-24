@@ -210,8 +210,11 @@ def create_features(
     
     # Try to load injury data
     try:
-        import nfl_data_py as nfl
-        injury_data = nfl.import_injuries(list(range(min(seasons), max(seasons) + 1)))
+        import nflreadpy as nfl
+        injury_data = nfl.load_injuries(list(range(min(seasons), max(seasons) + 1)))
+        # Convert Polars to Pandas if needed
+        if injury_data is not None and hasattr(injury_data, 'to_pandas'):
+            injury_data = injury_data.to_pandas()
         if injury_data is not None and len(injury_data) > 0:
             pipeline.add_builder(InjuryFeatures(injury_data=injury_data))
     except Exception as e:

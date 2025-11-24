@@ -70,7 +70,7 @@ def print_banner():
     """Print welcome banner."""
     print("\n" + "=" * 70)
     print("  NFL BETTING SYSTEM - DATA PIPELINE")
-    print("  Download NFL data from nflverse (nfl_data_py)")
+    print("  Download NFL data from nflverse (nflreadpy)")
     print("=" * 70 + "\n")
 
 
@@ -203,7 +203,7 @@ Examples:
         print(f"\n[ERROR] {e}")
         print("\nTroubleshooting:")
         print("  1. Check internet connection")
-        print("  2. Verify nfl_data_py is installed: pip install nfl-data-py")
+        print("  2. Verify nflreadpy is installed: pip install nflreadpy")
         print("  3. Try with --no-pbp flag (play-by-play is large)")
         print("  4. Check logs above for specific error")
         sys.exit(1)

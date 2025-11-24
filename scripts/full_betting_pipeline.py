@@ -58,14 +58,17 @@ class NFLScheduleManager:
             List of game dictionaries with kickoff times
         """
         try:
-            import nfl_data_py as nfl
+            import nflreadpy as nfl
 
             # Get current season
             now = datetime.now()
             season = now.year if now.month >= 9 else now.year - 1
             
             # Load schedule
-            schedule = nfl.import_schedules([season])
+            schedule = nfl.load_schedules([season])
+            # Convert Polars to Pandas
+            if hasattr(schedule, 'to_pandas'):
+                schedule = schedule.to_pandas()
             
             # Filter for today's games
             today_str = now.strftime('%Y-%m-%d')
@@ -89,14 +92,17 @@ class NFLScheduleManager:
             List of game dictionaries
         """
         try:
-            import nfl_data_py as nfl
+            import nflreadpy as nfl
 
             # Determine season from date
             date = datetime.strptime(date_str, '%Y-%m-%d')
             season = date.year if date.month >= 9 else date.year - 1
             
             # Load schedule
-            schedule = nfl.import_schedules([season])
+            schedule = nfl.load_schedules([season])
+            # Convert Polars to Pandas
+            if hasattr(schedule, 'to_pandas'):
+                schedule = schedule.to_pandas()
             
             # Filter for specific date
             games = schedule[schedule['gameday'] == date_str].to_dict('records')
@@ -113,7 +119,7 @@ class NFLScheduleManager:
         Parse kickoff time from game dictionary.
         
         Args:
-            game: Game dictionary from nfl_data_py
+            game: Game dictionary from nflreadpy
         
         Returns:
             Datetime object in Eastern time
