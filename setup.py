@@ -14,12 +14,12 @@ setup(
     author="NFL Betting System",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    python_requires=">=3.10,<3.13",
+    python_requires=">=3.10",
     install_requires=[
         "nfl-data-py>=0.3.0",
         "pandas>=2.0.0",
         "pyarrow>=12.0.0",
-        "numpy>=1.24.0,<2.0.0",  # Pin to avoid compilation issues
+        "numpy>=1.24.0",  # Python 3.13+ uses numpy 2.x
         "xgboost>=2.0.0",
         "scikit-learn>=1.3.0",
         "fastapi>=0.100.0",

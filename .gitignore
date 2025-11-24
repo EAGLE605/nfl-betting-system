@@ -47,6 +47,9 @@ models/
 *.joblib
 *.h5
 
+# Reports
+reports/
+
 # Logs
 *.log
 logs/

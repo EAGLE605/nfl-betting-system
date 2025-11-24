@@ -1,3 +1,1 @@
 """NFL Betting System - Tests"""
-
-

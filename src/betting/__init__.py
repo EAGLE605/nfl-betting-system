@@ -1,2 +1,1 @@
 """Betting strategy package."""
-
