@@ -1,0 +1,21 @@
+# Authentication & Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+authlib>=1.2.1
+itsdangerous>=2.1.2
+pyotp>=2.9.0
+qrcode[pil]>=7.4.2
+streamlit-authenticator>=0.2.3
+
+# Core dashboard (from main requirements)
+streamlit>=1.28.0
+plotly>=5.18.0
+pandas>=2.0.0
+
+# Optional OAuth providers
+# google-auth>=2.23.0
+# google-auth-oauthlib>=1.1.0
+# PyGithub>=2.1.1
+
