@@ -20,6 +20,9 @@ try:
     from .weather import WeatherFeatures
     from .line import LineFeatures
     from .form import FormFeatures
+    from .encoding import CategoricalEncodingFeatures
+    from .referee import RefereeFeatures
+    from .injury import InjuryFeatures
 except ImportError:
     from src.features.base import FeatureBuilder
     from src.features.elo import EloFeatures
@@ -28,6 +31,9 @@ except ImportError:
     from src.features.weather import WeatherFeatures
     from src.features.line import LineFeatures
     from src.features.form import FormFeatures
+    from src.features.encoding import CategoricalEncodingFeatures
+    from src.features.referee import RefereeFeatures
+    from src.features.injury import InjuryFeatures
 
 logger = logging.getLogger(__name__)
 
@@ -196,9 +202,20 @@ def create_features(
     pipeline.add_builder(EloFeatures())
     pipeline.add_builder(WeatherFeatures())
     pipeline.add_builder(FormFeatures())
+    pipeline.add_builder(CategoricalEncodingFeatures())
+    pipeline.add_builder(RefereeFeatures())
 
     if pbp is not None:
         pipeline.add_builder(EPAFeatures(pbp_data=pbp))
+    
+    # Try to load injury data
+    try:
+        import nfl_data_py as nfl
+        injury_data = nfl.import_injuries(list(range(min(seasons), max(seasons) + 1)))
+        if injury_data is not None and len(injury_data) > 0:
+            pipeline.add_builder(InjuryFeatures(injury_data=injury_data))
+    except Exception as e:
+        logger.warning(f"Could not load injury data: {e}")
 
     # Build features
     df_features = pipeline.build_features(schedules.copy())
