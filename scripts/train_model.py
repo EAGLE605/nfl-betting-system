@@ -8,17 +8,18 @@ CRITICAL DATA SPLIT:
 NEVER use test data (2024) until final evaluation.
 """
 
-import sys
-from pathlib import Path
+from src.utils.path_setup import setup_project_path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+setup_project_path()
 
+import logging
+
+import joblib
 import pandas as pd
 import yaml
-import joblib
-import logging
-from src.models.xgboost_model import XGBoostNFLModel
+
 from src.models.calibration import ModelCalibrator
+from src.models.xgboost_model import XGBoostNFLModel
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
