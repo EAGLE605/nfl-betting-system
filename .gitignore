@@ -28,7 +28,6 @@ env/
 
 # IDEs
 .vscode/*
-!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -41,6 +40,7 @@ data/
 *.json
 !requirements.txt
 !pytest.ini
+!.vscode/settings.json
 
 # Models
 models/
@@ -69,6 +69,9 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb
 
-# Environment
+# Environment & API Keys
 .env
 .env.local
+config/api_keys.env
+**/api_keys.env
+*.env

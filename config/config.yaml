@@ -31,9 +31,9 @@ features:
     - elo_prob_home
     - rest_days_home
     - rest_days_away
-    - spread_line
-    - total_line
-    - home_favorite
+    # WARNING: Betting line features (spread_line, total_line, home_favorite) 
+    # are EXCLUDED from models to prevent data leakage
+    # They are created by LineFeatures but removed before training
   advanced:
     - win_pct_home
     - win_pct_away
