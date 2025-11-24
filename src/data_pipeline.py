@@ -191,7 +191,7 @@ class NFLDataPipeline:
         if not force_download and not self._should_download(filepath, seasons):
             return pd.read_parquet(filepath)
 
-        df = self._retry_download(nfl.load_schedules, "schedules", years=seasons)
+        df = self._retry_download(nfl.load_schedules, "schedules", seasons=seasons)
 
         if df is None:
             raise ValueError("Failed to download schedules after all retries")
@@ -238,7 +238,7 @@ class NFLDataPipeline:
         if not force_download and not self._should_download(filepath, seasons):
             return pd.read_parquet(filepath)
 
-        df = self._retry_download(nfl.load_pbp, "play-by-play", years=seasons)
+        df = self._retry_download(nfl.load_pbp, "play-by-play", seasons=seasons)
 
         if df is None:
             raise ValueError("Failed to download play-by-play data after all retries")
@@ -291,7 +291,7 @@ class NFLDataPipeline:
             return pd.read_parquet(filepath)
 
         df = self._retry_download(
-            nfl.load_player_stats, f"weekly {stat_type} stats", years=seasons
+            nfl.load_player_stats, f"weekly {stat_type} stats", seasons=seasons
         )
 
         if df is None:
@@ -306,7 +306,7 @@ class NFLDataPipeline:
         # Validate
         self.validate_data(
             df,
-            required_columns=["season", "week", "player_id", "recent_team"],
+            required_columns=["season", "week", "player_id", "team"],
             data_type=f"weekly_{stat_type}",
         )
 

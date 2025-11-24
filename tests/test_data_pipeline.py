@@ -177,7 +177,7 @@ class TestNFLDataPipeline:
         result = pipeline.get_schedules(seasons)
 
         # Verify API was called
-        mock_import.assert_called_once_with(years=seasons)
+        mock_import.assert_called_once_with(seasons=seasons)
 
         # Verify data was returned
         assert len(result) == len(sample_schedules_df)
@@ -212,7 +212,7 @@ class TestNFLDataPipeline:
         seasons = [2023]
         result = pipeline.get_play_by_play(seasons)
 
-        mock_import.assert_called_once_with(years=seasons)
+        mock_import.assert_called_once_with(seasons=seasons)
         assert len(result) == len(sample_pbp_df)
         assert "epa" in result.columns
 
@@ -224,7 +224,7 @@ class TestNFLDataPipeline:
                 "season": [2023] * 3,
                 "week": [1, 1, 1],
                 "player_id": ["P1", "P2", "P3"],
-                "recent_team": ["BUF", "KC", "NYJ"],
+                "team": ["BUF", "KC", "NYJ"],
             }
         )
         mock_import.return_value = sample_weekly
@@ -232,7 +232,7 @@ class TestNFLDataPipeline:
         seasons = [2023]
         result = pipeline.get_weekly_stats(seasons, stat_type="offense")
 
-        mock_import.assert_called_once_with(years=seasons)
+        mock_import.assert_called_once_with(seasons=seasons)
         assert len(result) == len(sample_weekly)
 
     @patch("data_pipeline.nfl.load_schedules")
@@ -288,7 +288,7 @@ class TestNFLDataPipeline:
             }
         )
         mock_weekly.return_value = pd.DataFrame(
-            {"season": [2023], "week": [1], "player_id": ["P1"], "recent_team": ["BUF"]}
+            {"season": [2023], "week": [1], "player_id": ["P1"], "team": ["BUF"]}
         )
         mock_pbp.return_value = sample_pbp_df
 
