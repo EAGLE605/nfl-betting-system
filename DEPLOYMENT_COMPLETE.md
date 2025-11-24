@@ -54,7 +54,7 @@ Conservative Estimate:
 # 1. Open PowerShell in C:\Scripts\nfl-betting-system
 
 # 2. Set your API key
-$env:ODDS_API_KEY="***REMOVED***"
+$env:ODDS_API_KEY="your_odds_api_key_here"
 
 # 3. Generate picks with Grok AI
 python scripts/generate_daily_picks_with_grok.py
@@ -335,7 +335,7 @@ Expected Results:
 ### Common Issues
 
 **Issue**: "ODDS_API_KEY not set"  
-**Fix**: Run `$env:ODDS_API_KEY="***REMOVED***"` before scripts
+**Fix**: Run `$env:ODDS_API_KEY="your_odds_api_key_here"` before scripts
 
 **Issue**: "Grok API 403 Forbidden"  
 **Fix**: Check credits at https://console.x.ai/ (you have $25 active)

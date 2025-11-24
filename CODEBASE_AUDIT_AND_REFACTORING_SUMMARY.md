@@ -160,6 +160,7 @@ def setup_project_path():
 ### ✅ Refactored Key Scripts
 
 **Files Updated**:
+
 1. `scripts/backtest.py` - Uses new path utility
 2. `scripts/train_model.py` - Uses new path utility
 

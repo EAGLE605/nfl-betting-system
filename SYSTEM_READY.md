@@ -63,7 +63,7 @@
 
 ```bash
 # Set API key (one-time)
-$env:ODDS_API_KEY="***REMOVED***"
+$env:ODDS_API_KEY="your_odds_api_key_here"
 
 # Generate picks
 python scripts/generate_daily_picks_with_grok.py

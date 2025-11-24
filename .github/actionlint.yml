@@ -1,0 +1,15 @@
+# actionlint configuration
+# https://github.com/rhysd/actionlint/blob/main/docs/config.md
+
+# Suppress warnings about undefined secrets
+# These are expected when secrets haven't been added to GitHub yet
+# The syntax ${{ secrets.SECRET_NAME }} is correct
+self-hosted-runner:
+  # No self-hosted runners
+  labels: []
+
+config-variables:
+  # Suppress warnings for secrets that may not be configured yet
+  # These are documented in the workflow file header
+  strict: false
+

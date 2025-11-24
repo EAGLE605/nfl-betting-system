@@ -399,7 +399,7 @@ Annual: $30,960 (310% ROI)
 ```bash
 # 1. Generate picks
 cd C:\Scripts\nfl-betting-system
-$env:ODDS_API_KEY="***REMOVED***"
+$env:ODDS_API_KEY="your_odds_api_key_here"
 python scripts/generate_daily_picks_with_grok.py
 
 # 2. Review output
@@ -485,7 +485,7 @@ python scripts/train_model.py
 
 ```bash
 # Set before running scripts
-$env:ODDS_API_KEY="***REMOVED***"
+$env:ODDS_API_KEY="your_odds_api_key_here"
 ```
 
 #### Issue: "No picks generated"

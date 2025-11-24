@@ -183,9 +183,10 @@ Composer should report after each task:
 
 ### **Step 3: Test with Live Data**
 ```bash
-# Export API keys
-export ODDS_API_KEY="your_odds_api_key_here"
-export XAI_API_KEY="your_xai_api_key_here"
+# Export API keys (NEVER commit real keys to git!)
+# Get your keys from config/api_keys.env or environment variables
+export ODDS_API_KEY="your_odds_api_key_here"  # Replace with your actual key
+export XAI_API_KEY="your_xai_api_key_here"    # Replace with your actual key
 
 # Test components individually
 python scripts/pregame_prediction_engine.py --all-today
@@ -276,13 +277,25 @@ After Composer 1 completes these tasks:
 
 ## 🔐 **SECURITY REMINDER**
 
-Your API keys are working and ready to use (stored securely in config/api_keys.env)
+**⚠️ CRITICAL: NEVER commit API keys to git!**
 
-**IMPORTANT**: Add these to `config/api_keys.env` (gitignored, won't be committed)
+API keys must be stored in `config/api_keys.env` (which is gitignored) or as environment variables.
 
-Also needed:
+**Required API Keys** (add to `config/api_keys.env`):
+- `ODDS_API_KEY` - The Odds API key
+- `XAI_API_KEY` - xAI Grok API key
+
+**Optional Credentials**:
 - Gmail app password (for email notifications)
 - Twilio credentials (optional, for SMS)
+
+**Security Best Practices**:
+- ✅ Use `config/api_keys.env` for local development (gitignored)
+- ✅ Use GitHub Secrets for CI/CD workflows
+- ✅ Use environment variables for production deployments
+- ❌ NEVER hardcode keys in source code
+- ❌ NEVER commit keys to git repositories
+- ❌ NEVER share keys in documentation or screenshots
 
 ---
 
