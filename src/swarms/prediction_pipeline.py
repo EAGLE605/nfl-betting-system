@@ -10,12 +10,12 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from src.features.pipeline import FeaturePipeline
 from src.features.elo import EloFeatures
 from src.features.encoding import CategoricalEncodingFeatures
 from src.features.epa import EPAFeatures
 from src.features.form import FormFeatures
 from src.features.line import LineFeatures
+from src.features.pipeline import FeaturePipeline
 from src.features.referee import RefereeFeatures
 from src.features.rest_days import RestDaysFeatures
 from src.features.weather import WeatherFeatures
@@ -110,9 +110,7 @@ class PredictionPipeline:
                 # Use first model's features
                 expected_features = self.model.models[0].feature_names
             else:
-                logger.warning(
-                    "Model doesn't expose feature names, using all features"
-                )
+                logger.warning("Model doesn't expose feature names, using all features")
                 expected_features = features_df.columns.tolist()
 
             # Select only the features the model was trained on
@@ -193,9 +191,7 @@ class PredictionPipeline:
             data_dir = Path("data/raw")
             # Try to load recent season's pbp
             current_season = pd.Timestamp.now().year
-            pbp_path = (
-                data_dir / f"pbp_{current_season-1}_{current_season}.parquet"
-            )
+            pbp_path = data_dir / f"pbp_{current_season-1}_{current_season}.parquet"
             if pbp_path.exists():
                 pbp_data = pd.read_parquet(pbp_path)
         except Exception as e:

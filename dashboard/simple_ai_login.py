@@ -37,7 +37,6 @@ SIMPLE_EXPLANATIONS = {
     - Tells you if it's a good bet or not
     - Explains WHY in simple words
     """,
-    
     "why_multiple_ais": """
     🎓 **Why Do We Ask 3 Different AIs?**
     
@@ -55,7 +54,6 @@ SIMPLE_EXPLANATIONS = {
     - Claude might catch a risk Gemini didn't see
     - When all 3 agree = That's a STRONG bet!
     """,
-    
     "what_is_confidence": """
     🎯 **What Does "Confidence" Mean?**
     
@@ -72,7 +70,6 @@ SIMPLE_EXPLANATIONS = {
     **Rule of thumb:**
     Only bet when confidence is MEDIUM or HIGH!
     """,
-    
     "what_is_edge": """
     💰 **What is "Edge"? (The Secret to Winning)**
     
@@ -92,7 +89,6 @@ SIMPLE_EXPLANATIONS = {
     - Small edge (2-4%) = Maybe bet small
     - BIG edge (8%+) = GOOD BET! (But not too much money!)
     """,
-    
     "why_dont_i_always_win": """
     🎲 **If AI Is Smart, Why Don't I Win Every Time?**
     
@@ -118,7 +114,6 @@ SIMPLE_EXPLANATIONS = {
     - But sometimes you get a B
     - Still doing great overall!
     """,
-    
     "what_is_bankroll": """
     🏦 **What is "Bankroll"? (Your Betting Piggy Bank)**
     
@@ -146,7 +141,7 @@ SIMPLE_EXPLANATIONS = {
     - Your bankroll = Your game lives
     - Each bet = A level in the game
     - Smart bets = More lives for longer!
-    """
+    """,
 }
 
 # =============================================================================
@@ -176,9 +171,8 @@ AI_PLATFORMS = {
         - Free version works fine!
         - Upgrade only if you want faster/smarter answers
         """,
-        "integration_available": True
+        "integration_available": True,
     },
-    
     "Claude": {
         "name": "Claude (Anthropic)",
         "icon": "🟣",
@@ -201,9 +195,8 @@ AI_PLATFORMS = {
         - Free version is perfect!
         - Very good at finding risks in bets
         """,
-        "integration_available": True
+        "integration_available": True,
     },
-    
     "Gemini": {
         "name": "Gemini (Google)",
         "icon": "🔵",
@@ -226,9 +219,8 @@ AI_PLATFORMS = {
         - Very fast responses
         - Good at explaining things simply
         """,
-        "integration_available": True
+        "integration_available": True,
     },
-    
     "Grok": {
         "name": "Grok (X/Twitter)",
         "icon": "⚡",
@@ -251,9 +243,8 @@ AI_PLATFORMS = {
         - Good for second opinions
         - Optional (not needed)
         """,
-        "integration_available": False  # Coming soon
+        "integration_available": False,  # Coming soon
     },
-    
     "Perplexity": {
         "name": "Perplexity AI",
         "icon": "🔍",
@@ -277,66 +268,68 @@ AI_PLATFORMS = {
         - Good for checking team stats
         - Great for learning!
         """,
-        "integration_available": False  # Coming soon
-    }
+        "integration_available": False,  # Coming soon
+    },
 }
 
 # =============================================================================
 # SIMPLE AI SETUP WIZARD
 # =============================================================================
 
+
 def show_simple_ai_setup():
     """Simple wizard for setting up AI (no technical stuff!)"""
-    
+
     st.title("🤖 Get Your AI Betting Buddies!")
     st.markdown("### No API keys, no coding - just simple logins like Facebook!")
-    
+
     # Explain what we're doing
     with st.expander("❓ What are we setting up? (Click to learn)", expanded=False):
         st.markdown(SIMPLE_EXPLANATIONS["what_is_ai"])
         st.markdown(SIMPLE_EXPLANATIONS["why_multiple_ais"])
-    
+
     st.divider()
-    
+
     # Show each AI platform
     for platform_key, platform in AI_PLATFORMS.items():
         with st.container():
             col1, col2 = st.columns([3, 1])
-            
+
             with col1:
                 st.markdown(f"### {platform['icon']} {platform['name']}")
-                st.caption(platform['description'])
-                
+                st.caption(platform["description"])
+
                 # Show if free or paid
-                if platform['free']:
+                if platform["free"]:
                     st.success("✅ **FREE** - No credit card needed!")
                 else:
                     st.warning(f"💰 Requires subscription")
-                
+
                 # How to get it
                 with st.expander(f"📖 How to get {platform['name']}", expanded=False):
-                    st.markdown(platform['how_to'])
+                    st.markdown(platform["how_to"])
                     st.markdown(f"[**👉 Sign up here**]({platform['signup_url']})")
-            
+
             with col2:
-                if platform['integration_available']:
+                if platform["integration_available"]:
                     # Check if user has it
                     has_account = st.checkbox(
                         "I have this!",
                         key=f"has_{platform_key}",
-                        help=f"Check this after you sign up for {platform['name']}"
+                        help=f"Check this after you sign up for {platform['name']}",
                     )
-                    
+
                     if has_account:
                         st.success("✅ Ready!")
                 else:
                     st.info("🔜 Coming soon!")
-            
+
             st.divider()
-    
+
     # Summary
     st.markdown("### 🎯 Recommendation for Beginners:")
-    st.info("""
+    st.info(
+        """
     **Get these 3 (all FREE!):**
     
     1. **Gemini** 🔵 - Easiest (just use your Gmail!)
@@ -346,36 +339,40 @@ def show_simple_ai_setup():
     **Time needed:** 5 minutes total
     
     **Cost:** $0 (completely free!)
-    """)
-    
+    """
+    )
+
     # Next steps
     if st.button("✅ I've Signed Up - Let's Connect Them!", type="primary"):
         st.balloons()
         st.success("🎉 Awesome! Now let's connect your AI accounts...")
         st.info("👉 Go to Settings → AI Connections to link your accounts")
 
+
 # =============================================================================
 # SIMPLE AI STATUS CHECKER
 # =============================================================================
 
+
 def show_ai_status_simple():
     """Show AI status in simple language"""
-    
+
     st.markdown("### 🤖 Your AI Helpers")
-    
+
     # Check which AIs are available
     connected_ais = []
-    
+
     # Check session state for connected AIs
-    if st.session_state.get('has_ChatGPT'):
+    if st.session_state.get("has_ChatGPT"):
         connected_ais.append("ChatGPT")
-    if st.session_state.get('has_Claude'):
+    if st.session_state.get("has_Claude"):
         connected_ais.append("Claude")
-    if st.session_state.get('has_Gemini'):
+    if st.session_state.get("has_Gemini"):
         connected_ais.append("Gemini")
-    
+
     if not connected_ais:
-        st.warning("""
+        st.warning(
+            """
         ⚠️ **No AI helpers connected yet!**
         
         **What this means:**
@@ -384,41 +381,46 @@ def show_ai_status_simple():
         **What to do:**
         Click the button below to set up your free AI accounts!
         (Takes 5 minutes, costs $0)
-        """)
-        
+        """
+        )
+
         if st.button("🚀 Set Up AI Helpers (FREE!)", type="primary"):
-            st.session_state['show_ai_setup'] = True
+            st.session_state["show_ai_setup"] = True
             st.rerun()
-    
+
     else:
-        st.success(f"""
+        st.success(
+            f"""
         ✅ **{len(connected_ais)} AI helpers ready!**
         
         Connected: {', '.join(connected_ais)}
         
         **What this means:**
         Your bets will have smart AI analysis!
-        """)
-        
+        """
+        )
+
         # Show simple status for each
         cols = st.columns(len(connected_ais))
         for idx, ai in enumerate(connected_ais):
             with cols[idx]:
-                icon = AI_PLATFORMS[ai]['icon']
+                icon = AI_PLATFORMS[ai]["icon"]
                 st.markdown(f"### {icon}")
-                st.caption(AI_PLATFORMS[ai]['name'])
+                st.caption(AI_PLATFORMS[ai]["name"])
                 st.metric("Status", "Ready", delta="✓")
+
 
 # =============================================================================
 # EXPLAIN LIKE I'M 10 - Q&A WIDGET
 # =============================================================================
 
+
 def show_eli10_helper():
     """Explain complex betting concepts like talking to a 10-year-old"""
-    
+
     st.markdown("### 🎓 Need Help Understanding Something?")
     st.caption("Ask anything! I'll explain it super simply.")
-    
+
     questions = [
         ("What is AI?", "what_is_ai"),
         ("Why use 3 different AIs?", "why_multiple_ais"),
@@ -427,54 +429,59 @@ def show_eli10_helper():
         ("Why don't I win every time?", "why_dont_i_always_win"),
         ("What is 'Bankroll'?", "what_is_bankroll"),
     ]
-    
+
     selected = st.selectbox(
-        "Pick a question:",
-        options=[q[0] for q in questions],
-        key="eli10_question"
+        "Pick a question:", options=[q[0] for q in questions], key="eli10_question"
     )
-    
+
     # Find the explanation
     for question_text, explanation_key in questions:
         if question_text == selected:
             st.markdown(SIMPLE_EXPLANATIONS[explanation_key])
             break
-    
+
     st.divider()
-    
+
     # Custom question
     st.markdown("#### 💬 Have a different question?")
-    custom_q = st.text_input("Type your question here:", placeholder="Why is this bet good?")
-    
+    custom_q = st.text_input(
+        "Type your question here:", placeholder="Why is this bet good?"
+    )
+
     if custom_q and st.button("Get Simple Answer"):
-        st.info("""
+        st.info(
+            """
         🤖 **AI Simple Explainer:**
         
         I'll answer this in the simplest way possible!
         (This feature uses your connected AI accounts)
-        """)
-        
+        """
+        )
+
         # TODO: Call AI with "explain like I'm 10" prompt
         st.write("Feature coming in next update!")
+
 
 # =============================================================================
 # AI INSUFFICIENCY DETECTOR
 # =============================================================================
+
 
 def check_ai_quality_simple(prediction_confidence: float, edge: float) -> dict:
     """
     Check if AI model is doing a good job (explained simply).
     Returns warnings if something seems off.
     """
-    
+
     issues = []
     severity = "good"  # good, warning, bad
-    
+
     # Check 1: Is confidence too low?
     if prediction_confidence < 0.52:
-        issues.append({
-            "problem": "AI isn't very sure about this bet",
-            "simple_explanation": """
+        issues.append(
+            {
+                "problem": "AI isn't very sure about this bet",
+                "simple_explanation": """
             **Think of it like this:**
             You're guessing if it will rain tomorrow, but you're only 52% sure.
             That's basically a coin flip! Not very helpful.
@@ -482,15 +489,17 @@ def check_ai_quality_simple(prediction_confidence: float, edge: float) -> dict:
             **What to do:**
             Skip this bet. Wait for one where AI is more confident (60%+ is better).
             """,
-            "emoji": "🤔"
-        })
+                "emoji": "🤔",
+            }
+        )
         severity = "warning"
-    
+
     # Check 2: Is edge too small?
     if edge < 0.02:
-        issues.append({
-            "problem": "The 'edge' is too tiny",
-            "simple_explanation": """
+        issues.append(
+            {
+                "problem": "The 'edge' is too tiny",
+                "simple_explanation": """
             **Imagine:**
             You're selling lemonade for $1, but it costs you $0.99 to make.
             Sure, you make 1 cent profit, but is it worth it?
@@ -499,16 +508,18 @@ def check_ai_quality_simple(prediction_confidence: float, edge: float) -> dict:
             Look for bets with bigger edge (3%+ is better).
             Small edges aren't worth the risk!
             """,
-            "emoji": "📏"
-        })
+                "emoji": "📏",
+            }
+        )
         if severity == "good":
             severity = "warning"
-    
+
     # Check 3: High confidence but low edge (suspicious!)
     if prediction_confidence > 0.70 and edge < 0.03:
-        issues.append({
-            "problem": "Something weird: AI is confident but edge is small",
-            "simple_explanation": """
+        issues.append(
+            {
+                "problem": "Something weird: AI is confident but edge is small",
+                "simple_explanation": """
             **This is like:**
             Being 100% sure your team will win, but the prize is only 10 cents.
             If you're so sure, the prize should be bigger!
@@ -521,15 +532,17 @@ def check_ai_quality_simple(prediction_confidence: float, edge: float) -> dict:
             **What to do:**
             Be extra careful. Maybe skip this one.
             """,
-            "emoji": "🚨"
-        })
+                "emoji": "🚨",
+            }
+        )
         severity = "bad"
-    
+
     # Check 4: Everything looks great!
     if not issues:
-        issues.append({
-            "problem": None,
-            "simple_explanation": """
+        issues.append(
+            {
+                "problem": None,
+                "simple_explanation": """
             **Great news!**
             
             ✅ AI is confident (like being sure it's pizza for dinner!)
@@ -540,65 +553,70 @@ def check_ai_quality_simple(prediction_confidence: float, edge: float) -> dict:
             
             (But remember: Even good bets lose sometimes. That's normal!)
             """,
-            "emoji": "🎯"
-        })
-    
+                "emoji": "🎯",
+            }
+        )
+
     return {
         "severity": severity,
         "issues": issues,
         "overall_grade": _get_simple_grade(severity),
-        "should_bet": severity != "bad"
+        "should_bet": severity != "bad",
     }
+
 
 def _get_simple_grade(severity: str) -> str:
     """Convert severity to simple grade like school"""
     grades = {
         "good": "A (Excellent bet!)",
         "warning": "C (Okay but be careful)",
-        "bad": "F (Skip this one!)"
+        "bad": "F (Skip this one!)",
     }
     return grades.get(severity, "?")
 
+
 def show_ai_quality_check(prediction_confidence: float, edge: float):
     """Show AI quality check in simple terms"""
-    
+
     st.markdown("### 🔍 Bet Quality Check")
     st.caption("Is this bet actually good? Let's check!")
-    
+
     result = check_ai_quality_simple(prediction_confidence, edge)
-    
+
     # Show grade
-    if result['severity'] == 'good':
+    if result["severity"] == "good":
         st.success(f"**Grade: {result['overall_grade']}**")
-    elif result['severity'] == 'warning':
+    elif result["severity"] == "warning":
         st.warning(f"**Grade: {result['overall_grade']}**")
     else:
         st.error(f"**Grade: {result['overall_grade']}**")
-    
+
     # Show each issue
-    for issue in result['issues']:
-        with st.expander(f"{issue['emoji']} {issue['problem'] or 'Quality Check Passed!'}", 
-                        expanded=(result['severity'] == 'bad')):
-            st.markdown(issue['simple_explanation'])
-    
+    for issue in result["issues"]:
+        with st.expander(
+            f"{issue['emoji']} {issue['problem'] or 'Quality Check Passed!'}",
+            expanded=(result["severity"] == "bad"),
+        ):
+            st.markdown(issue["simple_explanation"])
+
     # Final recommendation
     st.divider()
-    if result['should_bet']:
+    if result["should_bet"]:
         st.info("💡 **Recommendation:** This bet passed the quality check!")
     else:
         st.warning("⚠️ **Recommendation:** Skip this bet. Wait for a better one!")
+
 
 # =============================================================================
 # EXPORT
 # =============================================================================
 
 __all__ = [
-    'show_simple_ai_setup',
-    'show_ai_status_simple',
-    'show_eli10_helper',
-    'check_ai_quality_simple',
-    'show_ai_quality_check',
-    'SIMPLE_EXPLANATIONS',
-    'AI_PLATFORMS'
+    "show_simple_ai_setup",
+    "show_ai_status_simple",
+    "show_eli10_helper",
+    "check_ai_quality_simple",
+    "show_ai_quality_check",
+    "SIMPLE_EXPLANATIONS",
+    "AI_PLATFORMS",
 ]
-

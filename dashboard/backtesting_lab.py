@@ -29,11 +29,12 @@ if _is_standalone:
         page_title="🧪 Backtesting Lab",
         page_icon="🧪",
         layout="wide",
-        initial_sidebar_state="collapsed"
+        initial_sidebar_state="collapsed",
     )
 
 # Custom CSS for Lego-inspired UI
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* Main container */
     .main {
@@ -207,43 +208,46 @@ st.markdown("""
         margin-right: 0.5rem;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 class BacktestingLab:
     """Visual backtesting and training interface."""
-    
+
     def __init__(self):
         """Initialize the lab."""
         self.state = self._load_state()
-        
+
     def _load_state(self) -> Dict:
         """Load current training state."""
-        if 'lab_state' not in st.session_state:
+        if "lab_state" not in st.session_state:
             st.session_state.lab_state = {
-                'is_running': False,
-                'current_stage': 'idle',
-                'cycle_number': 0,
-                'strategies_generated': 0,
-                'strategies_tested': 0,
-                'strategies_validated': 0,
-                'strategies_deployed': 0,
-                'current_metrics': {},
-                'history': [],
-                'stage_progress': {
-                    'generate': 0,
-                    'backtest': 0,
-                    'validate': 0,
-                    'analyze': 0,
-                    'deploy': 0
-                }
+                "is_running": False,
+                "current_stage": "idle",
+                "cycle_number": 0,
+                "strategies_generated": 0,
+                "strategies_tested": 0,
+                "strategies_validated": 0,
+                "strategies_deployed": 0,
+                "current_metrics": {},
+                "history": [],
+                "stage_progress": {
+                    "generate": 0,
+                    "backtest": 0,
+                    "validate": 0,
+                    "analyze": 0,
+                    "deploy": 0,
+                },
             }
         return st.session_state.lab_state
-    
+
     def render(self):
         """Render the backtesting lab interface."""
         # Header
-        st.markdown("""
+        st.markdown(
+            """
             <div style='text-align: center; padding: 2rem 0;'>
                 <h1 style='color: white; font-size: 3rem; margin-bottom: 0.5rem;'>
                     🧪 Backtesting & Training Lab
@@ -252,61 +256,71 @@ class BacktestingLab:
                     Watch AI build winning strategies - piece by piece
                 </p>
             </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Control panel
         self._render_control_panel()
-        
+
         # Main content area
-        if self.state['is_running'] or self.state['cycle_number'] > 0:
+        if self.state["is_running"] or self.state["cycle_number"] > 0:
             col1, col2 = st.columns([2, 1])
-            
+
             with col1:
                 self._render_build_pipeline()
-            
+
             with col2:
                 self._render_stats_panel()
         else:
             self._render_welcome_screen()
-        
+
         # Results section
-        if self.state['history']:
+        if self.state["history"]:
             self._render_results_section()
-    
+
     def _render_control_panel(self):
         """Render control panel."""
-        st.markdown("<div style='background: white; padding: 1.5rem; border-radius: 12px; margin: 1rem 0;'>", unsafe_allow_html=True)
-        
+        st.markdown(
+            "<div style='background: white; padding: 1.5rem; border-radius: 12px; margin: 1rem 0;'>",
+            unsafe_allow_html=True,
+        )
+
         # Info banner
-        st.info("🎯 **Smart Simulation Mode**: Using your real 73.8% win rate and historical performance as baseline")
-        
+        st.info(
+            "🎯 **Smart Simulation Mode**: Using your real 73.8% win rate and historical performance as baseline"
+        )
+
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
-            if self.state['is_running']:
-                if st.button("⏸️ Pause Training", width='stretch', type="secondary"):
+            if self.state["is_running"]:
+                if st.button("⏸️ Pause Training", width="stretch", type="secondary"):
                     self._pause_training()
             else:
-                if st.button("▶️ Start Training", width='stretch', type="primary"):
+                if st.button("▶️ Start Training", width="stretch", type="primary"):
                     self._start_training()
-        
+
         with col2:
-            if st.button("🔄 Run Single Cycle", width='stretch'):
+            if st.button("🔄 Run Single Cycle", width="stretch"):
                 self._run_single_cycle()
-        
+
         with col3:
-            if st.button("📊 View History", width='stretch'):
-                st.session_state.show_history = not st.session_state.get('show_history', False)
-        
+            if st.button("📊 View History", width="stretch"):
+                st.session_state.show_history = not st.session_state.get(
+                    "show_history", False
+                )
+
         with col4:
-            if st.button("🗑️ Reset Lab", width='stretch'):
+            if st.button("🗑️ Reset Lab", width="stretch"):
                 self._reset_lab()
-        
+
         st.markdown("</div>", unsafe_allow_html=True)
-    
+
     def _render_welcome_screen(self):
         """Render welcome screen when lab is idle."""
-        st.markdown("""
+        st.markdown(
+            """
             <div class='stage-container' style='text-align: center; padding: 3rem;'>
                 <div style='font-size: 4rem; margin-bottom: 1rem;'>🧱</div>
                 <h2 style='color: #374151; margin-bottom: 1rem;'>Ready to Build?</h2>
@@ -344,69 +358,72 @@ class BacktestingLab:
                     <p style='color: #6b7280;'>Click <strong>Start Training</strong> to begin your first cycle</p>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     def _render_build_pipeline(self):
         """Render the main build pipeline visualization."""
         st.markdown("### 🏗️ Build Pipeline")
-        
+
         stages = [
             {
-                'id': 'generate',
-                'name': 'Generate Strategies',
-                'icon': '🧠',
-                'description': 'AI creates new betting strategies',
-                'target': 10
+                "id": "generate",
+                "name": "Generate Strategies",
+                "icon": "🧠",
+                "description": "AI creates new betting strategies",
+                "target": 10,
             },
             {
-                'id': 'backtest',
-                'name': 'Run Backtests',
-                'icon': '⏮️',
-                'description': 'Test strategies on historical games',
-                'target': 5
+                "id": "backtest",
+                "name": "Run Backtests",
+                "icon": "⏮️",
+                "description": "Test strategies on historical games",
+                "target": 5,
             },
             {
-                'id': 'validate',
-                'name': 'Validate Results',
-                'icon': '✅',
-                'description': '5-agent swarm votes on winners',
-                'target': 5
+                "id": "validate",
+                "name": "Validate Results",
+                "icon": "✅",
+                "description": "5-agent swarm votes on winners",
+                "target": 5,
             },
             {
-                'id': 'analyze',
-                'name': 'Analyze & Learn',
-                'icon': '📊',
-                'description': 'Extract insights and patterns',
-                'target': 1
+                "id": "analyze",
+                "name": "Analyze & Learn",
+                "icon": "📊",
+                "description": "Extract insights and patterns",
+                "target": 1,
             },
             {
-                'id': 'deploy',
-                'name': 'Deploy Winners',
-                'icon': '🚀',
-                'description': 'Best strategies go live',
-                'target': 3
-            }
+                "id": "deploy",
+                "name": "Deploy Winners",
+                "icon": "🚀",
+                "description": "Best strategies go live",
+                "target": 3,
+            },
         ]
-        
+
         for stage in stages:
             self._render_stage_card(stage)
-    
+
     def _render_stage_card(self, stage: Dict):
         """Render a single stage card."""
-        progress = self.state['stage_progress'].get(stage['id'], 0)
-        target = stage['target']
-        is_active = self.state['current_stage'] == stage['id']
+        progress = self.state["stage_progress"].get(stage["id"], 0)
+        target = stage["target"]
+        is_active = self.state["current_stage"] == stage["id"]
         is_complete = progress >= target
-        
+
         # Determine card class
         if is_complete:
-            card_class = 'complete'
+            card_class = "complete"
         elif is_active:
-            card_class = 'active'
+            card_class = "active"
         else:
-            card_class = 'pending'
-        
-        st.markdown(f"""
+            card_class = "pending"
+
+        st.markdown(
+            f"""
             <div class='stage-container {card_class}'>
                 <div style='display: flex; align-items: center; margin-bottom: 1rem;'>
                     <div style='font-size: 2rem; margin-right: 1rem;'>{stage['icon']}</div>
@@ -431,203 +448,251 @@ class BacktestingLab:
                 
                 {self._render_lego_blocks(progress, target, stage['id'])}
             </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     def _get_status_badge(self, card_class: str, is_active: bool) -> str:
         """Get status badge HTML."""
-        if card_class == 'complete':
+        if card_class == "complete":
             return "<span class='status-badge complete'>✓ Complete</span>"
         elif is_active:
             return "<span class='status-badge running'>⚡ Running</span>"
         else:
             return "<span class='status-badge'>⏳ Pending</span>"
-    
+
     def _render_lego_blocks(self, progress: int, target: int, stage_id: str) -> str:
         """Render Lego blocks visualization."""
         if progress == 0:
             return ""
-        
+
         # Determine block color class
         color_map = {
-            'generate': 'strategy',
-            'validate': 'validation',
-            'deploy': 'deployed'
+            "generate": "strategy",
+            "validate": "validation",
+            "deploy": "deployed",
         }
-        color_class = color_map.get(stage_id, '')
-        
+        color_class = color_map.get(stage_id, "")
+
         blocks_html = "<div style='margin-top: 1rem; text-align: center;'>"
         for i in range(min(progress, 10)):  # Max 10 blocks to avoid clutter
             blocks_html += f"<div class='lego-block {color_class} building' style='animation-delay: {i*0.1}s;'></div>"
-        
+
         if progress > 10:
             blocks_html += f"<span style='color: #6b7280; margin-left: 1rem;'>+{progress-10} more</span>"
-        
+
         blocks_html += "</div>"
         return blocks_html
-    
+
     def _render_stats_panel(self):
         """Render statistics panel."""
         st.markdown("### 📊 Live Stats")
-        
+
         # Cycle counter
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div class='metric-card'>
                 <div class='metric-value'>{self.state['cycle_number']}</div>
                 <div class='metric-label'>Training Cycles</div>
             </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Key metrics
         metrics = [
-            ('🧠', 'Generated', self.state['strategies_generated'], '#8b5cf6'),
-            ('⏮️', 'Tested', self.state['strategies_tested'], '#3b82f6'),
-            ('✅', 'Validated', self.state['strategies_validated'], '#10b981'),
-            ('🚀', 'Deployed', self.state['strategies_deployed'], '#f59e0b')
+            ("🧠", "Generated", self.state["strategies_generated"], "#8b5cf6"),
+            ("⏮️", "Tested", self.state["strategies_tested"], "#3b82f6"),
+            ("✅", "Validated", self.state["strategies_validated"], "#10b981"),
+            ("🚀", "Deployed", self.state["strategies_deployed"], "#f59e0b"),
         ]
-        
+
         for icon, label, value, color in metrics:
-            st.markdown(f"""
+            st.markdown(
+                f"""
                 <div class='metric-card' style='margin-top: 1rem;'>
                     <div style='font-size: 2rem;'>{icon}</div>
                     <div class='metric-value' style='font-size: 2rem;'>{value}</div>
                     <div class='metric-label'>{label}</div>
                 </div>
-            """, unsafe_allow_html=True)
-        
+            """,
+                unsafe_allow_html=True,
+            )
+
         # Current performance
-        if self.state['current_metrics']:
+        if self.state["current_metrics"]:
             st.markdown("### 🎯 Current Performance")
-            
-            metrics = self.state['current_metrics']
-            
+
+            metrics = self.state["current_metrics"]
+
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Win Rate", f"{metrics.get('win_rate', 0):.1f}%")
                 st.metric("ROI", f"{metrics.get('roi', 0):.1f}%")
-            
+
             with col2:
                 st.metric("Sharpe Ratio", f"{metrics.get('sharpe_ratio', 0):.2f}")
                 st.metric("Max Drawdown", f"{abs(metrics.get('max_drawdown', 0)):.1f}%")
-    
+
     def _render_results_section(self):
         """Render historical results."""
         st.markdown("---")
         st.markdown("### 📈 Training History")
-        
+
         # Convert history to DataFrame
-        history_df = pd.DataFrame(self.state['history'])
-        
+        history_df = pd.DataFrame(self.state["history"])
+
         if len(history_df) == 0:
             st.info("No training history yet. Start a cycle to see results!")
             return
-        
+
         # Tabs for different views
         tab1, tab2, tab3 = st.tabs(["📊 Performance", "🎯 Strategies", "📉 Metrics"])
-        
+
         with tab1:
             self._render_performance_chart(history_df)
-        
+
         with tab2:
             self._render_strategy_table(history_df)
-        
+
         with tab3:
             self._render_metrics_evolution(history_df)
-    
+
     def _render_performance_chart(self, df: pd.DataFrame):
         """Render performance over time chart."""
         fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Win Rate Over Time', 'ROI Over Time', 
-                          'Strategies Deployed', 'Validation Rate'),
-            specs=[[{'type': 'scatter'}, {'type': 'scatter'}],
-                   [{'type': 'bar'}, {'type': 'scatter'}]]
+            rows=2,
+            cols=2,
+            subplot_titles=(
+                "Win Rate Over Time",
+                "ROI Over Time",
+                "Strategies Deployed",
+                "Validation Rate",
+            ),
+            specs=[
+                [{"type": "scatter"}, {"type": "scatter"}],
+                [{"type": "bar"}, {"type": "scatter"}],
+            ],
         )
-        
+
         # Win rate
         fig.add_trace(
-            go.Scatter(x=df['cycle'], y=df['avg_win_rate']*100, 
-                      name='Win Rate', line=dict(color='#10b981', width=3)),
-            row=1, col=1
+            go.Scatter(
+                x=df["cycle"],
+                y=df["avg_win_rate"] * 100,
+                name="Win Rate",
+                line=dict(color="#10b981", width=3),
+            ),
+            row=1,
+            col=1,
         )
-        
+
         # ROI
         fig.add_trace(
-            go.Scatter(x=df['cycle'], y=df['avg_roi']*100,
-                      name='ROI', line=dict(color='#3b82f6', width=3)),
-            row=1, col=2
+            go.Scatter(
+                x=df["cycle"],
+                y=df["avg_roi"] * 100,
+                name="ROI",
+                line=dict(color="#3b82f6", width=3),
+            ),
+            row=1,
+            col=2,
         )
-        
+
         # Strategies deployed
         fig.add_trace(
-            go.Bar(x=df['cycle'], y=df['strategies_deployed'],
-                  name='Deployed', marker_color='#f59e0b'),
-            row=2, col=1
+            go.Bar(
+                x=df["cycle"],
+                y=df["strategies_deployed"],
+                name="Deployed",
+                marker_color="#f59e0b",
+            ),
+            row=2,
+            col=1,
         )
-        
+
         # Validation rate
-        df['validation_rate'] = (df['strategies_validated'] / df['strategies_tested']) * 100
+        df["validation_rate"] = (
+            df["strategies_validated"] / df["strategies_tested"]
+        ) * 100
         fig.add_trace(
-            go.Scatter(x=df['cycle'], y=df['validation_rate'],
-                      name='Validation %', line=dict(color='#8b5cf6', width=3)),
-            row=2, col=2
+            go.Scatter(
+                x=df["cycle"],
+                y=df["validation_rate"],
+                name="Validation %",
+                line=dict(color="#8b5cf6", width=3),
+            ),
+            row=2,
+            col=2,
         )
-        
+
         fig.update_layout(height=700, showlegend=False)
         fig.update_yaxes(title_text="Win Rate (%)", row=1, col=1)
         fig.update_yaxes(title_text="ROI (%)", row=1, col=2)
         fig.update_yaxes(title_text="Count", row=2, col=1)
         fig.update_yaxes(title_text="Validation Rate (%)", row=2, col=2)
-        
-        st.plotly_chart(fig, width='stretch')
-    
+
+        st.plotly_chart(fig, width="stretch")
+
     def _render_strategy_table(self, df: pd.DataFrame):
         """Render strategy performance table."""
         st.dataframe(
-            df[['cycle', 'strategies_generated', 'strategies_tested', 
-                'strategies_validated', 'strategies_deployed']],
-            width='stretch'
+            df[
+                [
+                    "cycle",
+                    "strategies_generated",
+                    "strategies_tested",
+                    "strategies_validated",
+                    "strategies_deployed",
+                ]
+            ],
+            width="stretch",
         )
-    
+
     def _render_metrics_evolution(self, df: pd.DataFrame):
         """Render metrics evolution charts."""
         fig = go.Figure()
-        
-        fig.add_trace(go.Scatter(
-            x=df['cycle'], 
-            y=df['avg_win_rate']*100,
-            name='Win Rate',
-            line=dict(color='#10b981', width=2)
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=df['cycle'],
-            y=df['avg_roi']*100,
-            name='ROI',
-            line=dict(color='#3b82f6', width=2)
-        ))
-        
+
+        fig.add_trace(
+            go.Scatter(
+                x=df["cycle"],
+                y=df["avg_win_rate"] * 100,
+                name="Win Rate",
+                line=dict(color="#10b981", width=2),
+            )
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=df["cycle"],
+                y=df["avg_roi"] * 100,
+                name="ROI",
+                line=dict(color="#3b82f6", width=2),
+            )
+        )
+
         fig.update_layout(
             title="Strategy Performance Evolution",
             xaxis_title="Cycle",
             yaxis_title="Percentage (%)",
             height=400,
-            hovermode='x unified'
+            hovermode="x unified",
         )
-        
-        st.plotly_chart(fig, width='stretch')
-    
+
+        st.plotly_chart(fig, width="stretch")
+
     # Control methods
-    
+
     def _start_training(self):
         """Start continuous training."""
-        self.state['is_running'] = True
+        self.state["is_running"] = True
         st.rerun()
-    
+
     def _pause_training(self):
         """Pause training."""
-        self.state['is_running'] = False
+        self.state["is_running"] = False
         st.rerun()
-    
+
     def _run_single_cycle(self):
         """Run a single training cycle."""
         with st.spinner("🔄 Running training cycle..."):
@@ -636,7 +701,7 @@ class BacktestingLab:
             self._update_state(result)
         st.success("✓ Cycle complete!")
         st.rerun()
-    
+
     def _simulate_cycle_with_real_data(self) -> Dict:
         """Simulate cycle using actual bet history performance."""
         from pathlib import Path
@@ -645,146 +710,158 @@ class BacktestingLab:
 
         # Try to load real bet history for realistic metrics
         try:
-            bet_history_path = Path(__file__).parent.parent / "reports" / "bet_history.csv"
+            bet_history_path = (
+                Path(__file__).parent.parent / "reports" / "bet_history.csv"
+            )
             if bet_history_path.exists():
                 history_df = pd.read_csv(bet_history_path)
-                
+
                 # Calculate real metrics from your data
                 total_bets = len(history_df)
-                wins = len(history_df[history_df['result'] == 'win'])
-                
+                wins = len(history_df[history_df["result"] == "win"])
+
                 if total_bets > 0:
                     actual_win_rate = wins / total_bets
-                    
+
                     # Calculate real ROI
-                    if 'profit' in history_df.columns and 'bet_size' in history_df.columns:
-                        total_profit = history_df['profit'].sum()
-                        total_wagered = history_df['bet_size'].sum()
-                        actual_roi = (total_profit / total_wagered) if total_wagered > 0 else 0
+                    if (
+                        "profit" in history_df.columns
+                        and "bet_size" in history_df.columns
+                    ):
+                        total_profit = history_df["profit"].sum()
+                        total_wagered = history_df["bet_size"].sum()
+                        actual_roi = (
+                            (total_profit / total_wagered) if total_wagered > 0 else 0
+                        )
                     else:
                         actual_roi = 0.15  # Fallback
-                    
+
                     # Use real data with slight variance
                     import random
+
                     base_win_rate = actual_win_rate + random.uniform(-0.05, 0.08)
                     base_roi = actual_roi + random.uniform(-0.03, 0.10)
-                    
+
                     return self._create_cycle_result(base_win_rate, base_roi)
         except Exception:
             pass
-        
+
         # Fallback to standard simulation
         return self._simulate_cycle()
-    
+
     def _create_cycle_result(self, win_rate: float, roi: float) -> Dict:
         """Create a cycle result with given metrics."""
         import random
-        
-        cycle_num = self.state['cycle_number'] + 1
-        
+
+        cycle_num = self.state["cycle_number"] + 1
+
         # Determine validation based on quality
-        strategies_validated = random.randint(2, 4) if win_rate > 0.55 else random.randint(1, 2)
-        strategies_deployed = random.randint(1, 3) if roi > 0.08 else random.randint(0, 1)
-        
+        strategies_validated = (
+            random.randint(2, 4) if win_rate > 0.55 else random.randint(1, 2)
+        )
+        strategies_deployed = (
+            random.randint(1, 3) if roi > 0.08 else random.randint(0, 1)
+        )
+
         return {
-            'cycle': cycle_num,
-            'strategies_generated': 10,
-            'strategies_tested': 5,
-            'strategies_validated': strategies_validated,
-            'strategies_deployed': strategies_deployed,
-            'avg_win_rate': max(0.50, min(0.75, win_rate)),
-            'avg_roi': max(-0.05, min(0.30, roi)),
-            'avg_sharpe': 1.2 + random.uniform(-0.3, 0.8)
+            "cycle": cycle_num,
+            "strategies_generated": 10,
+            "strategies_tested": 5,
+            "strategies_validated": strategies_validated,
+            "strategies_deployed": strategies_deployed,
+            "avg_win_rate": max(0.50, min(0.75, win_rate)),
+            "avg_roi": max(-0.05, min(0.30, roi)),
+            "avg_sharpe": 1.2 + random.uniform(-0.3, 0.8),
         }
-    
+
     def _simulate_cycle(self) -> Dict:
         """Simulate a training cycle (mock for now)."""
         import random
         import time
-        
-        cycle_num = self.state['cycle_number'] + 1
-        
+
+        cycle_num = self.state["cycle_number"] + 1
+
         # Simulate stages
-        stages = ['generate', 'backtest', 'validate', 'analyze', 'deploy']
+        stages = ["generate", "backtest", "validate", "analyze", "deploy"]
         results = {
-            'cycle': cycle_num,
-            'strategies_generated': 10,
-            'strategies_tested': 5,
-            'strategies_validated': random.randint(2, 4),
-            'strategies_deployed': random.randint(1, 3),
-            'avg_win_rate': 0.55 + random.uniform(-0.05, 0.10),
-            'avg_roi': 0.10 + random.uniform(-0.05, 0.15),
-            'avg_sharpe': 1.5 + random.uniform(-0.3, 0.5)
+            "cycle": cycle_num,
+            "strategies_generated": 10,
+            "strategies_tested": 5,
+            "strategies_validated": random.randint(2, 4),
+            "strategies_deployed": random.randint(1, 3),
+            "avg_win_rate": 0.55 + random.uniform(-0.05, 0.10),
+            "avg_roi": 0.10 + random.uniform(-0.05, 0.15),
+            "avg_sharpe": 1.5 + random.uniform(-0.3, 0.5),
         }
-        
+
         # Simulate stage progression
         for stage in stages:
-            self.state['current_stage'] = stage
-            
-            if stage == 'generate':
+            self.state["current_stage"] = stage
+
+            if stage == "generate":
                 for i in range(10):
-                    self.state['stage_progress']['generate'] = i + 1
+                    self.state["stage_progress"]["generate"] = i + 1
                     time.sleep(0.1)
-            elif stage == 'backtest':
+            elif stage == "backtest":
                 for i in range(5):
-                    self.state['stage_progress']['backtest'] = i + 1
+                    self.state["stage_progress"]["backtest"] = i + 1
                     time.sleep(0.2)
-            elif stage == 'validate':
+            elif stage == "validate":
                 for i in range(5):
-                    self.state['stage_progress']['validate'] = i + 1
+                    self.state["stage_progress"]["validate"] = i + 1
                     time.sleep(0.15)
-            elif stage == 'analyze':
-                self.state['stage_progress']['analyze'] = 1
+            elif stage == "analyze":
+                self.state["stage_progress"]["analyze"] = 1
                 time.sleep(0.3)
-            elif stage == 'deploy':
-                for i in range(results['strategies_deployed']):
-                    self.state['stage_progress']['deploy'] = i + 1
+            elif stage == "deploy":
+                for i in range(results["strategies_deployed"]):
+                    self.state["stage_progress"]["deploy"] = i + 1
                     time.sleep(0.1)
-        
+
         return results
-    
+
     def _update_state(self, result: Dict):
         """Update state with cycle results."""
-        self.state['cycle_number'] = result['cycle']
-        self.state['strategies_generated'] += result['strategies_generated']
-        self.state['strategies_tested'] += result['strategies_tested']
-        self.state['strategies_validated'] += result['strategies_validated']
-        self.state['strategies_deployed'] += result['strategies_deployed']
-        
-        self.state['current_metrics'] = {
-            'win_rate': result['avg_win_rate'] * 100,
-            'roi': result['avg_roi'] * 100,
-            'sharpe_ratio': result['avg_sharpe'],
-            'max_drawdown': -10  # Mock
+        self.state["cycle_number"] = result["cycle"]
+        self.state["strategies_generated"] += result["strategies_generated"]
+        self.state["strategies_tested"] += result["strategies_tested"]
+        self.state["strategies_validated"] += result["strategies_validated"]
+        self.state["strategies_deployed"] += result["strategies_deployed"]
+
+        self.state["current_metrics"] = {
+            "win_rate": result["avg_win_rate"] * 100,
+            "roi": result["avg_roi"] * 100,
+            "sharpe_ratio": result["avg_sharpe"],
+            "max_drawdown": -10,  # Mock
         }
-        
-        self.state['history'].append(result)
-        
+
+        self.state["history"].append(result)
+
         # Reset stage progress
-        for key in self.state['stage_progress']:
-            self.state['stage_progress'][key] = 0
-        
-        self.state['current_stage'] = 'idle'
-    
+        for key in self.state["stage_progress"]:
+            self.state["stage_progress"][key] = 0
+
+        self.state["current_stage"] = "idle"
+
     def _reset_lab(self):
         """Reset the lab state."""
         st.session_state.lab_state = {
-            'is_running': False,
-            'current_stage': 'idle',
-            'cycle_number': 0,
-            'strategies_generated': 0,
-            'strategies_tested': 0,
-            'strategies_validated': 0,
-            'strategies_deployed': 0,
-            'current_metrics': {},
-            'history': [],
-            'stage_progress': {
-                'generate': 0,
-                'backtest': 0,
-                'validate': 0,
-                'analyze': 0,
-                'deploy': 0
-            }
+            "is_running": False,
+            "current_stage": "idle",
+            "cycle_number": 0,
+            "strategies_generated": 0,
+            "strategies_tested": 0,
+            "strategies_validated": 0,
+            "strategies_deployed": 0,
+            "current_metrics": {},
+            "history": [],
+            "stage_progress": {
+                "generate": 0,
+                "backtest": 0,
+                "validate": 0,
+                "analyze": 0,
+                "deploy": 0,
+            },
         }
         st.rerun()
 
@@ -797,4 +874,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -127,7 +127,9 @@ class DatabaseSchema:
             ColumnSchema("game_id", "TEXT", nullable=False),
             ColumnSchema("gameday", "TEXT", nullable=False),
             ColumnSchema("team", "TEXT", nullable=False),  # Team bet on
-            ColumnSchema("bet_type", "TEXT", nullable=False),  # moneyline, spread, total
+            ColumnSchema(
+                "bet_type", "TEXT", nullable=False
+            ),  # moneyline, spread, total
             ColumnSchema("amount", "REAL", nullable=False),  # Bet amount
             ColumnSchema("odds", "REAL", nullable=False),  # Decimal odds
             ColumnSchema("bookmaker", "TEXT"),

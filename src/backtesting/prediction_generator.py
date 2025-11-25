@@ -10,12 +10,12 @@ from typing import Any, Dict, Optional
 import numpy as np
 import pandas as pd
 
-from src.features.pipeline import FeaturePipeline
 from src.features.elo import EloFeatures
 from src.features.encoding import CategoricalEncodingFeatures
 from src.features.epa import EPAFeatures
 from src.features.form import FormFeatures
 from src.features.line import LineFeatures
+from src.features.pipeline import FeaturePipeline
 from src.features.referee import RefereeFeatures
 from src.features.rest_days import RestDaysFeatures
 from src.features.weather import WeatherFeatures
@@ -105,9 +105,7 @@ class PredictionGenerator:
         # Handle missing features
         missing_features = set(expected_features) - set(features_df.columns)
         if missing_features:
-            logger.warning(
-                f"Missing {len(missing_features)} features, filling with 0"
-            )
+            logger.warning(f"Missing {len(missing_features)} features, filling with 0")
             for feat in missing_features:
                 features_df[feat] = 0
 
@@ -198,9 +196,7 @@ class PredictionGenerator:
             # result might be 1 for home win, 0 for away win
             predictions_df["actual"] = features_df["result"].values
         else:
-            logger.warning(
-                "No actual outcomes found in data, predictions incomplete"
-            )
+            logger.warning("No actual outcomes found in data, predictions incomplete")
             predictions_df["actual"] = np.nan
 
         return predictions_df

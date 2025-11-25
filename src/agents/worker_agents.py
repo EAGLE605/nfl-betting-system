@@ -56,11 +56,19 @@ class DatabaseAgent(BaseAgent):
         self.register_tool("query", self._query, "Query database")
         self.register_tool("store", self._store, "Store data")
         self.register_tool("get_odds", self._get_odds, "Get odds for game")
-        self.register_tool("get_line_movement", self._get_line_movement, "Get line movement")
-        self.register_tool("store_prediction", self._store_prediction, "Store prediction")
+        self.register_tool(
+            "get_line_movement", self._get_line_movement, "Get line movement"
+        )
+        self.register_tool(
+            "store_prediction", self._store_prediction, "Store prediction"
+        )
         self.register_tool("store_bet", self._store_bet, "Store bet")
-        self.register_tool("get_performance", self._get_performance, "Get performance metrics")
-        self.register_tool("update_bet_result", self._update_bet_result, "Update bet result")
+        self.register_tool(
+            "get_performance", self._get_performance, "Get performance metrics"
+        )
+        self.register_tool(
+            "update_bet_result", self._update_bet_result, "Update bet result"
+        )
 
     async def run(self):
         await self._initialize_database()
@@ -70,6 +78,7 @@ class DatabaseAgent(BaseAgent):
     async def _initialize_database(self):
         """Initialize database with schemas."""
         import sqlite3
+
         from src.agents.database_schemas import DatabaseSchema
         from src.agents.query_builder import QueryBuilder
 
@@ -97,6 +106,7 @@ class DatabaseAgent(BaseAgent):
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
             from src.agents.query_builder import QueryBuilder
+
             self._query_builder = QueryBuilder(self._conn)
 
         return self._conn
@@ -143,7 +153,9 @@ class DatabaseAgent(BaseAgent):
             logger.error(f"Failed to store bet: {e}")
             return {"stored": False, "error": str(e)}
 
-    async def _get_performance(self, days: int = 7, period_type: str = "daily") -> Dict[str, Any]:
+    async def _get_performance(
+        self, days: int = 7, period_type: str = "daily"
+    ) -> Dict[str, Any]:
         """Get recent performance metrics."""
         try:
             self._get_connection()
@@ -199,7 +211,9 @@ class DatabaseAgent(BaseAgent):
                 logger.error(f"Failed to store odds snapshot: {e}")
                 return {"stored": False, "error": str(e)}
         else:
-            logger.warning(f"No schema-aware method for table {table}, using generic store")
+            logger.warning(
+                f"No schema-aware method for table {table}, using generic store"
+            )
             return {"stored": False, "error": f"Unknown table: {table}"}
 
 

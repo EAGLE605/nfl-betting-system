@@ -114,9 +114,7 @@ class ValidationSwarm(SwarmBase):
                 )
 
                 if len(predictions_df) == 0:
-                    logger.warning(
-                        f"Agent {agent.agent_id}: No predictions generated"
-                    )
+                    logger.warning(f"Agent {agent.agent_id}: No predictions generated")
                     result = {
                         "agent": agent.agent_id,
                         "roi": 0.0,

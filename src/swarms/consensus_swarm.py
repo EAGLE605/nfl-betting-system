@@ -75,9 +75,7 @@ class ConsensusSwarm(SwarmBase):
                 self.prediction_pipelines[agent.agent_id] = pipeline
                 logger.info(f"Agent {agent.agent_id} assigned model: {model_name}")
             except Exception as e:
-                logger.error(
-                    f"Failed to initialize pipeline for {agent.agent_id}: {e}"
-                )
+                logger.error(f"Failed to initialize pipeline for {agent.agent_id}: {e}")
 
     async def generate_daily_picks(self, games: List[Dict]) -> List[Dict]:
         """
@@ -131,9 +129,7 @@ class ConsensusSwarm(SwarmBase):
             pipeline = self.prediction_pipelines.get(agent.agent_id)
 
             if pipeline is None:
-                logger.warning(
-                    f"No pipeline for agent {agent.agent_id}, using default"
-                )
+                logger.warning(f"No pipeline for agent {agent.agent_id}, using default")
                 pick = {
                     "agent": agent.agent_id,
                     "pick": "home",

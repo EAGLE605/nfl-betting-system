@@ -123,9 +123,7 @@ class BacktestDataLoader:
         try:
             min_season = min(seasons)
             max_season = max(seasons)
-            consolidated_path = (
-                self.raw_dir / f"pbp_{min_season}_{max_season}.parquet"
-            )
+            consolidated_path = self.raw_dir / f"pbp_{min_season}_{max_season}.parquet"
 
             if consolidated_path.exists():
                 logger.info(f"Loading from consolidated PBP file: {consolidated_path}")
@@ -184,9 +182,7 @@ class BacktestDataLoader:
         start_year = data_period.get("start_year")
         end_year = data_period.get("end_year")
 
-        schedules = self.load_historical_games(
-            start_year=start_year, end_year=end_year
-        )
+        schedules = self.load_historical_games(start_year=start_year, end_year=end_year)
         pbp = self.load_play_by_play(start_year=start_year, end_year=end_year)
 
         return schedules, pbp
@@ -248,10 +244,10 @@ class BacktestDataLoader:
             "missing_seasons": missing_seasons,
             "has_all_data": len(missing_seasons) == 0,
             "coverage_pct": (
-                len(requested_seasons) - len(missing_seasons)
-            )
-            / len(requested_seasons)
-            * 100
-            if requested_seasons
-            else 0,
+                (len(requested_seasons) - len(missing_seasons))
+                / len(requested_seasons)
+                * 100
+                if requested_seasons
+                else 0
+            ),
         }

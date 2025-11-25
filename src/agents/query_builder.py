@@ -136,7 +136,14 @@ class QueryBuilder:
         schema = DatabaseSchema.PREDICTIONS
 
         # Validate required fields
-        required = ["game_id", "model_name", "gameday", "home_team", "away_team", "pred_prob"]
+        required = [
+            "game_id",
+            "model_name",
+            "gameday",
+            "home_team",
+            "away_team",
+            "pred_prob",
+        ]
         missing = [f for f in required if f not in prediction]
         if missing:
             logger.error(f"Missing required fields for prediction: {missing}")
