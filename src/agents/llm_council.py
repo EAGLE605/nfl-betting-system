@@ -142,6 +142,17 @@ class AnthropicClient(BaseLLMClient):
     async def generate(self, prompt: str, system: str = "") -> str:
         url = "https://api.anthropic.com/v1/messages"
         
+        # Build request with proper format
+        request_body = {
+            "model": self.config.model,
+            "max_tokens": self.config.max_tokens,
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        
+        # Add system prompt if provided
+        if system:
+            request_body["system"] = system
+        
         response = await self.client.post(
             url,
             headers={
@@ -149,12 +160,7 @@ class AnthropicClient(BaseLLMClient):
                 "anthropic-version": "2023-06-01",
                 "Content-Type": "application/json"
             },
-            json={
-                "model": self.config.model,
-                "max_tokens": self.config.max_tokens,
-                "system": system,
-                "messages": [{"role": "user", "content": prompt}]
-            }
+            json=request_body
         )
         response.raise_for_status()
         data = response.json()
@@ -165,7 +171,7 @@ class GrokClient(BaseLLMClient):
     """Grok (X.AI) API client."""
     
     async def generate(self, prompt: str, system: str = "") -> str:
-        # X.AI uses OpenAI-compatible API
+        # X.AI Grok API (OpenAI-compatible format)
         url = "https://api.x.ai/v1/chat/completions"
         
         messages = []
@@ -173,34 +179,31 @@ class GrokClient(BaseLLMClient):
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
         
-        try:
-            response = await self.client.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {self.config.api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self.config.model or "grok-beta",
-                    "messages": messages,
-                    "temperature": self.config.temperature,
-                    "max_tokens": self.config.max_tokens
-                }
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"]
-        except Exception as e:
-            # Grok API may not be publicly available yet
-            logger.warning(f"Grok API error (may not be publicly available): {e}")
-            raise
+        response = await self.client.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {self.config.api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": self.config.model or "grok-3",  # Updated from deprecated grok-beta
+                "messages": messages,
+                "temperature": self.config.temperature,
+                "max_tokens": self.config.max_tokens,
+                "stream": False
+            }
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
 
 class GoogleClient(BaseLLMClient):
     """Google Gemini API client."""
     
     async def generate(self, prompt: str, system: str = "") -> str:
-        model = self.config.model or "gemini-pro"
+        model = self.config.model or "gemini-2.0-flash"
+        # Use v1beta endpoint for latest models
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
@@ -343,7 +346,7 @@ class LLMCouncil:
                 member_id="claude_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.ANTHROPIC,
-                    model="claude-3-sonnet-20240229",  # Use stable model
+                    model="claude-3-haiku-20240307",  # Fast, reliable model
                     api_key=anthropic_key
                 ),
                 specialty="situational",
@@ -359,7 +362,7 @@ class LLMCouncil:
                 member_id="grok_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.GROK,
-                    model="grok-beta",
+                    model="grok-3",  # Updated from deprecated grok-beta
                     api_key=grok_key
                 ),
                 specialty="contrarian",
@@ -373,7 +376,7 @@ class LLMCouncil:
                 member_id="gemini_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.GOOGLE,
-                    model="gemini-pro",  # Use stable model
+                    model="gemini-2.0-flash",  # Latest stable model
                     api_key=google_key
                 ),
                 specialty="general",
