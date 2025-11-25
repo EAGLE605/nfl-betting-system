@@ -37,7 +37,13 @@ def run_weekly_retrain():
     logger.info("\n[1] Downloading latest data...")
     try:
         result = subprocess.run(
-            [sys.executable, "scripts/download_data.py", "--seasons", "2024", "--force"],
+            [
+                sys.executable,
+                "scripts/download_data.py",
+                "--seasons",
+                "2024",
+                "--force",
+            ],
             capture_output=True,
             text=True,
             cwd=str(PROJECT_ROOT),

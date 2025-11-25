@@ -1,6 +1,7 @@
-import streamlit as st
-import pandas as pd
 import uuid
+
+import pandas as pd
+import streamlit as st
 
 # -----------------------------------------------------------------------------
 # 1. SETUP & CSS (OddsJam Dark Theme)
@@ -43,7 +44,8 @@ TEAM_LOGOS = {
     "Rams": "https://a.espncdn.com/i/teamlogos/nfl/500/lar.png",
 }
 
-st.markdown("""
+st.markdown(
+    """
     <style>
         /* IMPORT FONTS */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -237,30 +239,36 @@ st.markdown("""
             margin-bottom: 24px;
         }
     </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # -----------------------------------------------------------------------------
 # 2. STATE MANAGEMENT (Shopping Cart)
 # -----------------------------------------------------------------------------
-if 'slip' not in st.session_state:
+if "slip" not in st.session_state:
     st.session_state.slip = []
 
 
 def add_to_slip(player, prop, line, odds, game, team):
     bet_id = str(uuid.uuid4())
-    st.session_state.slip.append({
-        "id": bet_id,
-        "player": player,
-        "prop": prop,
-        "line": line,
-        "odds": odds,
-        "game": game,
-        "team": team
-    })
+    st.session_state.slip.append(
+        {
+            "id": bet_id,
+            "player": player,
+            "prop": prop,
+            "line": line,
+            "odds": odds,
+            "game": game,
+            "team": team,
+        }
+    )
 
 
 def remove_from_slip(bet_id):
-    st.session_state.slip = [bet for bet in st.session_state.slip if bet['id'] != bet_id]
+    st.session_state.slip = [
+        bet for bet in st.session_state.slip if bet["id"] != bet_id
+    ]
 
 
 def clear_slip():
@@ -287,16 +295,16 @@ def decimal_to_american(decimal_odds):
 def calculate_parlay(slip, wager):
     if not slip:
         return 0, 0, "+0"
-    
+
     total_multiplier = 1.0
     for bet in slip:
-        dec = american_to_decimal(bet['odds'])
+        dec = american_to_decimal(bet["odds"])
         total_multiplier *= dec
-        
+
     final_odds = decimal_to_american(total_multiplier)
     payout = wager * total_multiplier
     profit = payout - wager
-    
+
     odds_str = f"+{final_odds}" if final_odds > 0 else str(final_odds)
     return profit, total_multiplier, odds_str
 
@@ -305,27 +313,88 @@ def calculate_parlay(slip, wager):
 # 4. MOCK DATA (Betting Market)
 # -----------------------------------------------------------------------------
 props_db = [
-    {"id": 1, "game": "Jacksonville Jaguars vs Tennessee Titans", "team": "Jaguars", "player": "Yes", "prop": "3rd Quarter Both Teams To Score", "line": "", "odds": 144},
-    {"id": 2, "game": "Arizona Cardinals vs Tampa Bay Buccaneers", "team": "Cardinals", "player": "Arizona Cardinals", "prop": "1st Quarter Moneyline 3-Way", "line": "", "odds": 165},
-    {"id": 3, "game": "Cincinnati Bengals vs Baltimore Ravens", "team": "Bengals", "player": "Ja'Marr Chase Over 34.5", "prop": "1st Quarter Player Receiving Yards", "line": "", "odds": 230},
-    {"id": 4, "game": "Detroit Lions vs Dallas Cowboys", "team": "Lions", "player": "Jahmyr Gibbs", "prop": "Anytime Touchdown Scorer", "line": "", "odds": -120},
-    {"id": 5, "game": "Kansas City Chiefs vs Buffalo Bills", "team": "Chiefs", "player": "Travis Kelce Over 6.5", "prop": "Receptions", "line": "", "odds": 100},
-    {"id": 6, "game": "Philadelphia Eagles vs New York Giants", "team": "Eagles", "player": "Saquon Barkley Over 75.5", "prop": "Rushing Yards", "line": "", "odds": -110},
+    {
+        "id": 1,
+        "game": "Jacksonville Jaguars vs Tennessee Titans",
+        "team": "Jaguars",
+        "player": "Yes",
+        "prop": "3rd Quarter Both Teams To Score",
+        "line": "",
+        "odds": 144,
+    },
+    {
+        "id": 2,
+        "game": "Arizona Cardinals vs Tampa Bay Buccaneers",
+        "team": "Cardinals",
+        "player": "Arizona Cardinals",
+        "prop": "1st Quarter Moneyline 3-Way",
+        "line": "",
+        "odds": 165,
+    },
+    {
+        "id": 3,
+        "game": "Cincinnati Bengals vs Baltimore Ravens",
+        "team": "Bengals",
+        "player": "Ja'Marr Chase Over 34.5",
+        "prop": "1st Quarter Player Receiving Yards",
+        "line": "",
+        "odds": 230,
+    },
+    {
+        "id": 4,
+        "game": "Detroit Lions vs Dallas Cowboys",
+        "team": "Lions",
+        "player": "Jahmyr Gibbs",
+        "prop": "Anytime Touchdown Scorer",
+        "line": "",
+        "odds": -120,
+    },
+    {
+        "id": 5,
+        "game": "Kansas City Chiefs vs Buffalo Bills",
+        "team": "Chiefs",
+        "player": "Travis Kelce Over 6.5",
+        "prop": "Receptions",
+        "line": "",
+        "odds": 100,
+    },
+    {
+        "id": 6,
+        "game": "Philadelphia Eagles vs New York Giants",
+        "team": "Eagles",
+        "player": "Saquon Barkley Over 75.5",
+        "prop": "Rushing Yards",
+        "line": "",
+        "odds": -110,
+    },
 ]
 
 # -----------------------------------------------------------------------------
 # 5. LAYOUT
 # -----------------------------------------------------------------------------
 
-st.markdown('<div class="page-title">Best NFL Parlay Bets Today</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="page-title">Best NFL Parlay Bets Today</div>', unsafe_allow_html=True
+)
 
 # Dynamic subtitle based on slip
 if st.session_state.slip:
-    slip_desc = " and ".join([f"{leg['player']} {leg['prop']} ({'+' if leg['odds'] > 0 else ''}{leg['odds']})" for leg in st.session_state.slip[:3]])
+    slip_desc = " and ".join(
+        [
+            f"{leg['player']} {leg['prop']} ({'+' if leg['odds'] > 0 else ''}{leg['odds']})"
+            for leg in st.session_state.slip[:3]
+        ]
+    )
     _, _, total_odds = calculate_parlay(st.session_state.slip, 100)
-    st.markdown(f'<div class="page-subtitle">{slip_desc} for a return of <b>{total_odds}</b></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="page-subtitle">{slip_desc} for a return of <b>{total_odds}</b></div>',
+        unsafe_allow_html=True,
+    )
 else:
-    st.markdown('<div class="page-subtitle">Build your parlay by selecting props from the market below</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Build your parlay by selecting props from the market below</div>',
+        unsafe_allow_html=True,
+    )
 
 col_slip, col_bet = st.columns([2, 1])
 
@@ -333,9 +402,10 @@ col_slip, col_bet = st.columns([2, 1])
 with col_slip:
     if st.session_state.slip:
         _, _, total_odds = calculate_parlay(st.session_state.slip, 100)
-        
+
         # Slip Header
-        st.markdown(f'''
+        st.markdown(
+            f"""
             <div class="bet-slip-card">
                 <div class="slip-header">
                     <div class="slip-title">
@@ -345,14 +415,19 @@ with col_slip:
                         {total_odds} 🛡️
                     </div>
                 </div>
-        ''', unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Slip Legs
         for leg in st.session_state.slip:
-            logo_url = TEAM_LOGOS.get(leg['team'], "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png")
-            odds_display = f"+{leg['odds']}" if leg['odds'] > 0 else str(leg['odds'])
-            
-            st.markdown(f'''
+            logo_url = TEAM_LOGOS.get(
+                leg["team"], "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png"
+            )
+            odds_display = f"+{leg['odds']}" if leg["odds"] > 0 else str(leg["odds"])
+
+            st.markdown(
+                f"""
                 <div class="bet-leg">
                     <img src="{logo_url}" class="team-logo" alt="{leg['team']}">
                     <div class="bet-info">
@@ -362,51 +437,69 @@ with col_slip:
                     </div>
                     <div class="bet-odds">{odds_display}</div>
                 </div>
-            ''', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
+            """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
         # Clear button
         if st.button("🗑️ Clear Slip", use_container_width=True):
             clear_slip()
             st.rerun()
     else:
-        st.markdown('''
+        st.markdown(
+            """
             <div class="bet-slip-card" style="padding: 40px; text-align: center;">
                 <div style="font-size: 3rem; margin-bottom: 12px;">🎫</div>
                 <div style="color: #64748b;">Your bet slip is empty</div>
                 <div style="color: #475569; font-size: 0.85rem; margin-top: 4px;">Add props from below to build your parlay</div>
             </div>
-        ''', unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
 # --- RIGHT: YOUR BET ---
 with col_bet:
     st.markdown('<div class="your-bet-card">', unsafe_allow_html=True)
     st.markdown('<div class="your-bet-title">Your bet</div>', unsafe_allow_html=True)
-    
+
     # Wager Input
     st.markdown('<div class="input-label">Wager</div>', unsafe_allow_html=True)
-    wager = st.number_input("Wager", min_value=1, value=100, step=10, label_visibility="collapsed")
-    
+    wager = st.number_input(
+        "Wager", min_value=1, value=100, step=10, label_visibility="collapsed"
+    )
+
     # Calculate profit
     profit, multiplier, final_odds = calculate_parlay(st.session_state.slip, wager)
-    
+
     # Profit Display
-    st.markdown('<div class="input-label" style="margin-top: 16px;">Profit</div>', unsafe_allow_html=True)
-    st.markdown(f'''
+    st.markdown(
+        '<div class="input-label" style="margin-top: 16px;">Profit</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
         <div class="input-wrapper" style="padding: 12px;">
             <span class="input-prefix">$</span>
             <span class="profit-value" style="margin-left: 8px;">{profit:,.2f}</span>
         </div>
-    ''', unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
-    
+
     # Add to Bet Tracker Button
-    if st.button("Add to Bet Tracker", type="primary", use_container_width=True, disabled=len(st.session_state.slip) == 0):
+    if st.button(
+        "Add to Bet Tracker",
+        type="primary",
+        use_container_width=True,
+        disabled=len(st.session_state.slip) == 0,
+    ):
         st.success("Added to Bet Tracker!")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -418,19 +511,26 @@ c1, c2, c3 = st.columns(3)
 with c1:
     st.selectbox("League", ["NFL", "NBA", "NHL", "MLB"], key="league_filter")
 with c2:
-    st.selectbox("Market", ["All Props", "Player Props", "Game Lines", "Touchdowns", "Quarters"], key="market_filter")
+    st.selectbox(
+        "Market",
+        ["All Props", "Player Props", "Game Lines", "Touchdowns", "Quarters"],
+        key="market_filter",
+    )
 with c3:
     st.text_input("Search", placeholder="e.g. Ja'Marr Chase", key="search_filter")
 
 # Props Grid
 for prop in props_db:
-    logo_url = TEAM_LOGOS.get(prop['team'], "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png")
-    odds_display = f"+{prop['odds']}" if prop['odds'] > 0 else str(prop['odds'])
-    
+    logo_url = TEAM_LOGOS.get(
+        prop["team"], "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png"
+    )
+    odds_display = f"+{prop['odds']}" if prop["odds"] > 0 else str(prop["odds"])
+
     col_card, col_btn = st.columns([5, 1])
-    
+
     with col_card:
-        st.markdown(f'''
+        st.markdown(
+            f"""
             <div class="prop-card">
                 <img src="{logo_url}" style="width: 44px; height: 44px; border-radius: 6px; object-fit: contain; background: #1a2744; padding: 4px;">
                 <div style="flex: 1;">
@@ -440,17 +540,28 @@ for prop in props_db:
                 </div>
                 <div style="font-size: 1.1rem; font-weight: 700; color: #22d3ee;">{odds_display}</div>
             </div>
-        ''', unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     with col_btn:
         # Check if already in slip
-        already_added = any(leg['id'] == str(prop['id']) or 
-                          (leg['player'] == prop['player'] and leg['prop'] == prop['prop']) 
-                          for leg in st.session_state.slip)
-        
+        already_added = any(
+            leg["id"] == str(prop["id"])
+            or (leg["player"] == prop["player"] and leg["prop"] == prop["prop"])
+            for leg in st.session_state.slip
+        )
+
         if already_added:
             st.button("✓", key=f"add_{prop['id']}", disabled=True)
         else:
             if st.button("ADD", key=f"add_{prop['id']}"):
-                add_to_slip(prop['player'], prop['prop'], prop['line'], prop['odds'], prop['game'], prop['team'])
+                add_to_slip(
+                    prop["player"],
+                    prop["prop"],
+                    prop["line"],
+                    prop["odds"],
+                    prop["game"],
+                    prop["team"],
+                )
                 st.rerun()
