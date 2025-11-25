@@ -9,12 +9,18 @@ Runs every Monday to:
 """
 
 import logging
+import os
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Set up paths
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# Set PYTHONPATH for subprocesses
+os.environ["PYTHONPATH"] = str(PROJECT_ROOT)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,9 +37,11 @@ def run_weekly_retrain():
     logger.info("\n[1] Downloading latest data...")
     try:
         result = subprocess.run(
-            ["python", "scripts/download_data.py", "--seasons", "2024", "--force"],
+            [sys.executable, "scripts/download_data.py", "--seasons", "2024", "--force"],
             capture_output=True,
             text=True,
+            cwd=str(PROJECT_ROOT),
+            env={**os.environ, "PYTHONPATH": str(PROJECT_ROOT)},
         )
         if result.returncode == 0:
             logger.info("[OK] Data downloaded successfully")
@@ -49,12 +57,14 @@ def run_weekly_retrain():
     try:
         result = subprocess.run(
             [
-                "python",
+                sys.executable,
                 "-c",
                 "from src.features.pipeline import create_features; create_features([2024])",
             ],
             capture_output=True,
             text=True,
+            cwd=str(PROJECT_ROOT),
+            env={**os.environ, "PYTHONPATH": str(PROJECT_ROOT)},
         )
         if result.returncode == 0:
             logger.info("[OK] Features regenerated")
@@ -67,9 +77,11 @@ def run_weekly_retrain():
     logger.info("\n[3] Retraining favorites-only model...")
     try:
         result = subprocess.run(
-            ["python", "scripts/train_favorites_specialist.py"],
+            [sys.executable, "scripts/train_favorites_specialist.py"],
             capture_output=True,
             text=True,
+            cwd=str(PROJECT_ROOT),
+            env={**os.environ, "PYTHONPATH": str(PROJECT_ROOT)},
         )
         if result.returncode == 0:
             logger.info("[OK] Model retrained successfully")

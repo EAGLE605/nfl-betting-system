@@ -28,12 +28,13 @@ jobs:
       env:
         ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
       run: |
-        python scripts/download_data.py --latest
+        python scripts/download_data.py --seasons 2024 --no-pbp
     
     - name: Generate predictions
       env:
         ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+        PYTHONPATH: ${{ github.workspace }}
       run: |
         python scripts/production_daily_pipeline.py
     
