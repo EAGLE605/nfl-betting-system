@@ -172,11 +172,26 @@ def load_games():
 
 
 def categorize_game_slot(game):
-    """Categorize game into TNF, Early, Late, SNF, MNF."""
+    """Categorize game into TNF, Early, Late, SNF, MNF based on Eastern Time."""
+    from datetime import datetime, timedelta, timezone
+    
     kickoff = game.get('kickoff_str', game.get('date', ''))
     day = game.get('day_of_week', '')
+    hour_et = None
     
-    if 'Thursday' in day or 'Thursday' in kickoff:
+    # Parse ISO date format and convert to Eastern Time (UTC-5 for EST)
+    if 'T' in kickoff:
+        try:
+            dt_str = kickoff.replace('Z', '+00:00')
+            dt_utc = datetime.fromisoformat(dt_str)
+            # Convert UTC to Eastern (approximately UTC-5)
+            dt_et = dt_utc - timedelta(hours=5)
+            day = dt_et.strftime('%A')  # Get day name in ET
+            hour_et = dt_et.hour
+        except Exception as e:
+            pass
+    
+    if 'Thursday' in day:
         return 'TNF'
     elif 'Friday' in day:
         return 'FRIDAY'
@@ -184,17 +199,17 @@ def categorize_game_slot(game):
         return 'SATURDAY'
     elif 'Monday' in day:
         return 'MNF'
-    elif 'Sunday' in day or 'Sunday' in kickoff:
-        # Check time for early vs late
-        if '01:00 PM' in kickoff or '1:00 PM' in kickoff or '13:00' in kickoff:
-            return 'EARLY'
-        elif '04:' in kickoff or '4:' in kickoff or '16:' in kickoff:
-            return 'LATE'
-        elif '08:' in kickoff or '8:' in kickoff or '20:' in kickoff:
-            return 'SNF'
-        else:
-            return 'EARLY'
-    return 'TBD'
+    elif 'Sunday' in day:
+        # Categorize by Eastern Time hour
+        if hour_et is not None:
+            if hour_et < 16:  # Before 4 PM ET
+                return 'EARLY'
+            elif hour_et < 20:  # 4 PM - 8 PM ET
+                return 'LATE'
+            else:  # 8 PM+ ET
+                return 'SNF'
+        return 'EARLY'
+    return 'EARLY'  # Default
 
 
 def get_game_status_label(game):
@@ -662,192 +677,162 @@ with tab_games:
             conf = random.randint(55, 92)
             spread = random.choice(['-3.5', '-6.5', '+2.5', '-7', '+3', '-4.5'])
             
-            st.markdown(f"""
-                <div class="{card_class}">
-                    <div class="game-card-overlay"></div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: relative; z-index: 1;">
-                        <span style="font-family: 'Rajdhani'; font-size: 0.75rem; color: var(--text-3); letter-spacing: 1px;">{slot}</span>
-                        {badge}
-                    </div>
-                    
-                    <div class="team-row" style="position: relative; z-index: 1;">
-                        <img src="{away_logo}" class="team-logo" onerror="this.style.display='none'"/>
-                        <span class="team-name" style="color: {away_color};">{away_name}</span>
-                        <span class="team-score">{away_score}</span>
-                    </div>
-                    
-                    <div class="team-row" style="position: relative; z-index: 1;">
-                        <img src="{home_logo}" class="team-logo" onerror="this.style.display='none'"/>
-                        <span class="team-name" style="color: {home_color};">{home_name}</span>
-                        <span class="team-score">{home_score}</span>
-                    </div>
-                    
-                    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--dark-4); position: relative; z-index: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-family: 'Rajdhani'; font-size: 0.7rem; color: var(--text-3); letter-spacing: 1px;">EDGE PICK</span>
-                            <span style="font-family: 'Bebas Neue'; font-size: 1rem; color: var(--accent);">{conf}%</span>
-                        </div>
-                        <div style="font-weight: 600; margin-bottom: 4px;">{home} {spread}</div>
-                        <div class="conf-meter">
-                            <div class="conf-fill" style="width: {conf}%;"></div>
-                        </div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
+            card_html = f'''<div class="{card_class}">
+<div class="game-card-overlay"></div>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: relative; z-index: 1;">
+<span style="font-family: Rajdhani; font-size: 0.75rem; color: var(--text-3); letter-spacing: 1px;">{slot}</span>
+{badge}
+</div>
+<div class="team-row" style="position: relative; z-index: 1;">
+<img src="{away_logo}" class="team-logo"/>
+<span class="team-name" style="color: {away_color};">{away_name}</span>
+<span class="team-score">{away_score}</span>
+</div>
+<div class="team-row" style="position: relative; z-index: 1;">
+<img src="{home_logo}" class="team-logo"/>
+<span class="team-name" style="color: {home_color};">{home_name}</span>
+<span class="team-score">{home_score}</span>
+</div>
+<div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--dark-4); position: relative; z-index: 1;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+<span style="font-family: Rajdhani; font-size: 0.7rem; color: var(--text-3); letter-spacing: 1px;">EDGE PICK</span>
+<span style="font-family: Bebas Neue; font-size: 1rem; color: var(--accent);">{conf}%</span>
+</div>
+<div style="font-weight: 600; margin-bottom: 4px;">{home} {spread}</div>
+<div class="conf-meter">
+<div class="conf-fill" style="width: {conf}%;"></div>
+</div>
+</div>
+</div>'''
+            st.markdown(card_html, unsafe_allow_html=True)
 
 # =============================================================================
-# TAB 2: CALENDAR VIEW
+# TAB 2: CALENDAR VIEW - DYNAMIC FROM LIVE DATA
 # =============================================================================
 with tab_calendar:
-    # Week 13 is Thanksgiving week - real NFL schedule
-    WEEK_13_SCHEDULE = {
-        'THU': [  # Thanksgiving
-            {'away': 'CHI', 'home': 'DET', 'time': '12:30 PM', 'network': 'CBS'},
-            {'away': 'NYG', 'home': 'DAL', 'time': '4:30 PM', 'network': 'FOX'},
-            {'away': 'MIA', 'home': 'GB', 'time': '8:20 PM', 'network': 'NBC'},
-        ],
-        'FRI': [
-            {'away': 'LV', 'home': 'KC', 'time': '3:00 PM', 'network': 'PRIME'},
-        ],
-        'SUN_EARLY': [
-            {'away': 'LAC', 'home': 'ATL', 'time': '1:00 PM', 'network': 'CBS'},
-            {'away': 'PIT', 'home': 'CIN', 'time': '1:00 PM', 'network': 'CBS'},
-            {'away': 'HOU', 'home': 'JAX', 'time': '1:00 PM', 'network': 'FOX'},
-            {'away': 'MIN', 'home': 'ARI', 'time': '1:00 PM', 'network': 'FOX'},
-            {'away': 'IND', 'home': 'NE', 'time': '1:00 PM', 'network': 'CBS'},
-            {'away': 'SEA', 'home': 'NYJ', 'time': '1:00 PM', 'network': 'FOX'},
-            {'away': 'TEN', 'home': 'WAS', 'time': '1:00 PM', 'network': 'CBS'},
-        ],
-        'SUN_LATE': [
-            {'away': 'TB', 'home': 'CAR', 'time': '4:05 PM', 'network': 'FOX'},
-            {'away': 'LAR', 'home': 'NO', 'time': '4:05 PM', 'network': 'FOX'},
-            {'away': 'PHI', 'home': 'BAL', 'time': '4:25 PM', 'network': 'CBS'},
-            {'away': 'SF', 'home': 'BUF', 'time': '4:25 PM', 'network': 'FOX'},
-        ],
-        'SNF': [
-            {'away': 'DEN', 'home': 'CLE', 'time': '8:20 PM', 'network': 'NBC'},
-        ],
-        'MNF': [
-            {'away': 'BAL', 'home': 'LAC', 'time': '8:15 PM', 'network': 'ESPN'},
-        ],
-    }
+    from datetime import datetime, timedelta
+
+    # Group games by date from live data
+    def parse_game_datetime(game):
+        """Parse ISO date and return datetime in ET."""
+        date_str = game.get('date', '')
+        if not date_str:
+            return None
+        try:
+            # Parse ISO format
+            dt_str = date_str.replace('Z', '+00:00')
+            dt_utc = datetime.fromisoformat(dt_str)
+            # Convert UTC to Eastern Time (approximately UTC-5)
+            dt_et = dt_utc - timedelta(hours=5)
+            return dt_et
+        except:
+            return None
     
-    st.markdown('<div class="slot-header">WEEK 13 // THANKSGIVING WEEK</div>', unsafe_allow_html=True)
+    def format_time_et(dt):
+        """Format datetime to readable time string."""
+        if not dt:
+            return "TBD"
+        if hasattr(dt, 'strftime'):
+            # Use %I and strip leading zero manually for cross-platform compatibility
+            time_str = dt.strftime("%I:%M %p")
+            if time_str.startswith('0'):
+                time_str = time_str[1:]
+            return time_str
+        return "TBD"
     
-    # Thursday - Thanksgiving
-    st.markdown("""
-        <div style="background: var(--dark-2); border: 1px solid var(--accent); border-radius: 8px; padding: 16px; margin: 12px 0;">
-            <div style="font-family: 'Bebas Neue'; font-size: 1.3rem; color: var(--accent); margin-bottom: 12px;">THURSDAY 11/28 - THANKSGIVING</div>
-    """, unsafe_allow_html=True)
+    # Group games by day
+    games_by_date = {}
+    for game in games:
+        dt = parse_game_datetime(game)
+        if dt:
+            date_key = dt.strftime('%Y-%m-%d')
+            day_name = dt.strftime('%A')
+            if date_key not in games_by_date:
+                games_by_date[date_key] = {
+                    'day_name': day_name,
+                    'date_str': dt.strftime('%m/%d'),
+                    'games': []
+                }
+            game_info = {
+                'away': game.get('away_team', ''),
+                'home': game.get('home_team', ''),
+                'time': format_time_et(dt),
+                'hour': dt.hour,
+                'status': game.get('status', ''),
+                'away_score': game.get('away_score', ''),
+                'home_score': game.get('home_score', '')
+            }
+            games_by_date[date_key]['games'].append(game_info)
     
-    for game in WEEK_13_SCHEDULE['THU']:
-        away_logo = TEAM_LOGOS.get(game['away'], '')
-        home_logo = TEAM_LOGOS.get(game['home'], '')
-        st.markdown(f"""
-            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--dark-4);">
-                <img src="{away_logo}" style="width: 32px; height: 32px;"/>
-                <span style="width: 40px;">{game['away']}</span>
-                <span style="color: var(--text-3);">@</span>
-                <span style="width: 40px;">{game['home']}</span>
-                <img src="{home_logo}" style="width: 32px; height: 32px;"/>
-                <span style="margin-left: auto; color: var(--accent);">{game['time']}</span>
-                <span style="color: var(--text-3); width: 50px;">{game['network']}</span>
-            </div>
-        """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Sort dates
+    sorted_dates = sorted(games_by_date.keys())
     
-    # Friday
-    st.markdown("""
-        <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin: 12px 0;">
-                <div style="font-family: 'Bebas Neue'; font-size: 1.1rem; color: #d0d0d0; margin-bottom: 12px;">FRIDAY 11/29 - BLACK FRIDAY</div>
-    """, unsafe_allow_html=True)
-    for game in WEEK_13_SCHEDULE['FRI']:
-        away_logo = TEAM_LOGOS.get(game['away'], '')
-        home_logo = TEAM_LOGOS.get(game['home'], '')
-        st.markdown(f"""
-            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0;">
-                <img src="{away_logo}" style="width: 32px; height: 32px;"/>
-                <span>{game['away']} @ {game['home']}</span>
-                <img src="{home_logo}" style="width: 32px; height: 32px;"/>
-                <span style="margin-left: auto; color: var(--accent);">{game['time']}</span>
-                <span style="color: var(--text-3);">{game['network']}</span>
-            </div>
-        """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(f'<div class="slot-header">WEEK {CURRENT_WEEK} SCHEDULE</div>', unsafe_allow_html=True)
     
-    # Sunday Early
-    col_early, col_late = st.columns(2)
-    with col_early:
-        st.markdown("""
-            <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px;">
-                <div style="font-family: 'Bebas Neue'; font-size: 1.1rem; color: #d0d0d0; margin-bottom: 12px;">SUNDAY EARLY WINDOW</div>
-        """, unsafe_allow_html=True)
-        for game in WEEK_13_SCHEDULE['SUN_EARLY']:
-            st.markdown(f"""
-                <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.9rem; border-bottom: 1px solid var(--dark-4);">
-                    <img src="{TEAM_LOGOS.get(game['away'], '')}" style="width: 24px; height: 24px;"/>
-                    <span style="flex: 1;">{game['away']} @ {game['home']}</span>
-                    <img src="{TEAM_LOGOS.get(game['home'], '')}" style="width: 24px; height: 24px;"/>
-                    <span style="color: var(--accent); font-size: 0.75rem; width: 50px;">{game['time']}</span>
-                    <span style="color: var(--text-3); font-size: 0.75rem; width: 35px; text-align: right;">{game['network']}</span>
-                </div>
-            """, unsafe_allow_html=True)
-        st.markdown("""
-            <div style="font-size: 0.7rem; color: var(--text-3); margin-top: 8px; font-style: italic;">
-                * CBS/FOX coverage varies by market
-            </div>
-        </div>""", unsafe_allow_html=True)
+    if not sorted_dates:
+        st.info("No games loaded. Check data source.")
     
-    with col_late:
-        st.markdown("""
-            <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px;">
-                <div style="font-family: 'Bebas Neue'; font-size: 1.1rem; color: #d0d0d0; margin-bottom: 12px;">SUNDAY LATE WINDOW</div>
-        """, unsafe_allow_html=True)
-        for game in WEEK_13_SCHEDULE['SUN_LATE']:
-            st.markdown(f"""
-                <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.9rem; border-bottom: 1px solid var(--dark-4);">
-                    <img src="{TEAM_LOGOS.get(game['away'], '')}" style="width: 24px; height: 24px;"/>
-                    <span style="flex: 1;">{game['away']} @ {game['home']}</span>
-                    <img src="{TEAM_LOGOS.get(game['home'], '')}" style="width: 24px; height: 24px;"/>
-                    <span style="color: var(--accent); font-size: 0.75rem; width: 50px;">{game['time']}</span>
-                    <span style="color: var(--text-3); font-size: 0.75rem; width: 35px; text-align: right;">{game['network']}</span>
-                </div>
-            """, unsafe_allow_html=True)
-        st.markdown("""
-            <div style="font-size: 0.7rem; color: var(--text-3); margin-top: 8px; font-style: italic;">
-                * CBS/FOX coverage varies by market
-            </div>
-        </div>""", unsafe_allow_html=True)
-    
-    # Primetime
-    col_snf, col_mnf = st.columns(2)
-    with col_snf:
-        game = WEEK_13_SCHEDULE['SNF'][0]
-        st.markdown(f"""
-            <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin-top: 12px;">
-                <div style="font-family: 'Bebas Neue'; font-size: 1.1rem; color: #f7c744; margin-bottom: 12px;">SUNDAY NIGHT FOOTBALL</div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <img src="{TEAM_LOGOS.get(game['away'], '')}" style="width: 40px; height: 40px;"/>
-                    <span style="font-size: 1.1rem; font-weight: 600;">{game['away']} @ {game['home']}</span>
-                    <img src="{TEAM_LOGOS.get(game['home'], '')}" style="width: 40px; height: 40px;"/>
-                    <span style="margin-left: auto; color: var(--accent);">{game['time']} NBC</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col_mnf:
-        game = WEEK_13_SCHEDULE['MNF'][0]
-        st.markdown(f"""
-            <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin-top: 12px;">
-                <div style="font-family: 'Bebas Neue'; font-size: 1.1rem; color: #ff6b35; margin-bottom: 12px;">MONDAY NIGHT FOOTBALL</div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <img src="{TEAM_LOGOS.get(game['away'], '')}" style="width: 40px; height: 40px;"/>
-                    <span style="font-size: 1.1rem; font-weight: 600;">{game['away']} @ {game['home']}</span>
-                    <img src="{TEAM_LOGOS.get(game['home'], '')}" style="width: 40px; height: 40px;"/>
-                    <span style="margin-left: auto; color: var(--accent);">{game['time']} ESPN</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+    for date_key in sorted_dates:
+        day_data = games_by_date[date_key]
+        day_name = day_data['day_name']
+        date_str = day_data['date_str']
+        day_games = sorted(day_data['games'], key=lambda x: x['hour'])
+        
+        # Determine header style based on day
+        if day_name == 'Thursday':
+            header_color = 'var(--accent)'
+            border_color = 'var(--accent)'
+            label = f'THURSDAY {date_str}'
+        elif day_name == 'Friday':
+            header_color = '#00d4aa'
+            border_color = '#00d4aa'
+            label = f'FRIDAY {date_str} - BLACK FRIDAY'
+        elif day_name == 'Saturday':
+            header_color = '#d0d0d0'
+            border_color = 'var(--dark-4)'
+            label = f'SATURDAY {date_str}'
+        elif day_name == 'Sunday':
+            header_color = '#d0d0d0'
+            border_color = 'var(--dark-4)'
+            label = f'SUNDAY {date_str}'
+        elif day_name == 'Monday':
+            header_color = '#ff6b35'
+            border_color = '#ff6b35'
+            label = f'MONDAY {date_str}'
+        else:
+            header_color = '#d0d0d0'
+            border_color = 'var(--dark-4)'
+            label = f'{day_name.upper()} {date_str}'
+        
+        st.markdown(f'''<div style="background: var(--dark-2); border: 1px solid {border_color}; border-radius: 8px; padding: 16px; margin: 12px 0;">
+<div style="font-family: 'Bebas Neue'; font-size: 1.3rem; color: {header_color}; margin-bottom: 12px;">{label}</div>''', unsafe_allow_html=True)
+        
+        for game in day_games:
+            away = game['away']
+            home = game['home']
+            away_logo = TEAM_LOGOS.get(away, '')
+            home_logo = TEAM_LOGOS.get(home, '')
+            game_time = game['time']
+            status = game['status']
+            
+            # Show score if game is final or in progress
+            if status == 'STATUS_FINAL':
+                score_display = f"<span style='color: var(--text-2);'>{game['away_score']} - {game['home_score']}</span> <span style='color: var(--text-3); font-size: 0.8rem;'>FINAL</span>"
+            elif status == 'STATUS_IN_PROGRESS':
+                score_display = f"<span style='color: var(--accent);'>{game['away_score']} - {game['home_score']}</span> <span style='color: #00ff88; font-size: 0.8rem;'>LIVE</span>"
+            else:
+                score_display = f"<span style='color: var(--accent);'>{game_time}</span>"
+            
+            st.markdown(f'''<div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--dark-4);">
+<img src="{away_logo}" style="width: 32px; height: 32px;"/>
+<span style="width: 45px; font-weight: 500;">{away}</span>
+<span style="color: var(--text-3); margin: 0 4px;">@</span>
+<span style="width: 45px; font-weight: 500;">{home}</span>
+<img src="{home_logo}" style="width: 32px; height: 32px;"/>
+<span style="margin-left: auto;">{score_display}</span>
+</div>''', unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # =============================================================================
 # TAB 3: PARLAY BUILDER - FULLY WIRED
@@ -897,7 +882,7 @@ with tab_parlay:
         """, unsafe_allow_html=True)
         
         # Generate odds for each game
-        for game in (games if games else WEEK_13_SCHEDULE.get('SUN_EARLY', []))[:10]:
+        for game in (games[:10] if games else []):
             if isinstance(game, dict) and 'away_team' in game:
                 away = game.get('away_team', 'AWAY')
                 home = game.get('home_team', 'HOME')
