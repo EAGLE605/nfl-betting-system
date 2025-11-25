@@ -101,6 +101,27 @@
 - **RAM**: 8GB minimum, 16GB recommended
 - **Storage**: 2GB for historical data
 
+### 🚀 Quick Deployment
+
+**Start Everything** (Autonomous System + Dashboard):
+```bash
+# Windows
+deploy.bat
+
+# Linux/macOS
+chmod +x deploy.sh
+./deploy.sh
+```
+
+**Or Start Separately**:
+```bash
+# Terminal 1: Autonomous System
+python scripts/start_autonomous_system.py
+
+# Terminal 2: Dashboard GUI
+streamlit run dashboard/app.py
+```
+
 ### Installation (5 minutes)
 
 #### 1️⃣ Clone & Setup Environment

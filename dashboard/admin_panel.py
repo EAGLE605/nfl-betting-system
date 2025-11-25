@@ -108,7 +108,7 @@ def advanced_settings_panel():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("🔍 Discover New Edges", use_container_width=True):
+            if st.button("🔍 Discover New Edges", width='stretch'):
                 with st.spinner("Running edge discovery..."):
                     try:
                         result = subprocess.run(
@@ -128,7 +128,7 @@ def advanced_settings_panel():
                         st.error(f"❌ Error: {str(e)}")
         
         with col2:
-            if st.button("📊 Run Backtest", use_container_width=True):
+            if st.button("📊 Run Backtest", width='stretch'):
                 with st.spinner("Running backtest..."):
                     try:
                         result = subprocess.run(
@@ -146,7 +146,7 @@ def advanced_settings_panel():
                         st.error(f"❌ Error: {str(e)}")
         
         with col3:
-            if st.button("🎨 Generate Report", use_container_width=True):
+            if st.button("🎨 Generate Report", width='stretch'):
                 with st.spinner("Generating report..."):
                     try:
                         result = subprocess.run(
@@ -274,7 +274,7 @@ def advanced_settings_panel():
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("🎯 Quick Train", use_container_width=True, help="Fast training (5 min)"):
+            if st.button("🎯 Quick Train", width='stretch', help="Fast training (5 min)"):
                 with st.spinner("🎓 Training model..."):
                     with st.expander("Training Log", expanded=True):
                         progress = st.progress(0)
@@ -308,7 +308,7 @@ def advanced_settings_panel():
                             st.error(f"❌ Error: {str(e)}")
         
         with col2:
-            if st.button("🔬 Deep Train", use_container_width=True, help="Full training (30 min)"):
+            if st.button("🔬 Deep Train", width='stretch', help="Full training (30 min)"):
                 with st.spinner("🧬 Deep training in progress..."):
                     try:
                         result = subprocess.run(
@@ -325,7 +325,7 @@ def advanced_settings_panel():
                         st.info("⏱️ Still training... Check system logs")
         
         with col3:
-            if st.button("🎨 Tune Hyperparameters", use_container_width=True, help="Optimize settings (1 hour)"):
+            if st.button("🎨 Tune Hyperparameters", width='stretch', help="Optimize settings (1 hour)"):
                 with st.spinner("🎯 Running Optuna optimization..."):
                     try:
                         result = subprocess.run(
@@ -343,7 +343,7 @@ def advanced_settings_panel():
                         st.info("⏱️ Still optimizing...")
         
         with col4:
-            if st.button("📊 Compare Models", use_container_width=True, help="A/B test models"):
+            if st.button("📊 Compare Models", width='stretch', help="A/B test models"):
                 st.info("🔄 Running model comparison...")
                 
                 comparison = pd.DataFrame({
@@ -353,7 +353,7 @@ def advanced_settings_panel():
                     'Sharpe': [5.0, 5.3, 4.7, 5.6]
                 })
                 
-                st.dataframe(comparison, use_container_width=True)
+                st.dataframe(comparison, width='stretch')
                 st.success("✅ Ensemble model performs best!")
         
         st.divider()
@@ -396,7 +396,7 @@ def advanced_settings_panel():
             'Status': ['Production', 'Archived', 'Archived', 'Archived']
         })
         
-        st.dataframe(history, use_container_width=True)
+        st.dataframe(history, width='stretch')
     
     # ======================================================================
     # TAB 3: FEATURE MANAGEMENT
@@ -436,7 +436,7 @@ def advanced_settings_panel():
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("🧬 Genetic Feature Search", use_container_width=True):
+            if st.button("🧬 Genetic Feature Search", width='stretch'):
                 with st.spinner("Running genetic programming..."):
                     st.info("🔬 Discovering novel features...")
                     st.success("✅ Found 3 new promising features!")
@@ -448,7 +448,7 @@ New Features Discovered:
                     """)
         
         with col2:
-            if st.button("📊 Correlation Analysis", use_container_width=True):
+            if st.button("📊 Correlation Analysis", width='stretch'):
                 st.info("Running correlation matrix...")
                 st.success("✅ Analysis complete!")
                 st.caption("High correlations found: elo_diff ↔ win_prob (0.89)")
@@ -479,7 +479,7 @@ New Features Discovered:
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("📥 Download Latest", use_container_width=True):
+            if st.button("📥 Download Latest", width='stretch'):
                 with st.spinner("Downloading..."):
                     try:
                         result = subprocess.run(
@@ -496,17 +496,17 @@ New Features Discovered:
                         st.error(f"Error: {e}")
         
         with col2:
-            if st.button("🔄 Force Refresh", use_container_width=True):
+            if st.button("🔄 Force Refresh", width='stretch'):
                 st.cache_data.clear()
                 st.success("✅ Cache cleared!")
         
         with col3:
-            if st.button("🧹 Clean Old Data", use_container_width=True):
+            if st.button("🧹 Clean Old Data", width='stretch'):
                 st.info("Removing data older than 2020...")
                 st.success("✅ Cleanup complete!")
         
         with col4:
-            if st.button("📊 Audit Data", use_container_width=True):
+            if st.button("📊 Audit Data", width='stretch'):
                 with st.spinner("Running audit..."):
                     try:
                         result = subprocess.run(
@@ -564,7 +564,7 @@ New Features Discovered:
         st.markdown("### 🔐 API Keys")
         st.caption("Manage external service credentials")
         
-        if st.button("🔑 View API Keys", use_container_width=True):
+        if st.button("🔑 View API Keys", width='stretch'):
             st.code("""
 ODDS_API_KEY: ****6a4 (Valid)
 XAI_API_KEY: ****vuK (Valid)
@@ -579,7 +579,7 @@ APPLE_CLIENT_ID: Not configured
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("💾 Backup Database", use_container_width=True):
+            if st.button("💾 Backup Database", width='stretch'):
                 st.success("✅ Backup created!")
                 st.download_button(
                     "📥 Download",
@@ -588,11 +588,11 @@ APPLE_CLIENT_ID: Not configured
                 )
         
         with col2:
-            if st.button("📤 Export Models", use_container_width=True):
+            if st.button("📤 Export Models", width='stretch'):
                 st.success("✅ Models exported!")
         
         with col3:
-            if st.button("📊 Export Reports", use_container_width=True):
+            if st.button("📊 Export Reports", width='stretch'):
                 st.success("✅ Reports exported!")
         
         st.divider()

@@ -421,7 +421,7 @@ def show_api_key_settings():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("🧪 Test All Keys", use_container_width=True):
+        if st.button("🧪 Test All Keys", width='stretch'):
             with st.spinner("Testing API connections..."):
                 results = {}
                 for key_name, key_info in all_keys.items():
@@ -437,7 +437,7 @@ def show_api_key_settings():
                         st.error(f"{all_keys[key_name]['name']}: {message}")
 
     with col2:
-        if st.button("📋 View Template", use_container_width=True):
+        if st.button("📋 View Template", width='stretch'):
             with st.expander("api_keys.env.template", expanded=True):
                 if manager.env_template.exists():
                     st.code(manager.env_template.read_text(), language="bash")
@@ -445,7 +445,7 @@ def show_api_key_settings():
                     st.warning("Template file not found")
 
     with col3:
-        if st.button("🔄 Reload Keys", use_container_width=True):
+        if st.button("🔄 Reload Keys", width='stretch'):
             load_dotenv(manager.env_file, override=True)
             st.success("✅ Keys reloaded!")
             st.rerun()
@@ -505,7 +505,7 @@ def show_api_key_input(
 
         with col1:
             if st.button(
-                "💾 Save", key=f"save_{key_name}", use_container_width=True
+                "💾 Save", key=f"save_{key_name}", width='stretch'
             ):
                 if new_value:
                     # Validate format
@@ -526,7 +526,7 @@ def show_api_key_input(
         with col2:
             if key_info["configured"]:
                 if st.button(
-                    "🧪 Test", key=f"test_{key_name}", use_container_width=True
+                    "🧪 Test", key=f"test_{key_name}", width='stretch'
                 ):
                     with st.spinner(f"Testing {key_info['name']}..."):
                         is_working, message = manager.test_key(key_name)
@@ -541,7 +541,7 @@ def show_api_key_input(
                 if st.button(
                     "🗑️ Remove",
                     key=f"remove_{key_name}",
-                    use_container_width=True,
+                    width='stretch',
                 ):
                     if manager.set_key(key_name, ""):
                         st.success(f"✅ {key_info['name']} key removed")

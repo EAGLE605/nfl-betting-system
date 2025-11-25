@@ -246,7 +246,7 @@ def show_parlay_builder():
     st.divider()
     
     # Calculate parlay
-    if st.button("💰 Calculate Parlay", type="primary", use_container_width=True):
+    if st.button("💰 Calculate Parlay", type="primary", width='stretch'):
         calc = calculate_parlay_odds(selected_legs)
         
         st.markdown("### 📊 Parlay Analysis")

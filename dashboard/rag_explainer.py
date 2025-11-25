@@ -263,7 +263,7 @@ def show_why_this_bet(bet_info: Dict, feature_importance: Dict[str, float]):
         font=dict(size=14)
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     
     # Simple explanation of the chart
     st.caption("""
