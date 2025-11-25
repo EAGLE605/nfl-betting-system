@@ -840,77 +840,92 @@ with tab5:
 
 with tab6:
     st.header("⚙️ Settings")
-    
-    # Notifications
-    st.subheader("🔔 Notifications")
-    notifications = st.toggle(
-        "Enable push notifications",
-        value=st.session_state.notifications,
-        help="Get alerted when high-value bets are found"
-    )
-    st.session_state.notifications = notifications
-    
-    if notifications:
-        st.success("✅ Notifications enabled")
-    
-    # Filters
-    st.subheader("🎯 Bet Filters")
-    
-    min_edge = st.slider(
-        "Minimum edge required",
-        min_value=0.0,
-        max_value=0.15,
-        value=0.015,
-        step=0.005,
-        format="%.1f%%",
-        help="Only show bets with at least this edge"
-    )
-    
-    min_prob = st.slider(
-        "Minimum win probability",
-        min_value=0.50,
-        max_value=0.70,
-        value=0.52,
-        step=0.01,
-        format="%.0f%%"
-    )
-    
-    # Data refresh
-    st.subheader("🔄 Data")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 Refresh Predictions", use_container_width=True):
-            st.cache_data.clear()
-            st.success("✅ Predictions refreshed!")
-            st.rerun()
-    
-    with col2:
-        if st.button("💾 Export History", use_container_width=True):
-            # Export tracked bets as JSON
-            json_data = json.dumps(st.session_state.tracked_bets, indent=2)
-            st.download_button(
-                label="📥 Download",
-                data=json_data,
-                file_name=f"bet_history_{datetime.now().strftime('%Y%m%d')}.json",
-                mime="application/json"
-            )
-    
-    # About
-    st.subheader("ℹ️ About")
-    st.info("""
-    **NFL Edge Finder v1.0**
-    
-    AI-powered betting intelligence with proven results:
-    - 67.2% win rate
-    - 428% ROI
-    - 5.0 Sharpe ratio
-    
-    Built with ❤️ for smart bettors.
-    
-    [GitHub](https://github.com/EAGLE605/nfl-betting-system) • 
-    [Documentation](https://github.com/EAGLE605/nfl-betting-system#readme)
-    """)
+
+    # Create sub-tabs for settings
+    settings_tab1, settings_tab2, settings_tab3 = st.tabs([
+        "🔑 API Keys",
+        "⚙️ Preferences",
+        "ℹ️ About"
+    ])
+
+    # API Keys tab
+    with settings_tab1:
+        from dashboard.api_key_manager import show_api_key_settings
+        show_api_key_settings()
+
+    # Preferences tab
+    with settings_tab2:
+        # Notifications
+        st.subheader("🔔 Notifications")
+        notifications = st.toggle(
+            "Enable push notifications",
+            value=st.session_state.notifications,
+            help="Get alerted when high-value bets are found"
+        )
+        st.session_state.notifications = notifications
+
+        if notifications:
+            st.success("✅ Notifications enabled")
+
+        # Filters
+        st.subheader("🎯 Bet Filters")
+
+        min_edge = st.slider(
+            "Minimum edge required",
+            min_value=0.0,
+            max_value=0.15,
+            value=0.015,
+            step=0.005,
+            format="%.1f%%",
+            help="Only show bets with at least this edge"
+        )
+
+        min_prob = st.slider(
+            "Minimum win probability",
+            min_value=0.50,
+            max_value=0.70,
+            value=0.52,
+            step=0.01,
+            format="%.0f%%"
+        )
+
+        # Data refresh
+        st.subheader("🔄 Data")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Refresh Predictions", use_container_width=True):
+                st.cache_data.clear()
+                st.success("✅ Predictions refreshed!")
+                st.rerun()
+
+        with col2:
+            if st.button("💾 Export History", use_container_width=True):
+                # Export tracked bets as JSON
+                json_data = json.dumps(st.session_state.tracked_bets, indent=2)
+                st.download_button(
+                    label="📥 Download",
+                    data=json_data,
+                    file_name=f"bet_history_{datetime.now().strftime('%Y%m%d')}.json",
+                    mime="application/json"
+                )
+
+    # About tab
+    with settings_tab3:
+        st.subheader("ℹ️ About NFL Edge Finder")
+        st.info("""
+        **NFL Edge Finder v1.0**
+
+        AI-powered betting intelligence with proven results:
+        - 67.2% win rate
+        - 428% ROI
+        - 5.0 Sharpe ratio
+
+        Built with ❤️ for smart bettors.
+
+        [GitHub](https://github.com/EAGLE605/nfl-betting-system) •
+        [Documentation](https://github.com/EAGLE605/nfl-betting-system#readme)
+        """)
     
     # Install PWA reminder
     st.markdown("---")
