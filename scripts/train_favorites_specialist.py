@@ -5,8 +5,15 @@ CRITICAL: This model ONLY bets favorites (odds < 2.0) where we have proven edge.
 Backtest shows: 77% win rate, +12% ROI on favorites vs 34% win rate, -24% ROI on underdogs.
 """
 
-import logging
+import os
 import sys
+
+# Add project root to path BEFORE any other imports
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+import logging
 from pathlib import Path
 
 import joblib
@@ -14,8 +21,6 @@ import numpy as np
 import pandas as pd
 import yaml
 from sklearn.metrics import accuracy_score, brier_score_loss, log_loss, roc_auc_score
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.models.xgboost_model import XGBoostNFLModel
 
