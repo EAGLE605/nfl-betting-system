@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -164,6 +165,7 @@ class GrokClient(BaseLLMClient):
     """Grok (X.AI) API client."""
     
     async def generate(self, prompt: str, system: str = "") -> str:
+        # X.AI uses OpenAI-compatible API
         url = "https://api.x.ai/v1/chat/completions"
         
         messages = []
@@ -171,22 +173,27 @@ class GrokClient(BaseLLMClient):
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
         
-        response = await self.client.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {self.config.api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": self.config.model or "grok-beta",
-                "messages": messages,
-                "temperature": self.config.temperature,
-                "max_tokens": self.config.max_tokens
-            }
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
+        try:
+            response = await self.client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {self.config.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": self.config.model or "grok-beta",
+                    "messages": messages,
+                    "temperature": self.config.temperature,
+                    "max_tokens": self.config.max_tokens
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            # Grok API may not be publicly available yet
+            logger.warning(f"Grok API error (may not be publicly available): {e}")
+            raise
 
 
 class GoogleClient(BaseLLMClient):
@@ -281,29 +288,63 @@ class LLMCouncil:
         # Load API keys from environment
         self._load_members_from_env()
     
+    def _get_api_key(self, *key_names: str) -> Optional[str]:
+        """Get API key from environment variables or Streamlit secrets."""
+        # Try environment variables first
+        for key_name in key_names:
+            value = os.getenv(key_name)
+            if value:
+                return value
+        
+        # Try Streamlit secrets
+        try:
+            import streamlit as st
+            for key_name in key_names:
+                if hasattr(st, 'secrets') and key_name in st.secrets:
+                    return st.secrets[key_name]
+        except Exception:
+            pass
+        
+        # Try loading from secrets.toml directly
+        try:
+            import tomllib
+            secrets_path = Path(__file__).parent.parent.parent / "dashboard" / ".streamlit" / "secrets.toml"
+            if secrets_path.exists():
+                with open(secrets_path, "rb") as f:
+                    secrets = tomllib.load(f)
+                    for key_name in key_names:
+                        if key_name in secrets:
+                            return secrets[key_name]
+        except Exception:
+            pass
+        
+        return None
+    
     def _load_members_from_env(self):
-        """Load council members from environment variables."""
+        """Load council members from environment variables or Streamlit secrets."""
         # OpenAI (GPT-4)
-        if os.getenv("OPENAI_API_KEY"):
+        openai_key = self._get_api_key("OPENAI_API_KEY")
+        if openai_key:
             self.add_member(CouncilMember(
                 member_id="gpt4_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.OPENAI,
                     model="gpt-4-turbo-preview",
-                    api_key=os.getenv("OPENAI_API_KEY")
+                    api_key=openai_key
                 ),
                 specialty="statistical",
                 weight=1.2
             ))
         
         # Anthropic (Claude)
-        if os.getenv("ANTHROPIC_API_KEY"):
+        anthropic_key = self._get_api_key("ANTHROPIC_API_KEY")
+        if anthropic_key:
             self.add_member(CouncilMember(
                 member_id="claude_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.ANTHROPIC,
-                    model="claude-3-5-sonnet-20241022",
-                    api_key=os.getenv("ANTHROPIC_API_KEY")
+                    model="claude-3-sonnet-20240229",  # Use stable model
+                    api_key=anthropic_key
                 ),
                 specialty="situational",
                 weight=1.2
@@ -312,39 +353,42 @@ class LLMCouncil:
             self.chairman_id = "claude_analyst"
         
         # Grok (X.AI)
-        if os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY"):
+        grok_key = self._get_api_key("XAI_API_KEY", "GROK_API_KEY")
+        if grok_key:
             self.add_member(CouncilMember(
                 member_id="grok_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.GROK,
                     model="grok-beta",
-                    api_key=os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY")
+                    api_key=grok_key
                 ),
                 specialty="contrarian",
                 weight=1.0
             ))
         
         # Google (Gemini)
-        if os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"):
+        google_key = self._get_api_key("GOOGLE_API_KEY", "GEMINI_API_KEY")
+        if google_key:
             self.add_member(CouncilMember(
                 member_id="gemini_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.GOOGLE,
-                    model="gemini-1.5-pro",
-                    api_key=os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+                    model="gemini-pro",  # Use stable model
+                    api_key=google_key
                 ),
                 specialty="general",
                 weight=1.0
             ))
         
-        # Perplexity (with web search for news/injuries)
-        if os.getenv("PERPLEXITY_API_KEY"):
+        # Perplexity (with web search for news/injuries) - OPTIONAL
+        perplexity_key = self._get_api_key("PERPLEXITY_API_KEY")
+        if perplexity_key:
             self.add_member(CouncilMember(
                 member_id="perplexity_analyst",
                 config=LLMConfig(
                     provider=LLMProvider.PERPLEXITY,
                     model="llama-3.1-sonar-large-128k-online",
-                    api_key=os.getenv("PERPLEXITY_API_KEY")
+                    api_key=perplexity_key
                 ),
                 specialty="news_aware",
                 weight=1.1
