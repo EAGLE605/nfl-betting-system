@@ -292,9 +292,20 @@ def format_picks_for_display(
         else:
             conf = float(conf_str)
 
-        # If confidence is 0, estimate from edge
-        if conf == 0 and edge > 0:
-            conf = min(85, 50 + edge * 1.5)
+        # Parse win probability - this is the REAL confidence
+        win_prob_str = pick.get("win_probability", "50%")
+        if isinstance(win_prob_str, str):
+            win_prob = float(win_prob_str.replace("%", ""))
+        else:
+            win_prob = float(win_prob_str) * 100
+
+        # CRITICAL: If win_prob is exactly 50%, model failed to predict - mark as invalid
+        if abs(win_prob - 50.0) < 0.1:
+            # Model didn't actually predict, skip this pick
+            continue
+
+        # Use actual model probability as confidence base
+        conf = win_prob if conf == 0 else conf
 
         formatted.append(
             {

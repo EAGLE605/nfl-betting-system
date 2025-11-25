@@ -310,64 +310,104 @@ def calculate_parlay(slip, wager):
 
 
 # -----------------------------------------------------------------------------
-# 4. MOCK DATA (Betting Market)
+# 4. LIVE ODDS DATA (From The Odds API)
 # -----------------------------------------------------------------------------
-props_db = [
-    {
-        "id": 1,
-        "game": "Jacksonville Jaguars vs Tennessee Titans",
-        "team": "Jaguars",
-        "player": "Yes",
-        "prop": "3rd Quarter Both Teams To Score",
-        "line": "",
-        "odds": 144,
-    },
-    {
-        "id": 2,
-        "game": "Arizona Cardinals vs Tampa Bay Buccaneers",
-        "team": "Cardinals",
-        "player": "Arizona Cardinals",
-        "prop": "1st Quarter Moneyline 3-Way",
-        "line": "",
-        "odds": 165,
-    },
-    {
-        "id": 3,
-        "game": "Cincinnati Bengals vs Baltimore Ravens",
-        "team": "Bengals",
-        "player": "Ja'Marr Chase Over 34.5",
-        "prop": "1st Quarter Player Receiving Yards",
-        "line": "",
-        "odds": 230,
-    },
-    {
-        "id": 4,
-        "game": "Detroit Lions vs Dallas Cowboys",
-        "team": "Lions",
-        "player": "Jahmyr Gibbs",
-        "prop": "Anytime Touchdown Scorer",
-        "line": "",
-        "odds": -120,
-    },
-    {
-        "id": 5,
-        "game": "Kansas City Chiefs vs Buffalo Bills",
-        "team": "Chiefs",
-        "player": "Travis Kelce Over 6.5",
-        "prop": "Receptions",
-        "line": "",
-        "odds": 100,
-    },
-    {
-        "id": 6,
-        "game": "Philadelphia Eagles vs New York Giants",
-        "team": "Eagles",
-        "player": "Saquon Barkley Over 75.5",
-        "prop": "Rushing Yards",
-        "line": "",
-        "odds": -110,
-    },
-]
+
+import os
+import sys
+from pathlib import Path
+
+# Add project root to path
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def fetch_live_odds():
+    """Fetch real NFL odds from The Odds API."""
+    try:
+        from agents.api_integrations import TheOddsAPI
+        
+        api = TheOddsAPI()
+        if not api.api_key:
+            st.sidebar.warning("⚠️ ODDS_API_KEY not set - showing cached data")
+            return []
+        
+        games = api.get_nfl_odds(markets="h2h,spreads,totals")
+        
+        props_data = []
+        prop_id = 1
+        
+        for game in games:
+            home_team = game.get("home_team", "Unknown")
+            away_team = game.get("away_team", "Unknown")
+            game_name = f"{away_team} @ {home_team}"
+            
+            # Get short team names
+            home_short = home_team.split()[-1]
+            away_short = away_team.split()[-1]
+            
+            for bookmaker in game.get("bookmakers", []):
+                if bookmaker.get("key") in ["fanduel", "draftkings", "betmgm"]:
+                    for market in bookmaker.get("markets", []):
+                        market_key = market.get("key")
+                        
+                        for outcome in market.get("outcomes", []):
+                            name = outcome.get("name", "")
+                            price = outcome.get("price", 0)
+                            point = outcome.get("point")
+                            
+                            # Build prop description
+                            if market_key == "h2h":
+                                prop = "Moneyline"
+                                player = name
+                                team = name.split()[-1] if name else "Unknown"
+                            elif market_key == "spreads":
+                                point_str = f"+{point}" if point > 0 else str(point)
+                                prop = f"Spread {point_str}"
+                                player = name
+                                team = name.split()[-1] if name else "Unknown"
+                            elif market_key == "totals":
+                                prop = f"Total {name}"
+                                player = f"{name} {point}" if point else name
+                                team = home_short
+                            else:
+                                continue
+                            
+                            props_data.append({
+                                "id": prop_id,
+                                "game": game_name,
+                                "team": team,
+                                "player": player,
+                                "prop": prop,
+                                "line": str(point) if point else "",
+                                "odds": int(price) if price else 0,
+                                "bookmaker": bookmaker.get("title", "Unknown")
+                            })
+                            prop_id += 1
+                    break  # Only use first matching bookmaker
+        
+        return props_data
+    
+    except Exception as e:
+        st.sidebar.error(f"Error fetching odds: {e}")
+        return []
+
+
+def get_props_db():
+    """Get props database - live if available, otherwise empty."""
+    props = fetch_live_odds()
+    
+    if not props:
+        # Return empty list with message
+        st.info("📡 No live odds available. Set ODDS_API_KEY environment variable to enable live data.")
+        return []
+    
+    return props
+
+
+# Fetch live data
+props_db = get_props_db()
 
 # -----------------------------------------------------------------------------
 # 5. LAYOUT
