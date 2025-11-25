@@ -6,7 +6,9 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from src.agents.base_agent import BaseAgent
+from src.backtesting.data_loader import BacktestDataLoader
 from src.backtesting.engine import BacktestEngine
+from src.backtesting.prediction_generator import PredictionGenerator
 from src.swarms.strategy_generation_swarm import StrategyGenerationSwarm
 from src.swarms.validation_swarm import ValidationSwarm
 
@@ -38,6 +40,8 @@ class AIBacktestOrchestrator:
         self.strategy_swarm = StrategyGenerationSwarm(strategy_agents)
         self.validation_swarm = ValidationSwarm(validation_agents)
         self.backtest_engine = BacktestEngine()
+        self.data_loader = BacktestDataLoader()
+        self.prediction_generator = PredictionGenerator()
 
         self.strategies_tested = 0
         self.strategies_deployed = 0
@@ -132,18 +136,60 @@ class AIBacktestOrchestrator:
     async def _run_backtest(
         self, strategy: Dict[str, Any], data_period: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Run backtest for a strategy."""
-        logger.debug(f"Backtesting strategy: {strategy.get('id')}")
+        """
+        Run backtest for a strategy using real historical data.
 
-        # In real implementation, would use BacktestEngine with data_period
-        # For now, return mock result
-        return {
-            "roi": 0.10,
-            "win_rate": 0.55,
-            "sharpe_ratio": 1.2,
-            "max_drawdown": 0.18,
-            "total_bets": 100,
-        }
+        Args:
+            strategy: Strategy config with model_name and parameters
+            data_period: Period config with start_year, end_year, focus
+
+        Returns:
+            Dict with backtest metrics (ROI, win_rate, sharpe, etc.)
+        """
+        logger.info(f"Backtesting strategy: {strategy.get('id')}")
+
+        try:
+            # Load historical data
+            schedules_df, pbp_df = self.data_loader.get_backtest_data(data_period)
+
+            # Generate predictions using model
+            predictions_df = self.prediction_generator.generate_predictions(
+                schedules_df, strategy, pbp_df
+            )
+
+            if len(predictions_df) == 0:
+                logger.warning("No predictions generated, returning poor metrics")
+                return {
+                    "roi": -0.10,
+                    "win_rate": 0.45,
+                    "sharpe_ratio": -0.5,
+                    "max_drawdown": 0.25,
+                    "total_bets": 0,
+                    "error": "No predictions generated",
+                }
+
+            # Run backtest
+            metrics, history_df = self.backtest_engine.run_backtest(predictions_df)
+
+            logger.info(
+                f"Backtest complete: ROI={metrics['roi']:.2%}, "
+                f"Win Rate={metrics['win_rate']:.2%}, "
+                f"Sharpe={metrics.get('sharpe_ratio', 0):.2f}"
+            )
+
+            return metrics
+
+        except Exception as e:
+            logger.error(f"Backtest failed: {e}")
+            # Return poor metrics on failure
+            return {
+                "roi": -0.20,
+                "win_rate": 0.40,
+                "sharpe_ratio": -1.0,
+                "max_drawdown": 0.30,
+                "total_bets": 0,
+                "error": str(e),
+            }
 
     async def _analyze_results(self, strategies: List[Dict]) -> Dict[str, Any]:
         """Phase 4: Analysis & Learning."""

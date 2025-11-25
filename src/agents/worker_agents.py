@@ -3,6 +3,7 @@
 import asyncio
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List
 
 from src.agents.base_agent import AgentCapability, BaseAgent
@@ -39,7 +40,7 @@ class APIManagerAgent(BaseAgent):
 
 
 class DatabaseAgent(BaseAgent):
-    """Database Agent - CRUD operations, query optimization."""
+    """Database Agent - Schema-aware CRUD operations, query optimization."""
 
     def __init__(self):
         super().__init__(
@@ -47,76 +48,159 @@ class DatabaseAgent(BaseAgent):
             agent_name="Database Agent",
             capabilities=[AgentCapability.TOOLS, AgentCapability.MEMORY],
         )
+        self.db_path = Path("data/odds_history.db")
+        self._conn = None
+        self._query_builder = None
+
+        # Register tools with schema-aware methods
         self.register_tool("query", self._query, "Query database")
         self.register_tool("store", self._store, "Store data")
+        self.register_tool("get_odds", self._get_odds, "Get odds for game")
+        self.register_tool("get_line_movement", self._get_line_movement, "Get line movement")
+        self.register_tool("store_prediction", self._store_prediction, "Store prediction")
+        self.register_tool("store_bet", self._store_bet, "Store bet")
+        self.register_tool("get_performance", self._get_performance, "Get performance metrics")
+        self.register_tool("update_bet_result", self._update_bet_result, "Update bet result")
 
     async def run(self):
+        await self._initialize_database()
         while self.running:
             await asyncio.sleep(60)
 
-    async def _query(self, query: str) -> Dict[str, Any]:
-        """Query database."""
+    async def _initialize_database(self):
+        """Initialize database with schemas."""
         import sqlite3
-        from pathlib import Path
+        from src.agents.database_schemas import DatabaseSchema
+        from src.agents.query_builder import QueryBuilder
 
-        # Connect to odds_history.db
-        db_path = Path("data/odds_history.db")
-        if not db_path.exists():
+        # Create database if it doesn't exist
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            conn = sqlite3.connect(str(self.db_path))
+
+            # Initialize all tables and indexes
+            DatabaseSchema.initialize_database(conn)
+
+            # Initialize query builder
+            self._query_builder = QueryBuilder(conn)
+            self._conn = conn
+
+            logger.info("Database initialized with schema-aware tables")
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {e}")
+
+    def _get_connection(self):
+        """Get database connection."""
+        import sqlite3
+
+        if self._conn is None:
+            self._conn = sqlite3.connect(str(self.db_path))
+            from src.agents.query_builder import QueryBuilder
+            self._query_builder = QueryBuilder(self._conn)
+
+        return self._conn
+
+    async def _get_odds(self, game_id: str, market_key: str = None) -> Dict[str, Any]:
+        """Get odds for a game using schema-aware query."""
+        try:
+            self._get_connection()
+            results = self._query_builder.get_odds_for_game(game_id, market_key)
+            return {"results": results, "count": len(results)}
+        except Exception as e:
+            logger.error(f"Failed to get odds: {e}")
+            return {"results": [], "count": 0, "error": str(e)}
+
+    async def _get_line_movement(
+        self, game_id: str, hours: int = 24, bookmaker: str = None
+    ) -> Dict[str, Any]:
+        """Get line movement history for a game."""
+        try:
+            self._get_connection()
+            results = self._query_builder.get_line_movement(game_id, hours, bookmaker)
+            return {"results": results, "count": len(results)}
+        except Exception as e:
+            logger.error(f"Failed to get line movement: {e}")
+            return {"results": [], "count": 0, "error": str(e)}
+
+    async def _store_prediction(self, prediction: Dict[str, Any]) -> Dict[str, Any]:
+        """Store a model prediction using schema validation."""
+        try:
+            self._get_connection()
+            success = self._query_builder.store_prediction(prediction)
+            return {"stored": success}
+        except Exception as e:
+            logger.error(f"Failed to store prediction: {e}")
+            return {"stored": False, "error": str(e)}
+
+    async def _store_bet(self, bet: Dict[str, Any]) -> Dict[str, Any]:
+        """Store a bet record using schema validation."""
+        try:
+            self._get_connection()
+            success = self._query_builder.store_bet(bet)
+            return {"stored": success}
+        except Exception as e:
+            logger.error(f"Failed to store bet: {e}")
+            return {"stored": False, "error": str(e)}
+
+    async def _get_performance(self, days: int = 7, period_type: str = "daily") -> Dict[str, Any]:
+        """Get recent performance metrics."""
+        try:
+            self._get_connection()
+            results = self._query_builder.get_recent_performance(days, period_type)
+            return {"results": results, "count": len(results)}
+        except Exception as e:
+            logger.error(f"Failed to get performance: {e}")
+            return {"results": [], "count": 0, "error": str(e)}
+
+    async def _update_bet_result(
+        self, bet_id: int, result: str, profit: float
+    ) -> Dict[str, Any]:
+        """Update bet result after settlement."""
+        try:
+            self._get_connection()
+            success = self._query_builder.update_bet_result(bet_id, result, profit)
+            return {"updated": success}
+        except Exception as e:
+            logger.error(f"Failed to update bet result: {e}")
+            return {"updated": False, "error": str(e)}
+
+    async def _query(self, query: str) -> Dict[str, Any]:
+        """Execute raw SQL query (backward compatibility)."""
+        import sqlite3
+
+        if not self.db_path.exists():
             return {"results": [], "count": 0, "error": "Database not found"}
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = self._get_connection()
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute(query)
             rows = [dict(row) for row in cursor.fetchall()]
-            conn.close()
             return {"results": rows, "count": len(rows)}
         except Exception as e:
             logger.error(f"Database query error: {e}")
             return {"results": [], "count": 0, "error": str(e)}
 
     async def _store(self, table: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Store data in database."""
-        import sqlite3
-        from datetime import datetime
-        from pathlib import Path
-
-        db_path = Path("data/odds_history.db")
-        if not db_path.exists():
-            return {"stored": False, "error": "Database not found"}
-
-        try:
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            # Simple insert (would need proper schema handling)
-            if table == "odds_snapshots":
-                cursor.execute(
-                    """
-                    INSERT INTO odds_snapshots (
-                        fetch_timestamp, game_id, home_team, away_team,
-                        commence_time, bookmaker, raw_data
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        datetime.now().isoformat(),
-                        data.get("game_id", ""),
-                        data.get("home_team", ""),
-                        data.get("away_team", ""),
-                        data.get("commence_time", ""),
-                        data.get("bookmaker", ""),
-                        str(data),
-                    ),
-                )
-
-            conn.commit()
-            row_id = cursor.lastrowid
-            conn.close()
-            return {"stored": True, "id": row_id}
-        except Exception as e:
-            logger.error(f"Database store error: {e}")
-            return {"stored": False, "error": str(e)}
+        """Store data using schema-aware methods (backward compatibility)."""
+        # Route to appropriate schema-aware method
+        if table == "predictions":
+            return await self._store_prediction(data)
+        elif table == "bet_history":
+            return await self._store_bet(data)
+        elif table == "odds_snapshots":
+            try:
+                self._get_connection()
+                success = self._query_builder.store_odds_snapshot(data)
+                return {"stored": success}
+            except Exception as e:
+                logger.error(f"Failed to store odds snapshot: {e}")
+                return {"stored": False, "error": str(e)}
+        else:
+            logger.warning(f"No schema-aware method for table {table}, using generic store")
+            return {"stored": False, "error": f"Unknown table: {table}"}
 
 
 class NotificationAgent(BaseAgent):
