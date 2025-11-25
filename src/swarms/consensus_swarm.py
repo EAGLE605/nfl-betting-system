@@ -1,9 +1,11 @@
 """Consensus Swarm - Daily picks through agent consensus."""
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from src.agents.base_agent import BaseAgent
+from src.swarms.model_loader import ModelLoader
+from src.swarms.prediction_pipeline import PredictionPipeline
 from src.swarms.swarm_base import ConsensusRule, SwarmBase
 
 logger = logging.getLogger(__name__)
@@ -17,15 +19,65 @@ class ConsensusSwarm(SwarmBase):
     Decision rule: Majority vote with confidence scaling
     """
 
-    def __init__(self, agents: List[BaseAgent]):
-        """Initialize consensus swarm."""
+    def __init__(
+        self,
+        agents: List[BaseAgent],
+        model_assignments: Optional[Dict[str, str]] = None,
+    ):
+        """
+        Initialize consensus swarm.
+
+        Args:
+            agents: List of BaseAgent instances
+            model_assignments: Dict mapping agent_id to model_name (optional)
+                              If None, will auto-assign from available models
+        """
         super().__init__(
             swarm_id="consensus_swarm_001",
             swarm_name="Consensus Swarm",
             agents=agents,
             consensus_rule=ConsensusRule.WEIGHTED,
         )
-        logger.info("Consensus Swarm initialized")
+
+        # Initialize prediction pipelines for each agent
+        self.prediction_pipelines: Dict[str, PredictionPipeline] = {}
+        self._initialize_pipelines(model_assignments)
+
+        logger.info(
+            f"Consensus Swarm initialized with {len(self.prediction_pipelines)} models"
+        )
+
+    def _initialize_pipelines(self, model_assignments: Optional[Dict[str, str]]):
+        """Initialize prediction pipelines for agents."""
+        model_loader = ModelLoader()
+
+        if model_assignments is None:
+            # Auto-assign models
+            model_assignments = model_loader.get_default_models()
+
+        available_models = model_loader.list_available_models()
+        if not available_models:
+            logger.warning("No trained models found! Predictions will fail.")
+            return
+
+        # Assign models to agents
+        for agent in self.agents:
+            # Try to get assigned model for this agent
+            model_name = model_assignments.get(agent.agent_id)
+
+            # Fallback: cycle through available models
+            if model_name is None or model_name not in available_models:
+                agent_index = self.agents.index(agent)
+                model_name = available_models[agent_index % len(available_models)]
+
+            try:
+                pipeline = PredictionPipeline(model_name)
+                self.prediction_pipelines[agent.agent_id] = pipeline
+                logger.info(f"Agent {agent.agent_id} assigned model: {model_name}")
+            except Exception as e:
+                logger.error(
+                    f"Failed to initialize pipeline for {agent.agent_id}: {e}"
+                )
 
     async def generate_daily_picks(self, games: List[Dict]) -> List[Dict]:
         """
@@ -63,15 +115,57 @@ class ConsensusSwarm(SwarmBase):
         return picks
 
     async def _individual_analysis(self, game: Dict) -> List[Dict]:
-        """Each agent analyzes the game."""
+        """
+        Each agent analyzes the game using their assigned model.
+
+        Args:
+            game: Dict with game info (home_team, away_team, gameday, etc.)
+
+        Returns:
+            List of picks from each agent with confidence scores
+        """
         picks = []
+
         for agent in self.agents:
-            pick = {
-                "agent": agent.agent_id,
-                "pick": "home",  # Simplified
-                "confidence": 0.7,
-            }
+            # Get agent's prediction pipeline
+            pipeline = self.prediction_pipelines.get(agent.agent_id)
+
+            if pipeline is None:
+                logger.warning(
+                    f"No pipeline for agent {agent.agent_id}, using default"
+                )
+                pick = {
+                    "agent": agent.agent_id,
+                    "pick": "home",
+                    "confidence": 0.5,
+                    "pred_prob": 0.5,
+                    "model_name": "default",
+                }
+            else:
+                try:
+                    # Generate real prediction
+                    prediction = pipeline.predict(game)
+                    pick = {
+                        "agent": agent.agent_id,
+                        "pick": prediction["pick"],
+                        "confidence": prediction["confidence"],
+                        "pred_prob": prediction["pred_prob"],
+                        "model_name": prediction["model_name"],
+                    }
+                except Exception as e:
+                    logger.error(f"Prediction failed for agent {agent.agent_id}: {e}")
+                    # Fallback to conservative prediction
+                    pick = {
+                        "agent": agent.agent_id,
+                        "pick": "home",
+                        "confidence": 0.5,
+                        "pred_prob": 0.5,
+                        "model_name": "error_fallback",
+                        "error": str(e),
+                    }
+
             picks.append(pick)
+
         return picks
 
     async def _deliberation_phase(self, picks: List[Dict]) -> List[Dict]:
