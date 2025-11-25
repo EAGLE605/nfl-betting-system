@@ -25,14 +25,17 @@ jobs:
         pip install -r requirements.txt
     
     - name: Download latest NFL data
-      run: |
-        python scripts/download_data.py --seasons 2024 --force --no-pbp
-    
-    - name: Retrain model
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        python scripts/weekly_retrain.py
+        python scripts/download_data.py --seasons 2024 --force --no-pbp
+    
+    - name: Train favorites specialist model
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+      run: |
+        python scripts/train_favorites_specialist.py
+      continue-on-error: true
     
     - name: Run validation tests
       env:
