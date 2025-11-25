@@ -64,14 +64,14 @@ jobs:
         pip install black ruff mypy isort
     
     - name: Run Black
-      run: black --check src/ scripts/ tests/
+      run: black --check src/ scripts/ tests/ dashboard/
     
     - name: Run Ruff
-      run: ruff check src/ scripts/ tests/
+      run: ruff check src/ scripts/ tests/ dashboard/
       continue-on-error: true
 
     - name: Run isort
-      run: isort --check-only --profile black src/ scripts/ tests/
+      run: isort --check-only --profile black src/ scripts/ tests/ dashboard/
     
     - name: Run mypy
       run: mypy src/ --ignore-missing-imports --no-strict-optional
