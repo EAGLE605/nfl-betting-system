@@ -10,7 +10,7 @@ from .secrets import (
 )
 
 # Import new unified settings
-from .settings import settings, reload_settings, print_settings
+from .settings import print_settings, reload_settings, settings
 
 __all__ = [
     # Legacy secrets API (for backwards compatibility)

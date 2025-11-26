@@ -27,24 +27,25 @@ sys.path.insert(0, str(project_root))
 # Import live game tracking
 sys.path.insert(0, str(Path(__file__).parent))
 from live_game_display import (
-    render_live_games_section,
-    render_upcoming_games_section,
-    render_completed_games_section,
-    render_scoreboard_ticker,
     render_auto_refresh_control,
+    render_completed_games_section,
     render_game_window_indicator,
+    render_live_games_section,
+    render_scoreboard_ticker,
     render_timezone_display,
+    render_upcoming_games_section,
 )
-from src.api.live_game_tracker import LiveGameTracker
 
 # Import strategy management
 from strategy_manager import (
-    render_strategy_list,
     render_add_strategy_form,
-    render_strategy_stats,
     render_duplicate_checker,
+    render_strategy_list,
+    render_strategy_stats,
     render_version_update_form,
 )
+
+from src.api.live_game_tracker import LiveGameTracker
 from src.strategy_registry import StrategyRegistry
 
 # AI Providers

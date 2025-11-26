@@ -5,9 +5,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 
-from src.self_healing.monitoring import (
-    MonitoringLayer,
-)
+from src.self_healing.monitoring import MonitoringLayer
 
 logger = logging.getLogger(__name__)
 

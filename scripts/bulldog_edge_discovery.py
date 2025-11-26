@@ -20,7 +20,7 @@ from scipy import stats
 
 # Import strategy registry
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from strategy_registry import StrategyRegistry, Strategy, StrategyStatus
+from strategy_registry import Strategy, StrategyRegistry, StrategyStatus
 
 warnings.filterwarnings("ignore")
 

@@ -13,8 +13,9 @@ BEGINNER-FRIENDLY EXPLANATION:
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
 from enum import Enum
+from typing import Dict, List, Optional, Tuple
+
 import pytz
 
 from .espn_client import ESPNClient

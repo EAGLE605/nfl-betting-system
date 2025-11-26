@@ -7,9 +7,10 @@ BEGINNER-FRIENDLY: These are like LEGO blocks you can use to build
 different views of games in your dashboard.
 """
 
-import streamlit as st
 from datetime import datetime
 from typing import Dict, List
+
+import streamlit as st
 
 
 def render_game_card(game: Dict, show_predictions: bool = False):

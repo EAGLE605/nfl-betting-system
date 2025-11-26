@@ -17,12 +17,9 @@ import requests
 
 # Import resilience utilities
 try:
-    from src.utils.resilience import (
-        espn_breaker,
-        espn_limiter,
-        with_resilience,
-        metrics as resilience_metrics,
-    )
+    from src.utils.resilience import espn_breaker, espn_limiter
+    from src.utils.resilience import metrics as resilience_metrics
+    from src.utils.resilience import with_resilience
 
     RESILIENCE_AVAILABLE = True
 except ImportError:

@@ -38,12 +38,12 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 import pybreaker
 from tenacity import (
     RetryError,
+    after_log,
+    before_sleep_log,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    before_sleep_log,
-    after_log,
 )
 
 logger = logging.getLogger(__name__)

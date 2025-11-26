@@ -5,15 +5,16 @@ BEGINNER-FRIENDLY UI for managing betting strategies.
 Think of this as your strategy control panel!
 """
 
-import streamlit as st
-from datetime import datetime
-from typing import List
 import sys
+from datetime import datetime
 from pathlib import Path
+from typing import List
+
+import streamlit as st
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from strategy_registry import StrategyRegistry, Strategy, StrategyStatus
+from strategy_registry import Strategy, StrategyRegistry, StrategyStatus
 
 
 def render_strategy_card(
