@@ -23,6 +23,7 @@ try:
         with_resilience,
         metrics as resilience_metrics,
     )
+
     RESILIENCE_AVAILABLE = True
 except ImportError:
     RESILIENCE_AVAILABLE = False
@@ -56,7 +57,9 @@ class ESPNClient:
         self._last_request_time = 0
         self._min_request_interval = 0.5  # 500ms between requests
 
-    def _make_request(self, url: str, params: Optional[Dict] = None, cache_key: Optional[str] = None) -> Dict:
+    def _make_request(
+        self, url: str, params: Optional[Dict] = None, cache_key: Optional[str] = None
+    ) -> Dict:
         """
         Make an HTTP request with resilience patterns.
 
@@ -83,6 +86,7 @@ class ESPNClient:
         if RESILIENCE_AVAILABLE:
             try:
                 from pybreaker import STATE_OPEN
+
                 if espn_breaker.current_state == STATE_OPEN:
                     logger.warning("ESPN circuit breaker OPEN - using fallback")
                     return self._get_fallback(cache_key)
@@ -115,22 +119,28 @@ class ESPNClient:
 
             except requests.exceptions.Timeout as e:
                 last_error = e
-                wait_time = self.RETRY_BACKOFF_BASE ** attempt
-                logger.warning(f"ESPN timeout (attempt {attempt + 1}/{self.MAX_RETRIES}), retrying in {wait_time}s")
+                wait_time = self.RETRY_BACKOFF_BASE**attempt
+                logger.warning(
+                    f"ESPN timeout (attempt {attempt + 1}/{self.MAX_RETRIES}), retrying in {wait_time}s"
+                )
                 time.sleep(wait_time)
 
             except requests.exceptions.ConnectionError as e:
                 last_error = e
-                wait_time = self.RETRY_BACKOFF_BASE ** attempt
-                logger.warning(f"ESPN connection error (attempt {attempt + 1}/{self.MAX_RETRIES}), retrying in {wait_time}s")
+                wait_time = self.RETRY_BACKOFF_BASE**attempt
+                logger.warning(
+                    f"ESPN connection error (attempt {attempt + 1}/{self.MAX_RETRIES}), retrying in {wait_time}s"
+                )
                 time.sleep(wait_time)
 
             except requests.exceptions.HTTPError as e:
                 last_error = e
                 if e.response and e.response.status_code >= 500:
                     # Server error - retry
-                    wait_time = self.RETRY_BACKOFF_BASE ** attempt
-                    logger.warning(f"ESPN server error {e.response.status_code} (attempt {attempt + 1}/{self.MAX_RETRIES})")
+                    wait_time = self.RETRY_BACKOFF_BASE**attempt
+                    logger.warning(
+                        f"ESPN server error {e.response.status_code} (attempt {attempt + 1}/{self.MAX_RETRIES})"
+                    )
                     time.sleep(wait_time)
                 else:
                     # Client error - don't retry

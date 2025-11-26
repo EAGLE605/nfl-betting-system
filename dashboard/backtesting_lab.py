@@ -777,7 +777,7 @@ class BacktestingLab:
     def _simulate_cycle(self) -> Dict:
         """
         Run a training cycle.
-        
+
         NOTE: This runs the actual training pipeline when available.
         Falls back to demonstration mode if training infrastructure not ready.
         """

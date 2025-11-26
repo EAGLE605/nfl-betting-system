@@ -55,9 +55,11 @@ logger = logging.getLogger(__name__)
 # HEALTH CHECK MODELS
 # =============================================================================
 
+
 @dataclass
 class HealthCheckResult:
     """Result of a single health check."""
+
     name: str
     status: str  # "healthy", "degraded", "unhealthy"
     message: str
@@ -69,6 +71,7 @@ class HealthCheckResult:
 @dataclass
 class SystemHealth:
     """Overall system health status."""
+
     status: str  # "healthy", "degraded", "unhealthy"
     checks: List[HealthCheckResult] = field(default_factory=list)
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -86,6 +89,7 @@ class SystemHealth:
 # =============================================================================
 # INDIVIDUAL HEALTH CHECKS
 # =============================================================================
+
 
 def check_database_health() -> HealthCheckResult:
     """
@@ -162,12 +166,16 @@ def check_api_health() -> HealthCheckResult:
     # Check ESPN API
     try:
         import requests
+
         resp = requests.get(
             "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
             timeout=5,
         )
         if resp.status_code == 200:
-            details["espn"] = {"status": "ok", "response_time_ms": resp.elapsed.total_seconds() * 1000}
+            details["espn"] = {
+                "status": "ok",
+                "response_time_ms": resp.elapsed.total_seconds() * 1000,
+            }
         else:
             issues.append(f"ESPN: HTTP {resp.status_code}")
             details["espn"] = {"status": "error", "http_code": resp.status_code}
@@ -178,6 +186,7 @@ def check_api_health() -> HealthCheckResult:
     # Check circuit breaker status
     try:
         from src.utils.resilience import get_circuit_status
+
         circuits = get_circuit_status()
         details["circuit_breakers"] = circuits
 
@@ -275,14 +284,15 @@ def check_disk_health() -> HealthCheckResult:
 
     try:
         import shutil
+
         total, used, free = shutil.disk_usage(".")
 
-        free_gb = free / (1024 ** 3)
+        free_gb = free / (1024**3)
         used_pct = (used / total) * 100
 
         details = {
-            "total_gb": round(total / (1024 ** 3), 2),
-            "used_gb": round(used / (1024 ** 3), 2),
+            "total_gb": round(total / (1024**3), 2),
+            "used_gb": round(used / (1024**3), 2),
             "free_gb": round(free_gb, 2),
             "used_percent": round(used_pct, 1),
         }
@@ -399,6 +409,7 @@ def check_config_health() -> HealthCheckResult:
 # AGGREGATE HEALTH CHECK
 # =============================================================================
 
+
 def run_health_checks() -> SystemHealth:
     """
     Run all health checks and return overall status.
@@ -445,6 +456,7 @@ def get_health_summary() -> Dict:
 # =============================================================================
 # HTTP SERVER (Optional)
 # =============================================================================
+
 
 def create_health_app():
     """
@@ -516,6 +528,7 @@ def create_health_app():
 # CLI
 # =============================================================================
 
+
 def print_health_report():
     """Print a formatted health report to console."""
     print("\n" + "=" * 60)
@@ -531,7 +544,9 @@ def print_health_report():
         "unhealthy": "[FAIL]",
     }
 
-    print(f"Overall Status: {status_icons.get(health.status, '?')} {health.status.upper()}\n")
+    print(
+        f"Overall Status: {status_icons.get(health.status, '?')} {health.status.upper()}\n"
+    )
 
     for check in health.checks:
         icon = status_icons.get(check.status, "?")

@@ -159,7 +159,9 @@ class BulldogEdgeDiscovery:
                     roi=roi,
                     sample_size=total,
                     edge=effect_size * 100,  # Convert to percentage
-                    conditions={"seasons": f"{sample['season'].min()}-{sample['season'].max()}"},
+                    conditions={
+                        "seasons": f"{sample['season'].min()}-{sample['season'].max()}"
+                    },
                 )
 
                 success, message = self.registry.add_strategy(strategy)
@@ -494,7 +496,9 @@ class BulldogEdgeDiscovery:
             status_marker = "[NEW]" if edge.get("is_new", False) else "[KNOWN]"
 
             logger.info(f"\n{'-'*80}")
-            logger.info(f"EDGE #{df.index.get_loc(idx) + 1}: {edge['name']} {status_marker}")
+            logger.info(
+                f"EDGE #{df.index.get_loc(idx) + 1}: {edge['name']} {status_marker}"
+            )
             logger.info(f"{'-'*80}")
             logger.info(
                 f"Win Rate: {edge['win_rate']:.1%} ({edge['wins']}/{edge['sample_size']} bets)"
@@ -528,7 +532,9 @@ class BulldogEdgeDiscovery:
             f"1. Review new strategies in dashboard: python -m streamlit run dashboard/app.py"
         )
         logger.info(f"2. Click the 'STRATEGIES' tab")
-        logger.info(f"3. Accept or reject the {self.new_strategies_count} pending strategies")
+        logger.info(
+            f"3. Accept or reject the {self.new_strategies_count} pending strategies"
+        )
 
 
 def main():

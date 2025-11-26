@@ -180,7 +180,11 @@ class DailyPicksGenerator:
             Prediction dict with probability, confidence, recommended bet
         """
         if self.model is None:
-            return {"error": "Model not loaded", "home_win_prob": 0.5, "model_used": False}
+            return {
+                "error": "Model not loaded",
+                "home_win_prob": 0.5,
+                "model_used": False,
+            }
 
         # Get team stats from historical data
         home_stats = self.get_team_recent_stats(home_team)
@@ -188,9 +192,11 @@ class DailyPicksGenerator:
 
         # Check if we have real data for these teams
         has_real_data = bool(home_stats) and bool(away_stats)
-        
+
         if not has_real_data:
-            logger.warning(f"No historical data for {home_team} vs {away_team} - cannot predict")
+            logger.warning(
+                f"No historical data for {home_team} vs {away_team} - cannot predict"
+            )
             return {
                 "error": "No historical data available",
                 "home_team": home_team,
@@ -207,7 +213,7 @@ class DailyPicksGenerator:
         home_elo = home_stats.get("elo_rating", 1500)
         away_elo = away_stats.get("elo_rating", 1500)
         elo_diff = home_elo - away_elo
-        
+
         features = {
             "elo_home": home_elo,
             "elo_away": away_elo,
@@ -231,23 +237,35 @@ class DailyPicksGenerator:
                 pass
 
         # Add EPA and form stats if available
-        for stat_key in ["epa_offense_home", "epa_defense_home", "win_pct_home", "point_diff_home"]:
+        for stat_key in [
+            "epa_offense_home",
+            "epa_defense_home",
+            "win_pct_home",
+            "point_diff_home",
+        ]:
             if stat_key in home_stats:
                 features[stat_key] = home_stats[stat_key]
-        for stat_key in ["epa_offense_away", "epa_defense_away", "win_pct_away", "point_diff_away"]:
+        for stat_key in [
+            "epa_offense_away",
+            "epa_defense_away",
+            "win_pct_away",
+            "point_diff_away",
+        ]:
             if stat_key.replace("_away", "_home") in away_stats:
                 features[stat_key] = away_stats[stat_key.replace("_away", "_home")]
 
         # Try to use model with available features
         try:
             # Get expected feature columns from model
-            if hasattr(self.model, 'feature_names_in_'):
+            if hasattr(self.model, "feature_names_in_"):
                 expected_features = list(self.model.feature_names_in_)
-            elif hasattr(self.model, 'get_booster'):
+            elif hasattr(self.model, "get_booster"):
                 expected_features = self.model.get_booster().feature_names
             else:
                 # Fall back to Elo-based prediction if we can't determine features
-                logger.warning("Cannot determine model features, using Elo-based prediction")
+                logger.warning(
+                    "Cannot determine model features, using Elo-based prediction"
+                )
                 home_win_prob = 1 / (1 + 10 ** (-elo_diff / 400))
                 return self._build_prediction_result(
                     home_team, away_team, home_win_prob, features, model_used=False
@@ -257,31 +275,44 @@ class DailyPicksGenerator:
             feature_vector = []
             for feat in expected_features:
                 feature_vector.append(features.get(feat, 0.0))
-            
+
             import numpy as np
+
             X = np.array([feature_vector])
-            
+
             # Get prediction
             if hasattr(self.model, "predict_proba"):
                 proba = self.model.predict_proba(X)
                 if proba.ndim == 1:
                     home_win_prob = float(proba[0])
                 else:
-                    home_win_prob = float(proba[0, 1]) if proba.shape[1] > 1 else float(proba[0, 0])
+                    home_win_prob = (
+                        float(proba[0, 1]) if proba.shape[1] > 1 else float(proba[0, 0])
+                    )
             else:
                 # Raw prediction
                 home_win_prob = float(self.model.predict(X)[0])
-            
+
             return self._build_prediction_result(
-                home_team, away_team, home_win_prob, features, model_used=True, odds=odds
+                home_team,
+                away_team,
+                home_win_prob,
+                features,
+                model_used=True,
+                odds=odds,
             )
-            
+
         except Exception as e:
             logger.error(f"Model prediction failed: {e}")
             # Fall back to Elo - but mark as model not used
             home_win_prob = 1 / (1 + 10 ** (-elo_diff / 400))
             return self._build_prediction_result(
-                home_team, away_team, home_win_prob, features, model_used=False, odds=odds
+                home_team,
+                away_team,
+                home_win_prob,
+                features,
+                model_used=False,
+                odds=odds,
             )
 
         return self._build_prediction_result(
@@ -289,13 +320,18 @@ class DailyPicksGenerator:
         )
 
     def _build_prediction_result(
-        self, home_team: str, away_team: str, home_win_prob: float, 
-        features: Dict, model_used: bool = True, odds: Dict = None
+        self,
+        home_team: str,
+        away_team: str,
+        home_win_prob: float,
+        features: Dict,
+        model_used: bool = True,
+        odds: Dict = None,
     ) -> Dict:
         """Build standardized prediction result."""
         # Clamp probability to reasonable range
         home_win_prob = max(0.15, min(0.85, home_win_prob))
-        
+
         prediction = {
             "home_team": home_team,
             "away_team": away_team,
@@ -306,11 +342,11 @@ class DailyPicksGenerator:
             "features": features,
             "model_used": model_used,
         }
-        
+
         # Add betting edge if odds available
         if odds:
             prediction["betting_edge"] = self._calculate_edge(prediction, odds)
-        
+
         return prediction
 
     def _calculate_edge(self, prediction: Dict, odds: Dict) -> Dict:

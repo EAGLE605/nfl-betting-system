@@ -327,36 +327,36 @@ def fetch_live_odds():
     """Fetch real NFL odds from The Odds API."""
     try:
         from agents.api_integrations import TheOddsAPI
-        
+
         api = TheOddsAPI()
         if not api.api_key:
             st.sidebar.warning("⚠️ ODDS_API_KEY not set - showing cached data")
             return []
-        
+
         games = api.get_nfl_odds(markets="h2h,spreads,totals")
-        
+
         props_data = []
         prop_id = 1
-        
+
         for game in games:
             home_team = game.get("home_team", "Unknown")
             away_team = game.get("away_team", "Unknown")
             game_name = f"{away_team} @ {home_team}"
-            
+
             # Get short team names
             home_short = home_team.split()[-1]
             away_short = away_team.split()[-1]
-            
+
             for bookmaker in game.get("bookmakers", []):
                 if bookmaker.get("key") in ["fanduel", "draftkings", "betmgm"]:
                     for market in bookmaker.get("markets", []):
                         market_key = market.get("key")
-                        
+
                         for outcome in market.get("outcomes", []):
                             name = outcome.get("name", "")
                             price = outcome.get("price", 0)
                             point = outcome.get("point")
-                            
+
                             # Build prop description
                             if market_key == "h2h":
                                 prop = "Moneyline"
@@ -373,22 +373,24 @@ def fetch_live_odds():
                                 team = home_short
                             else:
                                 continue
-                            
-                            props_data.append({
-                                "id": prop_id,
-                                "game": game_name,
-                                "team": team,
-                                "player": player,
-                                "prop": prop,
-                                "line": str(point) if point else "",
-                                "odds": int(price) if price else 0,
-                                "bookmaker": bookmaker.get("title", "Unknown")
-                            })
+
+                            props_data.append(
+                                {
+                                    "id": prop_id,
+                                    "game": game_name,
+                                    "team": team,
+                                    "player": player,
+                                    "prop": prop,
+                                    "line": str(point) if point else "",
+                                    "odds": int(price) if price else 0,
+                                    "bookmaker": bookmaker.get("title", "Unknown"),
+                                }
+                            )
                             prop_id += 1
                     break  # Only use first matching bookmaker
-        
+
         return props_data
-    
+
     except Exception as e:
         st.sidebar.error(f"Error fetching odds: {e}")
         return []
@@ -397,12 +399,14 @@ def fetch_live_odds():
 def get_props_db():
     """Get props database - live if available, otherwise empty."""
     props = fetch_live_odds()
-    
+
     if not props:
         # Return empty list with message
-        st.info("📡 No live odds available. Set ODDS_API_KEY environment variable to enable live data.")
+        st.info(
+            "📡 No live odds available. Set ODDS_API_KEY environment variable to enable live data."
+        )
         return []
-    
+
     return props
 
 

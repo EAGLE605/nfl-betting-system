@@ -30,6 +30,7 @@ try:
     from src.backtesting.engine import BacktestEngine
     from src.backtesting.prediction_generator import PredictionGenerator
     from src.swarms.model_loader import ModelLoader
+
     BACKEND_AVAILABLE = True
 except ImportError as e:
     BACKEND_AVAILABLE = False
@@ -45,13 +46,14 @@ st.set_page_config(
     page_title="THE LAB | GAMELOCK AI",
     page_icon="🧪",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
 # -----------------------------------------------------------------------------
 # CUSTOM CSS - CYBERPUNK LAB THEME
 # -----------------------------------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
     
@@ -271,23 +273,26 @@ st.markdown("""
     .status-error { background: #ef4444; }
     .status-pending { background: #6b7280; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # -----------------------------------------------------------------------------
 # SESSION STATE INITIALIZATION
 # -----------------------------------------------------------------------------
-if 'backtest_results' not in st.session_state:
+if "backtest_results" not in st.session_state:
     st.session_state.backtest_results = None
-if 'backtest_history' not in st.session_state:
+if "backtest_history" not in st.session_state:
     st.session_state.backtest_history = []
-if 'console_logs' not in st.session_state:
+if "console_logs" not in st.session_state:
     st.session_state.console_logs = []
-if 'is_running' not in st.session_state:
+if "is_running" not in st.session_state:
     st.session_state.is_running = False
-if 'selected_models' not in st.session_state:
+if "selected_models" not in st.session_state:
     st.session_state.selected_models = []
-if 'training_progress' not in st.session_state:
+if "training_progress" not in st.session_state:
     st.session_state.training_progress = 0
+
 
 # -----------------------------------------------------------------------------
 # HELPER FUNCTIONS
@@ -295,32 +300,40 @@ if 'training_progress' not in st.session_state:
 def add_console_log(message: str, level: str = "info"):
     """Add a log entry to the console."""
     timestamp = datetime.now().strftime("%H:%M:%S")
-    st.session_state.console_logs.append({
-        "timestamp": timestamp,
-        "message": message,
-        "level": level
-    })
+    st.session_state.console_logs.append(
+        {"timestamp": timestamp, "message": message, "level": level}
+    )
     # Keep last 100 logs
     st.session_state.console_logs = st.session_state.console_logs[-100:]
+
 
 def render_console():
     """Render the console output."""
     st.markdown('<div class="console-output">', unsafe_allow_html=True)
     for log in st.session_state.console_logs[-20:]:
         level_class = f"console-{log['level']}"
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div class="console-line">
                 <span class="console-timestamp">[{log['timestamp']}]</span>
                 <span class="{level_class}">{log['message']}</span>
             </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 def get_available_models() -> List[str]:
     """Get list of available trained models."""
     if not BACKEND_AVAILABLE:
-        return ["xgboost_evolved_75pct", "lightgbm_improved", "ensemble_model", "calibrated_model"]
-    
+        return [
+            "xgboost_evolved_75pct",
+            "lightgbm_improved",
+            "ensemble_model",
+            "calibrated_model",
+        ]
+
     try:
         loader = ModelLoader()
         return loader.list_available_models()
@@ -328,78 +341,84 @@ def get_available_models() -> List[str]:
         logger.error(f"Failed to get models: {e}")
         return []
 
+
 def get_model_metadata(model_name: str) -> Dict:
     """Get metadata for a model."""
     if not BACKEND_AVAILABLE:
         return {"exists": True, "size_mb": 2.5, "model_type": "XGBoost"}
-    
+
     try:
         loader = ModelLoader()
         return loader.get_model_metadata(model_name)
     except:
         return {"exists": False}
 
+
 def get_available_seasons() -> List[int]:
     """Get available seasons for backtesting."""
     if not BACKEND_AVAILABLE:
         return list(range(2016, 2025))
-    
+
     try:
         loader = BacktestDataLoader()
         return loader.get_available_seasons()
     except:
         return list(range(2016, 2025))
 
-def run_backtest_sync(model_name: str, start_year: int, end_year: int, bankroll: float, kelly_fraction: float) -> Dict:
+
+def run_backtest_sync(
+    model_name: str,
+    start_year: int,
+    end_year: int,
+    bankroll: float,
+    kelly_fraction: float,
+) -> Dict:
     """Run backtest synchronously using real data."""
     if not BACKEND_AVAILABLE:
         # Backend not available - return error with helpful message
         return {
             "error": "Backend modules not available. Please ensure all dependencies are installed.",
             "help": "Run: pip install -e . from the project root",
-            "metrics": None
+            "metrics": None,
         }
-    
+
     try:
         # Load data
         data_loader = BacktestDataLoader()
-        schedules_df, pbp_df = data_loader.get_backtest_data({
-            "start_year": start_year,
-            "end_year": end_year,
-            "focus": "full"
-        })
-        
+        schedules_df, pbp_df = data_loader.get_backtest_data(
+            {"start_year": start_year, "end_year": end_year, "focus": "full"}
+        )
+
         # Generate predictions
         pred_generator = PredictionGenerator()
         predictions_df = pred_generator.generate_predictions(
-            schedules_df,
-            {"model_name": model_name},
-            pbp_df
+            schedules_df, {"model_name": model_name}, pbp_df
         )
-        
+
         # Run backtest
         engine = BacktestEngine(
-            initial_bankroll=bankroll,
-            config={"kelly_fraction": kelly_fraction}
+            initial_bankroll=bankroll, config={"kelly_fraction": kelly_fraction}
         )
         metrics, history_df = engine.run_backtest(predictions_df)
-        
+
         return {
             "metrics": metrics,
             "model_name": model_name,
             "start_year": start_year,
             "end_year": end_year,
-            "history": history_df.to_dict('records') if len(history_df) > 0 else []
+            "history": history_df.to_dict("records") if len(history_df) > 0 else [],
         }
-        
+
     except Exception as e:
         logger.error(f"Backtest failed: {e}")
         return {"error": str(e)}
 
+
 # -----------------------------------------------------------------------------
 # HEADER
 # -----------------------------------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
     <div style="margin-bottom: 30px;">
         <div style="display: flex; align-items: center; gap: 20px;">
             <div style="
@@ -437,35 +456,35 @@ st.markdown("""
             Walk-forward backtesting • Model training • Strategy research • Real predictions
         </div>
     </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # -----------------------------------------------------------------------------
 # MAIN TABS
 # -----------------------------------------------------------------------------
-tab_backtest, tab_models, tab_train, tab_compare = st.tabs([
-    "BACKTEST ENGINE",
-    "MODEL ARSENAL", 
-    "TRAINING CENTER",
-    "STRATEGY COMPARE"
-])
+tab_backtest, tab_models, tab_train, tab_compare = st.tabs(
+    ["BACKTEST ENGINE", "MODEL ARSENAL", "TRAINING CENTER", "STRATEGY COMPARE"]
+)
 
 # =============================================================================
 # TAB 1: BACKTEST ENGINE
 # =============================================================================
 with tab_backtest:
     col_config, col_results = st.columns([1, 2])
-    
+
     with col_config:
-        st.markdown('<div class="lab-section-header">⚙️ CONFIGURATION</div>', unsafe_allow_html=True)
-        
+        st.markdown(
+            '<div class="lab-section-header">⚙️ CONFIGURATION</div>',
+            unsafe_allow_html=True,
+        )
+
         # Model selection
         available_models = get_available_models()
         selected_model = st.selectbox(
-            "Select Model",
-            available_models,
-            help="Choose a trained model to backtest"
+            "Select Model", available_models, help="Choose a trained model to backtest"
         )
-        
+
         # Date range
         seasons = get_available_seasons()
         col_start, col_end = st.columns(2)
@@ -473,170 +492,235 @@ with tab_backtest:
             start_year = st.selectbox("Start Year", seasons, index=0)
         with col_end:
             end_year = st.selectbox("End Year", seasons[::-1], index=0)
-        
+
         # Bankroll settings
         st.markdown("---")
-        st.markdown('<div class="lab-section-header">💰 BANKROLL</div>', unsafe_allow_html=True)
-        
-        initial_bankroll = st.number_input("Initial Bankroll ($)", min_value=100, max_value=1000000, value=10000, step=1000)
-        kelly_fraction = st.slider("Kelly Fraction", min_value=0.05, max_value=1.0, value=0.25, step=0.05, help="Fraction of Kelly criterion to use for bet sizing")
-        
+        st.markdown(
+            '<div class="lab-section-header">💰 BANKROLL</div>', unsafe_allow_html=True
+        )
+
+        initial_bankroll = st.number_input(
+            "Initial Bankroll ($)",
+            min_value=100,
+            max_value=1000000,
+            value=10000,
+            step=1000,
+        )
+        kelly_fraction = st.slider(
+            "Kelly Fraction",
+            min_value=0.05,
+            max_value=1.0,
+            value=0.25,
+            step=0.05,
+            help="Fraction of Kelly criterion to use for bet sizing",
+        )
+
         # Run button
         st.markdown("---")
-        if st.button("🚀 RUN BACKTEST", type="primary", use_container_width=True, disabled=st.session_state.is_running):
+        if st.button(
+            "🚀 RUN BACKTEST",
+            type="primary",
+            use_container_width=True,
+            disabled=st.session_state.is_running,
+        ):
             st.session_state.is_running = True
             st.session_state.console_logs = []
-            
+
             add_console_log(f"Starting backtest for {selected_model}", "info")
             add_console_log(f"Period: {start_year} - {end_year}", "info")
-            add_console_log(f"Bankroll: ${initial_bankroll:,.0f} | Kelly: {kelly_fraction}", "info")
-            
+            add_console_log(
+                f"Bankroll: ${initial_bankroll:,.0f} | Kelly: {kelly_fraction}", "info"
+            )
+
             with st.spinner("Running backtest..."):
                 add_console_log("Loading historical data...", "info")
-                result = run_backtest_sync(selected_model, start_year, end_year, initial_bankroll, kelly_fraction)
-                
+                result = run_backtest_sync(
+                    selected_model,
+                    start_year,
+                    end_year,
+                    initial_bankroll,
+                    kelly_fraction,
+                )
+
                 if "error" in result:
                     add_console_log(f"ERROR: {result['error']}", "error")
                     st.session_state.backtest_results = None
                 else:
-                    add_console_log(f"Processed {result['metrics'].get('total_bets', 0)} bets", "success")
-                    add_console_log(f"Win Rate: {result['metrics'].get('win_rate', 0):.1f}%", "success")
-                    add_console_log(f"ROI: {result['metrics'].get('roi', 0):.2f}%", "success")
+                    add_console_log(
+                        f"Processed {result['metrics'].get('total_bets', 0)} bets",
+                        "success",
+                    )
+                    add_console_log(
+                        f"Win Rate: {result['metrics'].get('win_rate', 0):.1f}%",
+                        "success",
+                    )
+                    add_console_log(
+                        f"ROI: {result['metrics'].get('roi', 0):.2f}%", "success"
+                    )
                     add_console_log("Backtest complete!", "success")
-                    
+
                     st.session_state.backtest_results = result
                     st.session_state.backtest_history.append(result)
-            
+
             st.session_state.is_running = False
             st.rerun()
-        
+
         # Console
         st.markdown("---")
-        st.markdown('<div class="lab-section-header">📟 CONSOLE</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="lab-section-header">📟 CONSOLE</div>', unsafe_allow_html=True
+        )
         render_console()
-    
+
     with col_results:
-        st.markdown('<div class="lab-section-header">📊 RESULTS</div>', unsafe_allow_html=True)
-        
+        st.markdown(
+            '<div class="lab-section-header">📊 RESULTS</div>', unsafe_allow_html=True
+        )
+
         if st.session_state.backtest_results:
             metrics = st.session_state.backtest_results["metrics"]
-            
+
             # KPI Row
             k1, k2, k3, k4, k5 = st.columns(5)
-            
+
             roi_color = "positive" if metrics.get("roi", 0) > 0 else "negative"
-            k1.markdown(f"""
+            k1.markdown(
+                f"""
                 <div class="metric-box">
                     <div class="metric-label">ROI</div>
                     <div class="metric-value {roi_color}">{metrics.get('roi', 0):.2f}%</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             win_rate = metrics.get("win_rate", 0)
             wr_color = "positive" if win_rate > 52 else "negative"
-            k2.markdown(f"""
+            k2.markdown(
+                f"""
                 <div class="metric-box">
                     <div class="metric-label">WIN RATE</div>
                     <div class="metric-value {wr_color}">{win_rate:.1f}%</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
-            k3.markdown(f"""
+            """,
+                unsafe_allow_html=True,
+            )
+
+            k3.markdown(
+                f"""
                 <div class="metric-box">
                     <div class="metric-label">TOTAL BETS</div>
                     <div class="metric-value">{metrics.get('total_bets', 0)}</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             profit = metrics.get("total_profit", 0)
             profit_color = "positive" if profit > 0 else "negative"
-            k4.markdown(f"""
+            k4.markdown(
+                f"""
                 <div class="metric-box">
                     <div class="metric-label">PROFIT</div>
                     <div class="metric-value {profit_color}">${profit:,.0f}</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             sharpe = metrics.get("sharpe_ratio", 0)
             sharpe_color = "positive" if sharpe > 1 else ""
-            k5.markdown(f"""
+            k5.markdown(
+                f"""
                 <div class="metric-box">
                     <div class="metric-label">SHARPE</div>
                     <div class="metric-value {sharpe_color}">{sharpe:.2f}</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             st.markdown("---")
-            
+
             # Charts
             col_chart1, col_chart2 = st.columns(2)
-            
+
             with col_chart1:
                 # Equity curve
                 if st.session_state.backtest_results.get("history"):
                     history = pd.DataFrame(st.session_state.backtest_results["history"])
                     fig_equity = go.Figure()
-                    fig_equity.add_trace(go.Scatter(
-                        x=list(range(len(history))),
-                        y=history["bankroll"],
-                        mode='lines',
-                        fill='tozeroy',
-                        line=dict(color='#22c55e', width=2),
-                        fillcolor='rgba(34, 197, 94, 0.1)'
-                    ))
+                    fig_equity.add_trace(
+                        go.Scatter(
+                            x=list(range(len(history))),
+                            y=history["bankroll"],
+                            mode="lines",
+                            fill="tozeroy",
+                            line=dict(color="#22c55e", width=2),
+                            fillcolor="rgba(34, 197, 94, 0.1)",
+                        )
+                    )
                     fig_equity.update_layout(
                         title="Equity Curve",
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        font_color='#94a3b8',
-                        margin=dict(l=0,r=0,t=40,b=0),
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#94a3b8",
+                        margin=dict(l=0, r=0, t=40, b=0),
                         height=250,
-                        xaxis=dict(gridcolor='rgba(55,65,81,0.3)'),
-                        yaxis=dict(gridcolor='rgba(55,65,81,0.3)')
+                        xaxis=dict(gridcolor="rgba(55,65,81,0.3)"),
+                        yaxis=dict(gridcolor="rgba(55,65,81,0.3)"),
                     )
                     st.plotly_chart(fig_equity, use_container_width=True)
                 else:
                     # No history data available - show message
                     st.info("📊 Run a backtest to generate equity curve data.")
-            
+
             with col_chart2:
                 # Win/Loss distribution
-                wins = metrics.get('wins', 50)
-                losses = metrics.get('losses', 40)
-                
-                fig_wl = go.Figure(data=[
-                    go.Bar(
-                        x=['Wins', 'Losses'],
-                        y=[wins, losses],
-                        marker_color=['#22c55e', '#ef4444'],
-                        text=[wins, losses],
-                        textposition='auto'
-                    )
-                ])
+                wins = metrics.get("wins", 50)
+                losses = metrics.get("losses", 40)
+
+                fig_wl = go.Figure(
+                    data=[
+                        go.Bar(
+                            x=["Wins", "Losses"],
+                            y=[wins, losses],
+                            marker_color=["#22c55e", "#ef4444"],
+                            text=[wins, losses],
+                            textposition="auto",
+                        )
+                    ]
+                )
                 fig_wl.update_layout(
                     title="Win/Loss Distribution",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font_color='#94a3b8',
-                    margin=dict(l=0,r=0,t=40,b=0),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font_color="#94a3b8",
+                    margin=dict(l=0, r=0, t=40, b=0),
                     height=250,
-                    xaxis=dict(gridcolor='rgba(55,65,81,0.3)'),
-                    yaxis=dict(gridcolor='rgba(55,65,81,0.3)')
+                    xaxis=dict(gridcolor="rgba(55,65,81,0.3)"),
+                    yaxis=dict(gridcolor="rgba(55,65,81,0.3)"),
                 )
                 st.plotly_chart(fig_wl, use_container_width=True)
-            
+
             # Additional metrics
             st.markdown("---")
-            st.markdown('<div class="lab-section-header">📈 ADVANCED METRICS</div>', unsafe_allow_html=True)
-            
+            st.markdown(
+                '<div class="lab-section-header">📈 ADVANCED METRICS</div>',
+                unsafe_allow_html=True,
+            )
+
             adv1, adv2, adv3, adv4 = st.columns(4)
             adv1.metric("Max Drawdown", f"{metrics.get('max_drawdown', 0):.1f}%")
             adv2.metric("Avg CLV", f"{metrics.get('avg_clv', 0):.2f}%")
             adv3.metric("Positive CLV %", f"{metrics.get('positive_clv_pct', 0):.1f}%")
-            adv4.metric("Record", f"{metrics.get('wins', 0)}-{metrics.get('losses', 0)}")
-        
+            adv4.metric(
+                "Record", f"{metrics.get('wins', 0)}-{metrics.get('losses', 0)}"
+            )
+
         else:
-            st.markdown("""
+            st.markdown(
+                """
                 <div style="
                     text-align: center;
                     padding: 60px;
@@ -646,16 +730,21 @@ with tab_backtest:
                     <div style="font-family: Orbitron; font-size: 1.1rem; margin-bottom: 10px;">NO BACKTEST RUNNING</div>
                     <div style="font-size: 0.9rem;">Configure settings and click RUN BACKTEST to start</div>
                 </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
 # =============================================================================
 # TAB 2: MODEL ARSENAL
 # =============================================================================
 with tab_models:
-    st.markdown('<div class="lab-section-header">🎯 TRAINED MODELS</div>', unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div class="lab-section-header">🎯 TRAINED MODELS</div>',
+        unsafe_allow_html=True,
+    )
+
     models = get_available_models()
-    
+
     if not models:
         st.warning("No trained models found in the models/ directory")
     else:
@@ -663,7 +752,7 @@ with tab_models:
         for i, model_name in enumerate(models):
             with cols[i % 3]:
                 meta = get_model_metadata(model_name)
-                
+
                 # Determine model type by name
                 if "xgboost" in model_name.lower():
                     model_type = "XGBoost"
@@ -685,10 +774,11 @@ with tab_models:
                     model_type = "Custom"
                     icon = "🧠"
                     color = "#64748b"
-                
+
                 size_mb = meta.get("size_mb", 0)
-                
-                st.markdown(f"""
+
+                st.markdown(
+                    f"""
                     <div class="model-card">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <span style="font-size: 1.5rem;">{icon}</span>
@@ -709,72 +799,93 @@ with tab_models:
                             Size: {size_mb:.1f} MB
                         </div>
                     </div>
-                """, unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
 # =============================================================================
 # TAB 3: TRAINING CENTER
 # =============================================================================
 with tab_train:
-    st.markdown('<div class="lab-section-header">🏋️ MODEL TRAINING</div>', unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div class="lab-section-header">🏋️ MODEL TRAINING</div>', unsafe_allow_html=True
+    )
+
     col_train_config, col_train_status = st.columns([1, 1])
-    
+
     with col_train_config:
         st.markdown("#### Training Configuration")
-        
+
         train_model_type = st.selectbox(
             "Model Type",
             ["XGBoost", "LightGBM", "Ensemble"],
-            help="Select the type of model to train"
+            help="Select the type of model to train",
         )
-        
+
         train_seasons = st.multiselect(
             "Training Seasons",
             get_available_seasons(),
             default=get_available_seasons()[-5:],
-            help="Select seasons to use for training"
+            help="Select seasons to use for training",
         )
-        
+
         val_split = st.slider(
             "Validation Split",
             min_value=0.1,
             max_value=0.3,
             value=0.2,
             step=0.05,
-            help="Fraction of data to use for validation"
+            help="Fraction of data to use for validation",
         )
-        
+
         # Hyperparameters
         st.markdown("---")
         st.markdown("#### Hyperparameters")
-        
+
         if train_model_type == "XGBoost":
-            n_estimators = st.number_input("n_estimators", min_value=50, max_value=1000, value=200)
+            n_estimators = st.number_input(
+                "n_estimators", min_value=50, max_value=1000, value=200
+            )
             max_depth = st.number_input("max_depth", min_value=2, max_value=15, value=6)
-            learning_rate = st.number_input("learning_rate", min_value=0.01, max_value=0.5, value=0.1, step=0.01)
+            learning_rate = st.number_input(
+                "learning_rate", min_value=0.01, max_value=0.5, value=0.1, step=0.01
+            )
         elif train_model_type == "LightGBM":
-            n_estimators = st.number_input("n_estimators", min_value=50, max_value=1000, value=200)
-            num_leaves = st.number_input("num_leaves", min_value=10, max_value=100, value=31)
-            learning_rate = st.number_input("learning_rate", min_value=0.01, max_value=0.5, value=0.1, step=0.01)
+            n_estimators = st.number_input(
+                "n_estimators", min_value=50, max_value=1000, value=200
+            )
+            num_leaves = st.number_input(
+                "num_leaves", min_value=10, max_value=100, value=31
+            )
+            learning_rate = st.number_input(
+                "learning_rate", min_value=0.01, max_value=0.5, value=0.1, step=0.01
+            )
         else:
-            st.info("Ensemble combines multiple models - no additional hyperparameters needed")
-        
+            st.info(
+                "Ensemble combines multiple models - no additional hyperparameters needed"
+            )
+
         st.markdown("---")
-        
+
         if st.button("🚀 START TRAINING", type="primary", use_container_width=True):
-            st.info("⚠️ Training integration requires full backend setup. Use the scripts/train_*.py scripts for now.")
-            st.code(f"""
+            st.info(
+                "⚠️ Training integration requires full backend setup. Use the scripts/train_*.py scripts for now."
+            )
+            st.code(
+                f"""
 # To train a new model, run from project root:
 python scripts/train_xgboost.py --seasons {','.join(map(str, train_seasons))}
 
 # Or use the Makefile:
 make train-xgboost
-            """)
-    
+            """
+            )
+
     with col_train_status:
         st.markdown("#### Training Status")
-        
-        st.markdown("""
+
+        st.markdown(
+            """
             <div style="
                 background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
                 border: 1px solid #374151;
@@ -790,11 +901,13 @@ make train-xgboost
                     Configure parameters and click START TRAINING
                 </div>
             </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         st.markdown("---")
         st.markdown("#### Trained Models")
-        
+
         # Get real model info from models directory
         training_history = []
         models_dir = Path(__file__).parent.parent.parent / "models"
@@ -802,21 +915,25 @@ make train-xgboost
             for model_file in models_dir.glob("*.pkl"):
                 import os
                 from datetime import datetime
+
                 mtime = os.path.getmtime(model_file)
                 date_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d")
-                training_history.append({
-                    "model": model_file.stem,
-                    "date": date_str,
-                    "accuracy": "N/A",  # Would need to read from metrics file
-                    "status": "success"
-                })
-        
+                training_history.append(
+                    {
+                        "model": model_file.stem,
+                        "date": date_str,
+                        "accuracy": "N/A",  # Would need to read from metrics file
+                        "status": "success",
+                    }
+                )
+
         if not training_history:
             st.info("No trained models found. Run training to create models.")
-        
+
         for run in training_history:
             status_color = "#22c55e" if run["status"] == "success" else "#ef4444"
-            st.markdown(f"""
+            st.markdown(
+                f"""
                 <div style="
                     background: rgba(30, 41, 59, 0.5);
                     border-radius: 8px;
@@ -842,25 +959,30 @@ make train-xgboost
                         "></div>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
 # =============================================================================
 # TAB 4: STRATEGY COMPARE
 # =============================================================================
 with tab_compare:
-    st.markdown('<div class="lab-section-header">⚔️ MODEL COMPARISON</div>', unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div class="lab-section-header">⚔️ MODEL COMPARISON</div>',
+        unsafe_allow_html=True,
+    )
+
     # Model selection for comparison
     models_to_compare = st.multiselect(
         "Select Models to Compare",
         get_available_models(),
         default=get_available_models()[:3],
-        help="Select 2+ models to compare performance"
+        help="Select 2+ models to compare performance",
     )
-    
+
     if len(models_to_compare) >= 2:
         col_cmp1, col_cmp2 = st.columns([2, 1])
-        
+
         with col_cmp1:
             # Comparison chart
             if st.session_state.backtest_history:
@@ -868,59 +990,65 @@ with tab_compare:
                 comparison_data = []
                 for result in st.session_state.backtest_history:
                     if result.get("model_name") in models_to_compare:
-                        comparison_data.append({
-                            "Model": result["model_name"],
-                            "ROI": result["metrics"].get("roi", 0),
-                            "Win Rate": result["metrics"].get("win_rate", 0),
-                            "Sharpe": result["metrics"].get("sharpe_ratio", 0)
-                        })
-                
+                        comparison_data.append(
+                            {
+                                "Model": result["model_name"],
+                                "ROI": result["metrics"].get("roi", 0),
+                                "Win Rate": result["metrics"].get("win_rate", 0),
+                                "Sharpe": result["metrics"].get("sharpe_ratio", 0),
+                            }
+                        )
+
                 if comparison_data:
                     df_compare = pd.DataFrame(comparison_data)
-                    
+
                     fig_compare = go.Figure()
                     for model in df_compare["Model"].unique():
                         model_data = df_compare[df_compare["Model"] == model]
-                        fig_compare.add_trace(go.Bar(
-                            name=model,
-                            x=["ROI %", "Win Rate %", "Sharpe × 10"],
-                            y=[
-                                model_data["ROI"].values[0],
-                                model_data["Win Rate"].values[0],
-                                model_data["Sharpe"].values[0] * 10
-                            ]
-                        ))
-                    
+                        fig_compare.add_trace(
+                            go.Bar(
+                                name=model,
+                                x=["ROI %", "Win Rate %", "Sharpe × 10"],
+                                y=[
+                                    model_data["ROI"].values[0],
+                                    model_data["Win Rate"].values[0],
+                                    model_data["Sharpe"].values[0] * 10,
+                                ],
+                            )
+                        )
+
                     fig_compare.update_layout(
                         title="Model Comparison",
-                        barmode='group',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        font_color='#94a3b8',
-                        margin=dict(l=0,r=0,t=40,b=0),
+                        barmode="group",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#94a3b8",
+                        margin=dict(l=0, r=0, t=40, b=0),
                         height=350,
-                        xaxis=dict(gridcolor='rgba(55,65,81,0.3)'),
-                        yaxis=dict(gridcolor='rgba(55,65,81,0.3)')
+                        xaxis=dict(gridcolor="rgba(55,65,81,0.3)"),
+                        yaxis=dict(gridcolor="rgba(55,65,81,0.3)"),
                     )
                     st.plotly_chart(fig_compare, use_container_width=True)
             else:
                 st.info("Run backtests on multiple models to see comparison")
-        
+
         with col_cmp2:
             st.markdown("#### Quick Actions")
-            
+
             if st.button("📊 Run Comparison Backtest", use_container_width=True):
                 st.info("Running backtest on all selected models...")
                 # Would trigger backtests for all selected models
-            
+
             if st.button("📥 Export Results", use_container_width=True):
                 if st.session_state.backtest_history:
-                    results_json = json.dumps(st.session_state.backtest_history, indent=2, default=str)
+                    results_json = json.dumps(
+                        st.session_state.backtest_history, indent=2, default=str
+                    )
                     st.download_button(
                         "Download JSON",
                         results_json,
                         file_name="backtest_results.json",
-                        mime="application/json"
+                        mime="application/json",
                     )
     else:
         st.info("Select at least 2 models to compare")
@@ -929,10 +1057,12 @@ with tab_compare:
 # FOOTER
 # -----------------------------------------------------------------------------
 st.markdown("---")
-st.markdown("""
+st.markdown(
+    """
     <div style="text-align: center; color: #64748b; font-size: 0.8rem; padding: 20px;">
         <span style="font-family: Orbitron;">GAMELOCK AI</span> • THE LAB • 
         Walk-forward backtesting powered by real ML models
     </div>
-""", unsafe_allow_html=True)
-
+""",
+    unsafe_allow_html=True,
+)

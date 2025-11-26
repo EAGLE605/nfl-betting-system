@@ -52,13 +52,13 @@ def normalize_pattern(text: str) -> str:
     text = text.lower()
 
     # Remove version suffixes (v1, v2, etc.)
-    text = re.sub(r'\s*\(v\d+\)|\s*v\d+$', '', text)
+    text = re.sub(r"\s*\(v\d+\)|\s*v\d+$", "", text)
 
     # Replace special chars with spaces
-    text = re.sub(r'[_\-:,\(\)]', ' ', text)
+    text = re.sub(r"[_\-:,\(\)]", " ", text)
 
     # Collapse multiple spaces
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r"\s+", " ", text).strip()
 
     return text
 
@@ -73,6 +73,7 @@ class StrategyStatus(Enum):
     - REJECTED = Tested it, not profitable
     - ARCHIVED = Was good, stopped using it
     """
+
     PENDING = "pending"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
@@ -87,16 +88,17 @@ class Strategy:
     BEGINNER NOTE: This is like a recipe card.
     It has all the info about one specific betting pattern.
     """
-    strategy_id: str              # Unique ID (like "prime_time_unders_v1")
-    name: str                     # Human-readable name
-    description: str              # What is this strategy?
-    pattern: str                  # The actual pattern (used for duplicate detection)
+
+    strategy_id: str  # Unique ID (like "prime_time_unders_v1")
+    name: str  # Human-readable name
+    description: str  # What is this strategy?
+    pattern: str  # The actual pattern (used for duplicate detection)
 
     # Performance metrics
-    win_rate: float              # % of bets won
-    roi: float                   # Return on investment %
-    sample_size: int             # How many bets tested
-    edge: float                  # Edge over market (%)
+    win_rate: float  # % of bets won
+    roi: float  # Return on investment %
+    sample_size: int  # How many bets tested
+    edge: float  # Edge over market (%)
     sharpe_ratio: Optional[float] = None  # Risk-adjusted return
 
     # Metadata
@@ -124,7 +126,7 @@ class Strategy:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> 'Strategy':
+    def from_dict(cls, data: Dict) -> "Strategy":
         """Create Strategy from dictionary."""
         return cls(**data)
 
@@ -148,7 +150,9 @@ class Strategy:
         norm_other_pattern = normalize_pattern(other_pattern)
 
         # Pattern similarity
-        pattern_score = SequenceMatcher(None, norm_self_pattern, norm_other_pattern).ratio()
+        pattern_score = SequenceMatcher(
+            None, norm_self_pattern, norm_other_pattern
+        ).ratio()
 
         # Also check name similarity if provided
         if other_name:
@@ -160,7 +164,9 @@ class Strategy:
 
         return pattern_score
 
-    def is_similar_to(self, other_pattern: str, other_name: str = None, threshold: float = 0.85) -> bool:
+    def is_similar_to(
+        self, other_pattern: str, other_name: str = None, threshold: float = 0.85
+    ) -> bool:
         """
         Check if this strategy is similar to another pattern.
 
@@ -227,7 +233,7 @@ class StrategyRegistry:
 
         if self.registry_path.exists():
             try:
-                with open(self.registry_path, 'r') as f:
+                with open(self.registry_path, "r") as f:
                     data = json.load(f)
 
                 # Convert dict data to Strategy objects
@@ -252,7 +258,9 @@ class StrategyRegistry:
                 logger.error(f"Error loading registry: {e}", exc_info=True)
                 self.strategies = {}
         else:
-            logger.info(f"No existing registry found at {self.registry_path}, creating new one")
+            logger.info(
+                f"No existing registry found at {self.registry_path}, creating new one"
+            )
             self.strategies = {}
             self._save_registry()
 
@@ -272,14 +280,20 @@ class StrategyRegistry:
         }
 
         try:
-            with open(self.registry_path, 'w') as f:
+            with open(self.registry_path, "w") as f:
                 json.dump(data, f, indent=2)
-            logger.info(f"Saved {len(self.strategies)} strategies to {self.registry_path}")
+            logger.info(
+                f"Saved {len(self.strategies)} strategies to {self.registry_path}"
+            )
             logger.debug(f"Saved strategies: {list(self.strategies.keys())}")
         except Exception as e:
-            logger.error(f"Error saving registry to {self.registry_path}: {e}", exc_info=True)
+            logger.error(
+                f"Error saving registry to {self.registry_path}: {e}", exc_info=True
+            )
 
-    def add_strategy(self, strategy: Strategy, skip_duplicate_check: bool = False) -> tuple[bool, Optional[str]]:
+    def add_strategy(
+        self, strategy: Strategy, skip_duplicate_check: bool = False
+    ) -> tuple[bool, Optional[str]]:
         """
         Add a new strategy to the registry.
 
@@ -300,18 +314,25 @@ class StrategyRegistry:
 
         # Check for duplicates
         if not skip_duplicate_check:
-            logger.debug(f"Checking for duplicates of: '{strategy.pattern}' / '{strategy.name}'")
+            logger.debug(
+                f"Checking for duplicates of: '{strategy.pattern}' / '{strategy.name}'"
+            )
             duplicate = self.find_similar_strategy(strategy.pattern, strategy.name)
             if duplicate:
                 logger.info(
                     f"Duplicate detected: '{strategy.name}' matches existing "
                     f"'{duplicate.name}' ({duplicate.strategy_id})"
                 )
-                return False, f"Similar strategy already exists: {duplicate.strategy_id} ({duplicate.name})"
+                return (
+                    False,
+                    f"Similar strategy already exists: {duplicate.strategy_id} ({duplicate.name})",
+                )
 
         # Check if ID already exists
         if strategy.strategy_id in self.strategies:
-            logger.warning(f"Strategy ID {strategy.strategy_id} already exists in registry")
+            logger.warning(
+                f"Strategy ID {strategy.strategy_id} already exists in registry"
+            )
             return False, f"Strategy ID {strategy.strategy_id} already exists"
 
         # Add strategy
@@ -355,8 +376,10 @@ class StrategyRegistry:
 
         self._save_registry()
 
-        if 'status' in updates and updates['status'] != old_status:
-            logger.info(f"Strategy status changed: {strategy_id} [{old_status} -> {updates['status']}]")
+        if "status" in updates and updates["status"] != old_status:
+            logger.info(
+                f"Strategy status changed: {strategy_id} [{old_status} -> {updates['status']}]"
+            )
         else:
             logger.info(f"Updated strategy: {strategy_id}")
 
@@ -375,12 +398,15 @@ class StrategyRegistry:
         Returns:
             (success: bool, message: str)
         """
-        logger.info(f"ACCEPTING strategy: {strategy_id}" + (f" (notes: {notes})" if notes else ""))
+        logger.info(
+            f"ACCEPTING strategy: {strategy_id}"
+            + (f" (notes: {notes})" if notes else "")
+        )
         return self.update_strategy(
             strategy_id,
             status=StrategyStatus.ACCEPTED.value,
             date_reviewed=datetime.now().isoformat(),
-            reviewer_notes=notes
+            reviewer_notes=notes,
         )
 
     def reject_strategy(self, strategy_id: str, notes: str = "") -> tuple[bool, str]:
@@ -396,12 +422,15 @@ class StrategyRegistry:
         Returns:
             (success: bool, message: str)
         """
-        logger.info(f"REJECTING strategy: {strategy_id}" + (f" (notes: {notes})" if notes else ""))
+        logger.info(
+            f"REJECTING strategy: {strategy_id}"
+            + (f" (notes: {notes})" if notes else "")
+        )
         return self.update_strategy(
             strategy_id,
             status=StrategyStatus.REJECTED.value,
             date_reviewed=datetime.now().isoformat(),
-            reviewer_notes=notes
+            reviewer_notes=notes,
         )
 
     def archive_strategy(self, strategy_id: str, notes: str = "") -> tuple[bool, str]:
@@ -421,7 +450,7 @@ class StrategyRegistry:
             strategy_id,
             status=StrategyStatus.ARCHIVED.value,
             date_reviewed=datetime.now().isoformat(),
-            reviewer_notes=notes
+            reviewer_notes=notes,
         )
 
     def get_strategies_by_status(self, status: StrategyStatus) -> List[Strategy]:
@@ -437,7 +466,8 @@ class StrategyRegistry:
             List of strategies with that status
         """
         return [
-            strategy for strategy in self.strategies.values()
+            strategy
+            for strategy in self.strategies.values()
             if strategy.status == status.value
         ]
 
@@ -454,10 +484,7 @@ class StrategyRegistry:
         return self.get_strategies_by_status(StrategyStatus.REJECTED)
 
     def find_similar_strategy(
-        self,
-        pattern: str,
-        name: str = None,
-        threshold: float = 0.85
+        self, pattern: str, name: str = None, threshold: float = 0.85
     ) -> Optional[Strategy]:
         """
         Find if a similar strategy already exists.
@@ -520,7 +547,7 @@ class StrategyRegistry:
             "win_rate": similar.win_rate,
             "roi": similar.roi,
             "sample_size": similar.sample_size,
-            "edge": similar.edge
+            "edge": similar.edge,
         }
 
         # Calculate improvements
@@ -534,7 +561,11 @@ class StrategyRegistry:
                         "old": old_val,
                         "new": new_val,
                         "change": new_val - old_val,
-                        "pct_change": ((new_val - old_val) / abs(old_val) * 100) if old_val != 0 else 0
+                        "pct_change": (
+                            ((new_val - old_val) / abs(old_val) * 100)
+                            if old_val != 0
+                            else 0
+                        ),
                     }
 
         if improvements:
@@ -543,12 +574,14 @@ class StrategyRegistry:
                 "strategy_name": similar.name,
                 "old_metrics": old_metrics,
                 "new_metrics": new_metrics,
-                "improvements": improvements
+                "improvements": improvements,
             }
 
         return None
 
-    def create_strategy_version(self, original_id: str, updated_metrics: Dict) -> tuple[bool, str]:
+    def create_strategy_version(
+        self, original_id: str, updated_metrics: Dict
+    ) -> tuple[bool, str]:
         """
         Create a new version of an existing strategy.
 
@@ -585,7 +618,7 @@ class StrategyRegistry:
             status=StrategyStatus.PENDING.value,  # Needs re-review
             conditions=original.conditions.copy(),
             version=new_version,
-            previous_version_id=original_id
+            previous_version_id=original_id,
         )
 
         # Add new version
@@ -637,5 +670,5 @@ class StrategyRegistry:
             "pending": len(self.get_pending_strategies()),
             "accepted": len(self.get_accepted_strategies()),
             "rejected": len(self.get_rejected_strategies()),
-            "archived": len(self.get_strategies_by_status(StrategyStatus.ARCHIVED))
+            "archived": len(self.get_strategies_by_status(StrategyStatus.ARCHIVED)),
         }

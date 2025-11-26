@@ -56,10 +56,12 @@ T = TypeVar("T")
 # CIRCUIT BREAKER CONFIGURATION
 # =============================================================================
 
+
 class CircuitState(Enum):
     """Circuit breaker states."""
-    CLOSED = "closed"      # Normal - requests go through
-    OPEN = "open"          # Tripped - requests fail fast
+
+    CLOSED = "closed"  # Normal - requests go through
+    OPEN = "open"  # Tripped - requests fail fast
     HALF_OPEN = "half_open"  # Testing - limited requests
 
 
@@ -73,7 +75,12 @@ class CircuitBreakerListener(pybreaker.CircuitBreakerListener):
         self.name = name
         self.state_changes: List[Dict] = []
 
-    def state_change(self, cb: pybreaker.CircuitBreaker, old_state: pybreaker.CircuitBreakerState, new_state: pybreaker.CircuitBreakerState):
+    def state_change(
+        self,
+        cb: pybreaker.CircuitBreaker,
+        old_state: pybreaker.CircuitBreakerState,
+        new_state: pybreaker.CircuitBreakerState,
+    ):
         """Called when circuit state changes."""
         change = {
             "timestamp": datetime.now().isoformat(),
@@ -84,15 +91,23 @@ class CircuitBreakerListener(pybreaker.CircuitBreakerListener):
         self.state_changes.append(change)
 
         if new_state.name == "open":
-            logger.warning(f"[CIRCUIT BREAKER] {self.name} OPENED - API failing, fast-failing requests")
+            logger.warning(
+                f"[CIRCUIT BREAKER] {self.name} OPENED - API failing, fast-failing requests"
+            )
         elif new_state.name == "closed":
-            logger.info(f"[CIRCUIT BREAKER] {self.name} CLOSED - API recovered, resuming normal operation")
+            logger.info(
+                f"[CIRCUIT BREAKER] {self.name} CLOSED - API recovered, resuming normal operation"
+            )
         elif new_state.name == "half-open":
-            logger.info(f"[CIRCUIT BREAKER] {self.name} HALF-OPEN - Testing if API recovered")
+            logger.info(
+                f"[CIRCUIT BREAKER] {self.name} HALF-OPEN - Testing if API recovered"
+            )
 
     def failure(self, cb: pybreaker.CircuitBreaker, exc: Exception):
         """Called on each failure."""
-        logger.debug(f"[CIRCUIT BREAKER] {self.name} failure recorded: {type(exc).__name__}")
+        logger.debug(
+            f"[CIRCUIT BREAKER] {self.name} failure recorded: {type(exc).__name__}"
+        )
 
     def success(self, cb: pybreaker.CircuitBreaker):
         """Called on each success."""
@@ -178,7 +193,7 @@ def get_circuit_status() -> Dict[str, Dict]:
         try:
             # Get state name - handle both string and object states
             state = breaker.current_state
-            if hasattr(state, 'name'):
+            if hasattr(state, "name"):
                 state_name = state.name
             else:
                 state_name = str(state)
@@ -201,6 +216,7 @@ def get_circuit_status() -> Dict[str, Dict]:
 # =============================================================================
 # RETRY DECORATORS WITH EXPONENTIAL BACKOFF
 # =============================================================================
+
 
 def retry_with_backoff(
     max_attempts: int = 5,
@@ -263,6 +279,7 @@ quick_retry = retry_with_backoff(
 # COMBINED CIRCUIT BREAKER + RETRY DECORATOR
 # =============================================================================
 
+
 def resilient_call(
     breaker: pybreaker.CircuitBreaker,
     max_retries: int = 3,
@@ -290,15 +307,20 @@ def resilient_call(
         def fetch_espn_scores():
             return espn_api.get_scores()
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:
             # Check if circuit is open
             if breaker.current_state == pybreaker.STATE_OPEN:
-                logger.warning(f"Circuit breaker OPEN for {func.__name__}, using fallback")
+                logger.warning(
+                    f"Circuit breaker OPEN for {func.__name__}, using fallback"
+                )
                 if fallback:
                     return fallback()
-                raise pybreaker.CircuitBreakerError(f"Circuit breaker open for {func.__name__}")
+                raise pybreaker.CircuitBreakerError(
+                    f"Circuit breaker open for {func.__name__}"
+                )
 
             # Create retry wrapper
             @retry(
@@ -324,12 +346,14 @@ def resilient_call(
                 raise
 
         return wrapper
+
     return decorator
 
 
 # =============================================================================
 # FALLBACK UTILITIES
 # =============================================================================
+
 
 class FallbackChain:
     """
@@ -370,12 +394,15 @@ class FallbackChain:
 
         # All fallbacks failed
         error_summary = "; ".join([f"#{i}: {t}" for i, t, _ in errors])
-        raise RuntimeError(f"All {len(self.fallbacks)} fallbacks failed: {error_summary}")
+        raise RuntimeError(
+            f"All {len(self.fallbacks)} fallbacks failed: {error_summary}"
+        )
 
 
 # =============================================================================
 # RATE LIMITER
 # =============================================================================
+
 
 class RateLimiter:
     """
@@ -449,11 +476,13 @@ class RateLimiter:
 
     def limit(self, func: Callable[..., T]) -> Callable[..., T]:
         """Decorator to rate limit a function."""
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             if not self.acquire():
                 raise RuntimeError("Rate limit exceeded")
             return func(*args, **kwargs)
+
         return wrapper
 
     def get_status(self) -> Dict:
@@ -485,6 +514,7 @@ llm_limiter = RateLimiter(
 # =============================================================================
 # MONITORING & METRICS
 # =============================================================================
+
 
 class ResilienceMetrics:
     """
@@ -537,8 +567,14 @@ class ResilienceMetrics:
                 "success_rate": (calls - failures) / calls if calls > 0 else 0,
                 "total_retries": retries,
                 "fallback_uses": fallbacks,
-                "avg_latency_ms": sum(latencies) / len(latencies) * 1000 if latencies else 0,
-                "p95_latency_ms": sorted(latencies)[int(len(latencies) * 0.95)] * 1000 if len(latencies) >= 20 else None,
+                "avg_latency_ms": (
+                    sum(latencies) / len(latencies) * 1000 if latencies else 0
+                ),
+                "p95_latency_ms": (
+                    sorted(latencies)[int(len(latencies) * 0.95)] * 1000
+                    if len(latencies) >= 20
+                    else None
+                ),
             }
 
         return summary
@@ -551,6 +587,7 @@ metrics = ResilienceMetrics()
 # =============================================================================
 # CONVENIENCE FUNCTIONS
 # =============================================================================
+
 
 def with_resilience(
     name: str,
@@ -569,6 +606,7 @@ def with_resilience(
         def fetch_espn_data():
             return requests.get("https://espn.com/api")
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:
@@ -599,7 +637,9 @@ def with_resilience(
 
                         # Success
                         latency = time.time() - start_time
-                        metrics.record_call(name, latency, success=True, retries=retries_used)
+                        metrics.record_call(
+                            name, latency, success=True, retries=retries_used
+                        )
                         return result
 
                     except (ConnectionError, TimeoutError, IOError) as e:
@@ -607,8 +647,10 @@ def with_resilience(
                         retries_used += 1
 
                         if attempt < max_retries:
-                            wait_time = min(2 ** attempt, 30)  # Exponential backoff
-                            logger.warning(f"{name} attempt {attempt + 1} failed, retrying in {wait_time}s")
+                            wait_time = min(2**attempt, 30)  # Exponential backoff
+                            logger.warning(
+                                f"{name} attempt {attempt + 1} failed, retrying in {wait_time}s"
+                            )
                             time.sleep(wait_time)
                         else:
                             raise
@@ -623,4 +665,5 @@ def with_resilience(
                 raise
 
         return wrapper
+
     return decorator

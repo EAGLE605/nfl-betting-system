@@ -55,26 +55,36 @@ def render_game_card(game: Dict, show_predictions: bool = False):
         # Away team
         st.markdown(f"### {away_team}")
         if is_live or is_final:
-            st.markdown(f"<h1 style='text-align: right; margin: 0;'>{away_score}</h1>",
-                       unsafe_allow_html=True)
+            st.markdown(
+                f"<h1 style='text-align: right; margin: 0;'>{away_score}</h1>",
+                unsafe_allow_html=True,
+            )
 
     with col2:
         # Status in the middle
-        st.markdown(f"<p style='text-align: center; color: #888;'>{status_display}</p>",
-                   unsafe_allow_html=True)
+        st.markdown(
+            f"<p style='text-align: center; color: #888;'>{status_display}</p>",
+            unsafe_allow_html=True,
+        )
         if not is_live and not is_final:
-            st.markdown("<p style='text-align: center; font-size: 0.8em;'>vs</p>",
-                       unsafe_allow_html=True)
+            st.markdown(
+                "<p style='text-align: center; font-size: 0.8em;'>vs</p>",
+                unsafe_allow_html=True,
+            )
         else:
-            st.markdown("<p style='text-align: center; font-size: 1.2em;'>@</p>",
-                       unsafe_allow_html=True)
+            st.markdown(
+                "<p style='text-align: center; font-size: 1.2em;'>@</p>",
+                unsafe_allow_html=True,
+            )
 
     with col3:
         # Home team
         st.markdown(f"### {home_team}")
         if is_live or is_final:
-            st.markdown(f"<h1 style='text-align: left; margin: 0;'>{home_score}</h1>",
-                       unsafe_allow_html=True)
+            st.markdown(
+                f"<h1 style='text-align: left; margin: 0;'>{home_score}</h1>",
+                unsafe_allow_html=True,
+            )
 
     # Separator
     st.markdown("---")
@@ -138,8 +148,9 @@ def render_completed_games_section(games: List[Dict]):
         return
 
     # Sort by game time (most recent first)
-    games_sorted = sorted(games, key=lambda g: g.get("game_time_local", datetime.min),
-                         reverse=True)
+    games_sorted = sorted(
+        games, key=lambda g: g.get("game_time_local", datetime.min), reverse=True
+    )
 
     st.markdown(f"**{len(games_sorted)} game(s) final**")
 

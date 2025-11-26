@@ -75,6 +75,7 @@ DEFAULT_RETENTION_DAYS = 30
 # BACKUP FUNCTIONS
 # =============================================================================
 
+
 def get_file_hash(file_path: Path) -> str:
     """
     Calculate MD5 hash of a file.
@@ -157,7 +158,9 @@ def backup_database(db_path: Path, backup_dir: Path, timestamp: str) -> dict:
         result["hash"] = get_file_hash(backup_path)
         result["success"] = True
 
-        logger.info(f"Backed up {db_path.name} -> {backup_filename} ({result['size_bytes']:,} bytes)")
+        logger.info(
+            f"Backed up {db_path.name} -> {backup_filename} ({result['size_bytes']:,} bytes)"
+        )
 
     except Exception as e:
         result["error"] = str(e)
@@ -206,7 +209,9 @@ def backup_file(file_path: Path, backup_dir: Path, timestamp: str) -> dict:
         result["hash"] = get_file_hash(backup_path)
         result["success"] = True
 
-        logger.info(f"Backed up {file_path.name} -> {backup_filename} ({result['size_bytes']:,} bytes)")
+        logger.info(
+            f"Backed up {file_path.name} -> {backup_filename} ({result['size_bytes']:,} bytes)"
+        )
 
     except Exception as e:
         result["error"] = str(e)
@@ -393,6 +398,7 @@ def restore_backup(backup_dir: str, target_dir: str = None) -> bool:
         return False
 
     import json
+
     with open(manifests[0]) as f:
         manifest = json.load(f)
 
@@ -432,6 +438,7 @@ def restore_backup(backup_dir: str, target_dir: str = None) -> bool:
 # =============================================================================
 # MAIN
 # =============================================================================
+
 
 def main():
     parser = argparse.ArgumentParser(

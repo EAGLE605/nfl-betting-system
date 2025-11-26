@@ -16,7 +16,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from strategy_registry import StrategyRegistry, Strategy, StrategyStatus
 
 
-def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_prefix: str = ""):
+def render_strategy_card(
+    strategy: Strategy, registry: StrategyRegistry, key_prefix: str = ""
+):
     """
     Render a single strategy card with actions.
 
@@ -33,7 +35,7 @@ def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_pre
         "pending": "#ffa500",
         "accepted": "#00ff00",
         "rejected": "#ff0000",
-        "archived": "#888888"
+        "archived": "#888888",
     }
     status_color = status_colors.get(strategy.status, "#888")
 
@@ -54,17 +56,29 @@ def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_pre
         roi_color = "#ffaa00"
 
     # Create expandable card
-    with st.expander(f"**{strategy.name}** ({strategy.status.upper()})", expanded=False):
+    with st.expander(
+        f"**{strategy.name}** ({strategy.status.upper()})", expanded=False
+    ):
         # Header with key metrics
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            st.metric("Win Rate", f"{strategy.win_rate:.1f}%",
-                     delta=None if strategy.win_rate == 0 else f"{strategy.win_rate - 50:.1f}% vs 50%")
+            st.metric(
+                "Win Rate",
+                f"{strategy.win_rate:.1f}%",
+                delta=(
+                    None
+                    if strategy.win_rate == 0
+                    else f"{strategy.win_rate - 50:.1f}% vs 50%"
+                ),
+            )
 
         with col2:
-            st.metric("ROI", f"{strategy.roi:.1f}%",
-                     delta=None if strategy.roi == 0 else f"{strategy.roi:.1f}%")
+            st.metric(
+                "ROI",
+                f"{strategy.roi:.1f}%",
+                delta=None if strategy.roi == 0 else f"{strategy.roi:.1f}%",
+            )
 
         with col3:
             st.metric("Sample Size", strategy.sample_size)
@@ -115,9 +129,15 @@ def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_pre
         # Accept button (if pending or rejected)
         if strategy.status in ["pending", "rejected"]:
             with col1:
-                if st.button("✅ Accept", key=f"{key_prefix}_accept_{strategy.strategy_id}"):
-                    notes = st.session_state.get(f"{key_prefix}_notes_{strategy.strategy_id}", "")
-                    success, message = registry.accept_strategy(strategy.strategy_id, notes)
+                if st.button(
+                    "✅ Accept", key=f"{key_prefix}_accept_{strategy.strategy_id}"
+                ):
+                    notes = st.session_state.get(
+                        f"{key_prefix}_notes_{strategy.strategy_id}", ""
+                    )
+                    success, message = registry.accept_strategy(
+                        strategy.strategy_id, notes
+                    )
                     if success:
                         st.success(message)
                         st.rerun()
@@ -127,9 +147,15 @@ def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_pre
         # Reject button (if pending or accepted)
         if strategy.status in ["pending", "accepted"]:
             with col2:
-                if st.button("❌ Reject", key=f"{key_prefix}_reject_{strategy.strategy_id}"):
-                    notes = st.session_state.get(f"{key_prefix}_notes_{strategy.strategy_id}", "")
-                    success, message = registry.reject_strategy(strategy.strategy_id, notes)
+                if st.button(
+                    "❌ Reject", key=f"{key_prefix}_reject_{strategy.strategy_id}"
+                ):
+                    notes = st.session_state.get(
+                        f"{key_prefix}_notes_{strategy.strategy_id}", ""
+                    )
+                    success, message = registry.reject_strategy(
+                        strategy.strategy_id, notes
+                    )
                     if success:
                         st.warning(message)
                         st.rerun()
@@ -139,9 +165,15 @@ def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_pre
         # Archive button (if accepted)
         if strategy.status == "accepted":
             with col3:
-                if st.button("📦 Archive", key=f"{key_prefix}_archive_{strategy.strategy_id}"):
-                    notes = st.session_state.get(f"{key_prefix}_notes_{strategy.strategy_id}", "")
-                    success, message = registry.archive_strategy(strategy.strategy_id, notes)
+                if st.button(
+                    "📦 Archive", key=f"{key_prefix}_archive_{strategy.strategy_id}"
+                ):
+                    notes = st.session_state.get(
+                        f"{key_prefix}_notes_{strategy.strategy_id}", ""
+                    )
+                    success, message = registry.archive_strategy(
+                        strategy.strategy_id, notes
+                    )
                     if success:
                         st.info(message)
                         st.rerun()
@@ -159,16 +191,23 @@ def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_pre
             st.warning("⚠️ Are you sure? This cannot be undone!")
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Yes, Delete", key=f"{key_prefix}_confirm_delete_{strategy.strategy_id}"):
+                if st.button(
+                    "Yes, Delete",
+                    key=f"{key_prefix}_confirm_delete_{strategy.strategy_id}",
+                ):
                     success, message = registry.delete_strategy(strategy.strategy_id)
                     if success:
                         st.success(message)
-                        st.session_state[f"confirm_delete_{strategy.strategy_id}"] = False
+                        st.session_state[f"confirm_delete_{strategy.strategy_id}"] = (
+                            False
+                        )
                         st.rerun()
                     else:
                         st.error(message)
             with col2:
-                if st.button("Cancel", key=f"{key_prefix}_cancel_delete_{strategy.strategy_id}"):
+                if st.button(
+                    "Cancel", key=f"{key_prefix}_cancel_delete_{strategy.strategy_id}"
+                ):
                     st.session_state[f"confirm_delete_{strategy.strategy_id}"] = False
                     st.rerun()
 
@@ -177,12 +216,17 @@ def render_strategy_card(strategy: Strategy, registry: StrategyRegistry, key_pre
             "Add notes (optional):",
             key=f"{key_prefix}_notes_{strategy.strategy_id}",
             height=80,
-            placeholder="Why are you accepting/rejecting this strategy?"
+            placeholder="Why are you accepting/rejecting this strategy?",
         )
 
 
-def render_strategy_list(strategies: List[Strategy], registry: StrategyRegistry,
-                        title: str, key_prefix: str, empty_message: str = "No strategies found."):
+def render_strategy_list(
+    strategies: List[Strategy],
+    registry: StrategyRegistry,
+    title: str,
+    key_prefix: str,
+    empty_message: str = "No strategies found.",
+):
     """
     Render a list of strategies.
 
@@ -194,7 +238,9 @@ def render_strategy_list(strategies: List[Strategy], registry: StrategyRegistry,
         empty_message: Message to show if list is empty
     """
     st.markdown(f"### {title}")
-    st.markdown(f"**{len(strategies)} strateg{'y' if len(strategies) == 1 else 'ies'}**")
+    st.markdown(
+        f"**{len(strategies)} strateg{'y' if len(strategies) == 1 else 'ies'}**"
+    )
 
     if not strategies:
         st.info(empty_message)
@@ -218,26 +264,39 @@ def render_add_strategy_form(registry: StrategyRegistry):
     with st.form("add_strategy_form"):
         # Basic info
         name = st.text_input("Strategy Name*", placeholder="e.g., Prime-time unders")
-        description = st.text_area("Description*", placeholder="What is this strategy?",
-                                   height=100)
-        pattern = st.text_input("Pattern*", placeholder="e.g., game.primetime == True AND total_line > 45")
+        description = st.text_area(
+            "Description*", placeholder="What is this strategy?", height=100
+        )
+        pattern = st.text_input(
+            "Pattern*", placeholder="e.g., game.primetime == True AND total_line > 45"
+        )
 
         # Performance metrics
         col1, col2 = st.columns(2)
         with col1:
-            win_rate = st.number_input("Win Rate (%)*", min_value=0.0, max_value=100.0, value=55.0)
-            roi = st.number_input("ROI (%)*", min_value=-100.0, max_value=1000.0, value=10.0)
+            win_rate = st.number_input(
+                "Win Rate (%)*", min_value=0.0, max_value=100.0, value=55.0
+            )
+            roi = st.number_input(
+                "ROI (%)*", min_value=-100.0, max_value=1000.0, value=10.0
+            )
         with col2:
             sample_size = st.number_input("Sample Size*", min_value=1, value=50)
-            edge = st.number_input("Edge (%)", min_value=-100.0, max_value=100.0, value=5.0)
+            edge = st.number_input(
+                "Edge (%)", min_value=-100.0, max_value=100.0, value=5.0
+            )
 
         # Optional
-        sharpe = st.number_input("Sharpe Ratio (optional)", min_value=-10.0, max_value=10.0, value=0.0)
+        sharpe = st.number_input(
+            "Sharpe Ratio (optional)", min_value=-10.0, max_value=10.0, value=0.0
+        )
 
         # Conditions (JSON format)
-        conditions_text = st.text_area("Conditions (JSON format, optional)",
-                                       placeholder='{"primetime": true, "total_line": ">45"}',
-                                       height=100)
+        conditions_text = st.text_area(
+            "Conditions (JSON format, optional)",
+            placeholder='{"primetime": true, "total_line": ">45"}',
+            height=100,
+        )
 
         submitted = st.form_submit_button("Add Strategy")
 
@@ -252,6 +311,7 @@ def render_add_strategy_form(registry: StrategyRegistry):
             if conditions_text:
                 try:
                     import json
+
                     conditions = json.loads(conditions_text)
                 except:
                     st.error("Invalid JSON format for conditions!")
@@ -271,7 +331,7 @@ def render_add_strategy_form(registry: StrategyRegistry):
                 sample_size=sample_size,
                 edge=edge,
                 sharpe_ratio=sharpe if sharpe != 0 else None,
-                conditions=conditions
+                conditions=conditions,
             )
 
             # Add to registry
@@ -319,14 +379,18 @@ def render_duplicate_checker(registry: StrategyRegistry):
     """
     st.markdown("### 🔍 Check for Duplicates")
 
-    pattern = st.text_input("Enter strategy pattern to check:",
-                           placeholder="e.g., Prime-time unders after long travel")
+    pattern = st.text_input(
+        "Enter strategy pattern to check:",
+        placeholder="e.g., Prime-time unders after long travel",
+    )
 
     if pattern:
         similar = registry.find_similar_strategy(pattern, threshold=0.85)
 
         if similar:
-            st.warning(f"⚠️ Similar strategy found: **{similar.name}** ({similar.strategy_id})")
+            st.warning(
+                f"⚠️ Similar strategy found: **{similar.name}** ({similar.strategy_id})"
+            )
             st.write(f"**Similarity:** {similar.similarity_score(pattern) * 100:.1f}%")
             st.write(f"**Status:** {similar.status}")
             st.write(f"**Pattern:** `{similar.pattern}`")
@@ -350,28 +414,45 @@ def render_version_update_form(registry: StrategyRegistry):
 
     # Select strategy to update
     strategy_names = {s.name: s.strategy_id for s in accepted_strategies}
-    selected_name = st.selectbox("Select strategy to update:", list(strategy_names.keys()))
+    selected_name = st.selectbox(
+        "Select strategy to update:", list(strategy_names.keys())
+    )
 
     if selected_name:
         strategy_id = strategy_names[selected_name]
         strategy = registry.strategies[strategy_id]
 
-        st.write(f"**Current stats:** Win Rate: {strategy.win_rate}%, ROI: {strategy.roi}%, Sample: {strategy.sample_size}")
+        st.write(
+            f"**Current stats:** Win Rate: {strategy.win_rate}%, ROI: {strategy.roi}%, Sample: {strategy.sample_size}"
+        )
 
         with st.form("update_version_form"):
             st.markdown("**New performance metrics:**")
 
             col1, col2 = st.columns(2)
             with col1:
-                new_win_rate = st.number_input("New Win Rate (%)", min_value=0.0, max_value=100.0,
-                                               value=strategy.win_rate)
-                new_roi = st.number_input("New ROI (%)", min_value=-100.0, max_value=1000.0,
-                                          value=strategy.roi)
+                new_win_rate = st.number_input(
+                    "New Win Rate (%)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=strategy.win_rate,
+                )
+                new_roi = st.number_input(
+                    "New ROI (%)",
+                    min_value=-100.0,
+                    max_value=1000.0,
+                    value=strategy.roi,
+                )
             with col2:
-                new_sample_size = st.number_input("New Sample Size", min_value=1,
-                                                 value=strategy.sample_size)
-                new_edge = st.number_input("New Edge (%)", min_value=-100.0, max_value=100.0,
-                                          value=strategy.edge)
+                new_sample_size = st.number_input(
+                    "New Sample Size", min_value=1, value=strategy.sample_size
+                )
+                new_edge = st.number_input(
+                    "New Edge (%)",
+                    min_value=-100.0,
+                    max_value=100.0,
+                    value=strategy.edge,
+                )
 
             submitted = st.form_submit_button("Create New Version")
 
@@ -386,7 +467,9 @@ def render_version_update_form(registry: StrategyRegistry):
                     improvements["edge"] = new_edge - strategy.edge
 
                 if not improvements:
-                    st.warning("⚠️ Stats didn't improve! Consider rejecting or archiving instead.")
+                    st.warning(
+                        "⚠️ Stats didn't improve! Consider rejecting or archiving instead."
+                    )
                     return
 
                 # Show improvements
@@ -399,10 +482,12 @@ def render_version_update_form(registry: StrategyRegistry):
                     "win_rate": new_win_rate,
                     "roi": new_roi,
                     "sample_size": new_sample_size,
-                    "edge": new_edge
+                    "edge": new_edge,
                 }
 
-                success, message = registry.create_strategy_version(strategy_id, new_metrics)
+                success, message = registry.create_strategy_version(
+                    strategy_id, new_metrics
+                )
 
                 if success:
                     st.success(message)

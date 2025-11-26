@@ -7,18 +7,21 @@ import streamlit as st
 # AI Providers
 try:
     import anthropic
+
     ANTHROPIC_AVAILABLE = True
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
 try:
     from openai import OpenAI
+
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
     import google.generativeai as genai
+
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
@@ -28,6 +31,7 @@ except ImportError:
 # 1. PAGE SETUP
 # -----------------------------------------------------------------------------
 st.set_page_config(page_title="Media Studio", page_icon="⚡", layout="wide")
+
 
 # -----------------------------------------------------------------------------
 # 2. API CONFIGURATION
@@ -39,6 +43,7 @@ def get_secret(key):
     except Exception:
         pass
     return os.environ.get(key, "")
+
 
 GOOGLE_API_KEY = get_secret("GOOGLE_API_KEY")
 ANTHROPIC_API_KEY = get_secret("ANTHROPIC_API_KEY")
@@ -111,7 +116,8 @@ TEAM_COLORS = {
 # -----------------------------------------------------------------------------
 # 4. CSS STYLING
 # -----------------------------------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         html, body, .stApp { background-color: #0a0f1a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
@@ -119,7 +125,10 @@ st.markdown("""
         .stButton > button { background: #3b82f6; border: none; color: white; font-weight: 600; border-radius: 8px; }
         .stButton > button:hover { background: #2563eb; }
     </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 
 # -----------------------------------------------------------------------------
 # 5. AI ANALYSIS FUNCTION (MULTI-PROVIDER)
@@ -142,11 +151,14 @@ Explain WHY this bet wins. Be specific about matchups or trends. Use betting ter
             response = client.chat.completions.create(
                 model="grok-3-mini",
                 messages=[
-                    {"role": "system", "content": "You are a sharp sports betting analyst. Be concise and confident."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": "You are a sharp sports betting analyst. Be concise and confident.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=200,
-                temperature=0.7
+                temperature=0.7,
             )
             return response.choices[0].message.content, "Grok-3"
         except Exception as e:
@@ -159,7 +171,7 @@ Explain WHY this bet wins. Be specific about matchups or trends. Use betting ter
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=200
+                max_tokens=200,
             )
             return response.choices[0].message.content, "GPT-4o"
         except Exception as e:
@@ -172,37 +184,42 @@ Explain WHY this bet wins. Be specific about matchups or trends. Use betting ter
             message = client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=200,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
             return message.content[0].text, "Claude Haiku"
         except Exception as e:
             pass
-    
+
     # Gemini
     if provider == "gemini" and GENAI_AVAILABLE and GOOGLE_API_KEY:
         try:
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel("gemini-pro")
             response = model.generate_content(prompt)
             return response.text, "Gemini Pro"
         except Exception as e:
             pass
-    
+
     # Fallback
-    pick = game_data['Pick']
-    line = game_data['Line'] if game_data['Line'] else 'ML'
-    return f"Sharp money is backing {pick} {line} at {game_data['Odds']}. The model shows {game_data['Confidence']}% confidence based on recent performance trends and matchup advantages.", "Fallback"
+    pick = game_data["Pick"]
+    line = game_data["Line"] if game_data["Line"] else "ML"
+    return (
+        f"Sharp money is backing {pick} {line} at {game_data['Odds']}. The model shows {game_data['Confidence']}% confidence based on recent performance trends and matchup advantages.",
+        "Fallback",
+    )
 
 
 def generate_hype_card_html(game_data):
     """Generate a stylized HTML hype card with logo and bet details."""
-    pick_team = game_data['Pick']
-    logo_url = TEAM_LOGOS.get(pick_team, "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png")
+    pick_team = game_data["Pick"]
+    logo_url = TEAM_LOGOS.get(
+        pick_team, "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png"
+    )
     colors = TEAM_COLORS.get(pick_team, ("#3b82f6", "#1e40af"))
     primary, secondary = colors
-    
-    bet_type = game_data['Type']
-    line = game_data['Line']
-    
+
+    bet_type = game_data["Type"]
+    line = game_data["Line"]
+
     if bet_type == "ML":
         bet_display = f"{pick_team} ML"
         bet_label = "MONEYLINE"
@@ -212,7 +229,7 @@ def generate_hype_card_html(game_data):
     else:
         bet_display = f"{pick_team} {line}"
         bet_label = "SPREAD"
-    
+
     return f"""
     <div style="
         background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
@@ -286,44 +303,98 @@ def generate_hype_card_html(game_data):
 
 # Header with AI status
 ai_list = []
-if OPENAI_AVAILABLE and XAI_API_KEY: ai_list.append("Grok")
-if OPENAI_AVAILABLE and OPENAI_API_KEY: ai_list.append("GPT")
-if ANTHROPIC_AVAILABLE and ANTHROPIC_API_KEY: ai_list.append("Claude")
-if GENAI_AVAILABLE and GOOGLE_API_KEY: ai_list.append("Gemini")
+if OPENAI_AVAILABLE and XAI_API_KEY:
+    ai_list.append("Grok")
+if OPENAI_AVAILABLE and OPENAI_API_KEY:
+    ai_list.append("GPT")
+if ANTHROPIC_AVAILABLE and ANTHROPIC_API_KEY:
+    ai_list.append("Claude")
+if GENAI_AVAILABLE and GOOGLE_API_KEY:
+    ai_list.append("Gemini")
 ai_badge = f"<span style='background:#6366f1;color:#fff;padding:4px 10px;border-radius:15px;font-size:0.7rem;font-weight:600;margin-left:10px;'>{' • '.join(ai_list) if ai_list else 'No AI'}</span>"
 
-st.markdown(f"""
+st.markdown(
+    f"""
     <div style="margin-bottom: 25px;">
         <span style="font-size: 1.5rem; font-weight: 700; color: #fff;">Media Studio</span>
         <span style="color: #64748b; margin-left: 10px;">Generate shareable bet cards</span>
         {ai_badge}
     </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # BETTING DATA
-df = pd.DataFrame([
-    {"Away": "Bears", "Home": "Lions", "Pick": "Lions", "Type": "Spread", "Line": "-6.5", "Odds": "-110", "Confidence": 78.2},
-    {"Away": "Bills", "Home": "Chiefs", "Pick": "Chiefs", "Type": "ML", "Line": "", "Odds": "-145", "Confidence": 71.5},
-    {"Away": "Cowboys", "Home": "Eagles", "Pick": "Cowboys", "Type": "Spread", "Line": "+4.5", "Odds": "-105", "Confidence": 62.8},
-    {"Away": "Seahawks", "Home": "49ers", "Pick": "49ers", "Type": "ML", "Line": "", "Odds": "-175", "Confidence": 75.3},
-    {"Away": "Packers", "Home": "Vikings", "Pick": "Under", "Type": "O/U", "Line": "47.5", "Odds": "-110", "Confidence": 58.9},
-])
+df = pd.DataFrame(
+    [
+        {
+            "Away": "Bears",
+            "Home": "Lions",
+            "Pick": "Lions",
+            "Type": "Spread",
+            "Line": "-6.5",
+            "Odds": "-110",
+            "Confidence": 78.2,
+        },
+        {
+            "Away": "Bills",
+            "Home": "Chiefs",
+            "Pick": "Chiefs",
+            "Type": "ML",
+            "Line": "",
+            "Odds": "-145",
+            "Confidence": 71.5,
+        },
+        {
+            "Away": "Cowboys",
+            "Home": "Eagles",
+            "Pick": "Cowboys",
+            "Type": "Spread",
+            "Line": "+4.5",
+            "Odds": "-105",
+            "Confidence": 62.8,
+        },
+        {
+            "Away": "Seahawks",
+            "Home": "49ers",
+            "Pick": "49ers",
+            "Type": "ML",
+            "Line": "",
+            "Odds": "-175",
+            "Confidence": 75.3,
+        },
+        {
+            "Away": "Packers",
+            "Home": "Vikings",
+            "Pick": "Under",
+            "Type": "O/U",
+            "Line": "47.5",
+            "Odds": "-110",
+            "Confidence": 58.9,
+        },
+    ]
+)
 
 col1, col2 = st.columns([1, 2])
 
 with col1:
     st.markdown("#### Select Bet")
-    
+
     selected_idx = st.selectbox(
         "Choose a pick",
         df.index,
-        format_func=lambda x: f"{df.iloc[x]['Pick']} {df.iloc[x]['Line']} ({df.iloc[x]['Type']})" if df.iloc[x]['Line'] else f"{df.iloc[x]['Pick']} ML",
-        label_visibility="collapsed"
+        format_func=lambda x: (
+            f"{df.iloc[x]['Pick']} {df.iloc[x]['Line']} ({df.iloc[x]['Type']})"
+            if df.iloc[x]["Line"]
+            else f"{df.iloc[x]['Pick']} ML"
+        ),
+        label_visibility="collapsed",
     )
     game_data = df.iloc[selected_idx]
-    
+
     # Bet Details
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div style="
             background: #1e293b;
             border: 1px solid #334155;
@@ -349,36 +420,46 @@ with col1:
                 </div>
             </div>
         </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     st.markdown("---")
-    
+
     # AI Provider Selector
     providers = []
-    if OPENAI_AVAILABLE and XAI_API_KEY: providers.append("Grok")
-    if OPENAI_AVAILABLE and OPENAI_API_KEY: providers.append("GPT")
-    if ANTHROPIC_AVAILABLE and ANTHROPIC_API_KEY: providers.append("Claude")
-    if GENAI_AVAILABLE and GOOGLE_API_KEY: providers.append("Gemini")
-    if not providers: providers = ["Fallback"]
-    
+    if OPENAI_AVAILABLE and XAI_API_KEY:
+        providers.append("Grok")
+    if OPENAI_AVAILABLE and OPENAI_API_KEY:
+        providers.append("GPT")
+    if ANTHROPIC_AVAILABLE and ANTHROPIC_API_KEY:
+        providers.append("Claude")
+    if GENAI_AVAILABLE and GOOGLE_API_KEY:
+        providers.append("Gemini")
+    if not providers:
+        providers = ["Fallback"]
+
     ai_provider = st.selectbox("AI Provider", providers, label_visibility="collapsed")
-    
+
     # AI Analysis Button
     if st.button("Generate AI Analysis", use_container_width=True, type="primary"):
         with st.spinner(f"Analyzing with {ai_provider}..."):
-            analysis_text, provider_used = generate_ai_analysis(game_data.to_dict(), provider=ai_provider.lower())
-            st.session_state['analysis'] = analysis_text
-            st.session_state['provider_used'] = provider_used
+            analysis_text, provider_used = generate_ai_analysis(
+                game_data.to_dict(), provider=ai_provider.lower()
+            )
+            st.session_state["analysis"] = analysis_text
+            st.session_state["provider_used"] = provider_used
             st.rerun()
 
 with col2:
     # Auto-generate hype card on selection
     st.markdown(generate_hype_card_html(game_data.to_dict()), unsafe_allow_html=True)
-    
+
     # Show AI Analysis
-    if 'analysis' in st.session_state:
-        provider_used = st.session_state.get('provider_used', 'AI')
-        st.markdown(f"""
+    if "analysis" in st.session_state:
+        provider_used = st.session_state.get("provider_used", "AI")
+        st.markdown(
+            f"""
             <div style="
                 background: #1e293b;
                 border-left: 4px solid #6366f1;
@@ -389,4 +470,6 @@ with col2:
                 <div style="color: #6366f1; font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">AI ANALYSIS • {provider_used}</div>
                 <div style="color: #e2e8f0; line-height: 1.6;">{st.session_state['analysis']}</div>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )

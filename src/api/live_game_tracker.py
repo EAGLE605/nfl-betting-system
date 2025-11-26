@@ -30,13 +30,14 @@ class GameStatus(Enum):
     Instead of checking if status == 1, we check if status == GameStatus.PREGAME
     Much more readable!
     """
+
     SCHEDULED = "scheduled"  # Game hasn't started yet
-    PREGAME = "pregame"      # Pregame show, about to start
-    IN_PROGRESS = "in"       # Game is live right now!
-    HALFTIME = "halftime"    # At halftime
-    FINAL = "final"          # Game over
+    PREGAME = "pregame"  # Pregame show, about to start
+    IN_PROGRESS = "in"  # Game is live right now!
+    HALFTIME = "halftime"  # At halftime
+    FINAL = "final"  # Game over
     POSTPONED = "postponed"  # Weather/other delay
-    CANCELED = "canceled"    # Game canceled
+    CANCELED = "canceled"  # Game canceled
 
 
 class LiveGameTracker:
@@ -66,9 +67,13 @@ class LiveGameTracker:
         # Cache settings
         self._cache = {}
         self._cache_timestamp = None
-        self._cache_ttl_live = timedelta(minutes=5)      # Refresh every 5 min during live games
-        self._cache_ttl_pregame = timedelta(minutes=30)   # Refresh every 30 min before games
-        self._cache_ttl_offday = timedelta(hours=24)      # Refresh once a day when no games
+        self._cache_ttl_live = timedelta(
+            minutes=5
+        )  # Refresh every 5 min during live games
+        self._cache_ttl_pregame = timedelta(
+            minutes=30
+        )  # Refresh every 30 min before games
+        self._cache_ttl_offday = timedelta(hours=24)  # Refresh once a day when no games
 
     def get_current_games(self, force_refresh: bool = False) -> List[Dict]:
         """
@@ -254,8 +259,8 @@ class LiveGameTracker:
 
         # Check if any games are upcoming today
         has_upcoming_today = any(
-            g.get("is_upcoming", False) and
-            g.get("game_time_local", datetime.now()).date() == datetime.now().date()
+            g.get("is_upcoming", False)
+            and g.get("game_time_local", datetime.now()).date() == datetime.now().date()
             for g in games
         )
 
@@ -316,9 +321,10 @@ class LiveGameTracker:
         cutoff = datetime.now(self.user_timezone) + timedelta(days=days_ahead)
 
         return [
-            g for g in games
-            if g.get("is_upcoming", False) and
-            g.get("game_time_local", datetime.max) < cutoff
+            g
+            for g in games
+            if g.get("is_upcoming", False)
+            and g.get("game_time_local", datetime.max) < cutoff
         ]
 
     def get_completed_games(self, days_back: int = 7) -> List[Dict]:
@@ -332,9 +338,10 @@ class LiveGameTracker:
         cutoff = datetime.now(self.user_timezone) - timedelta(days=days_back)
 
         return [
-            g for g in games
-            if g.get("is_final", False) and
-            g.get("game_time_local", datetime.min) > cutoff
+            g
+            for g in games
+            if g.get("is_final", False)
+            and g.get("game_time_local", datetime.min) > cutoff
         ]
 
     def format_game_time(self, game: Dict) -> str:

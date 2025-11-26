@@ -47,6 +47,7 @@ import yaml
 # Load .env file BEFORE any other imports that might need env vars
 try:
     from dotenv import load_dotenv
+
     # Load from project root .env
     _env_path = Path(__file__).parent.parent.parent / ".env"
     if _env_path.exists():
@@ -58,6 +59,7 @@ except ImportError:
 try:
     from pydantic import Field, field_validator
     from pydantic_settings import BaseSettings, SettingsConfigDict
+
     PYDANTIC_AVAILABLE = True
 except ImportError:
     PYDANTIC_AVAILABLE = False
@@ -79,24 +81,35 @@ if PYDANTIC_AVAILABLE:
         """API configuration."""
 
         # Odds API
-        odds_api_key: Optional[str] = Field(default=None, description="The Odds API key")
+        odds_api_key: Optional[str] = Field(
+            default=None, description="The Odds API key"
+        )
         odds_api_base_url: str = "https://api.the-odds-api.com/v4"
-        odds_api_rate_limit: int = Field(default=500, description="Monthly request limit")
+        odds_api_rate_limit: int = Field(
+            default=500, description="Monthly request limit"
+        )
 
         # LLM APIs (all optional)
-        openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
-        anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key")
+        openai_api_key: Optional[str] = Field(
+            default=None, description="OpenAI API key"
+        )
+        anthropic_api_key: Optional[str] = Field(
+            default=None, description="Anthropic API key"
+        )
         xai_api_key: Optional[str] = Field(default=None, description="xAI Grok API key")
-        google_api_key: Optional[str] = Field(default=None, description="Google Gemini API key")
+        google_api_key: Optional[str] = Field(
+            default=None, description="Google Gemini API key"
+        )
 
         # ESPN (no key needed)
-        espn_base_url: str = "https://site.api.espn.com/apis/site/v2/sports/football/nfl"
+        espn_base_url: str = (
+            "https://site.api.espn.com/apis/site/v2/sports/football/nfl"
+        )
 
         model_config = SettingsConfigDict(
             env_prefix="",
             extra="ignore",
         )
-
 
     class ModelSettings(BaseSettings):
         """Model training configuration."""
@@ -131,7 +144,6 @@ if PYDANTIC_AVAILABLE:
             extra="ignore",
         )
 
-
     class BettingSettings(BaseSettings):
         """Betting configuration."""
 
@@ -163,7 +175,6 @@ if PYDANTIC_AVAILABLE:
                 raise ValueError("Kelly fraction must be between 0 and 1")
             return v
 
-
     class FeatureSettings(BaseSettings):
         """Feature engineering configuration."""
 
@@ -190,7 +201,6 @@ if PYDANTIC_AVAILABLE:
             extra="ignore",
         )
 
-
     class DashboardSettings(BaseSettings):
         """Dashboard configuration."""
 
@@ -209,7 +219,6 @@ if PYDANTIC_AVAILABLE:
             env_prefix="DASHBOARD_",
             extra="ignore",
         )
-
 
     class NotificationSettings(BaseSettings):
         """Notification configuration."""
@@ -237,7 +246,6 @@ if PYDANTIC_AVAILABLE:
             extra="ignore",
         )
 
-
     class PathSettings(BaseSettings):
         """Path configuration."""
 
@@ -253,7 +261,6 @@ if PYDANTIC_AVAILABLE:
             extra="ignore",
         )
 
-
     class Settings(BaseSettings):
         """
         Master settings class.
@@ -267,7 +274,9 @@ if PYDANTIC_AVAILABLE:
         betting: BettingSettings = Field(default_factory=BettingSettings)
         features: FeatureSettings = Field(default_factory=FeatureSettings)
         dashboard: DashboardSettings = Field(default_factory=DashboardSettings)
-        notifications: NotificationSettings = Field(default_factory=NotificationSettings)
+        notifications: NotificationSettings = Field(
+            default_factory=NotificationSettings
+        )
         paths: PathSettings = Field(default_factory=PathSettings)
 
         # Environment
@@ -306,11 +315,17 @@ if PYDANTIC_AVAILABLE:
             if "model" in yaml_config and "params" in yaml_config["model"]:
                 params = yaml_config["model"]["params"]
                 if not os.getenv("MODEL_XGB_N_ESTIMATORS"):
-                    self.model.xgb_n_estimators = params.get("n_estimators", self.model.xgb_n_estimators)
+                    self.model.xgb_n_estimators = params.get(
+                        "n_estimators", self.model.xgb_n_estimators
+                    )
                 if not os.getenv("MODEL_XGB_MAX_DEPTH"):
-                    self.model.xgb_max_depth = params.get("max_depth", self.model.xgb_max_depth)
+                    self.model.xgb_max_depth = params.get(
+                        "max_depth", self.model.xgb_max_depth
+                    )
                 if not os.getenv("MODEL_XGB_LEARNING_RATE"):
-                    self.model.xgb_learning_rate = params.get("learning_rate", self.model.xgb_learning_rate)
+                    self.model.xgb_learning_rate = params.get(
+                        "learning_rate", self.model.xgb_learning_rate
+                    )
 
             # Betting profiles
             if "betting" in yaml_config:
@@ -318,14 +333,19 @@ if PYDANTIC_AVAILABLE:
                 if active in yaml_config["betting"]:
                     profile = yaml_config["betting"][active]
                     if not os.getenv("BETTING_KELLY_FRACTION"):
-                        self.betting.kelly_fraction = profile.get("kelly_fraction", self.betting.kelly_fraction)
+                        self.betting.kelly_fraction = profile.get(
+                            "kelly_fraction", self.betting.kelly_fraction
+                        )
                     if not os.getenv("BETTING_MAX_BET"):
-                        self.betting.max_bet = profile.get("max_bet", self.betting.max_bet)
+                        self.betting.max_bet = profile.get(
+                            "max_bet", self.betting.max_bet
+                        )
 
         def _load_streamlit_secrets(self):
             """Load secrets from Streamlit (if running in dashboard)."""
             try:
                 import streamlit as st
+
                 if hasattr(st, "secrets"):
                     secrets = st.secrets
 
@@ -336,7 +356,10 @@ if PYDANTIC_AVAILABLE:
                         self.api.xai_api_key = secrets["XAI_API_KEY"]
                     if "OPENAI_API_KEY" in secrets and not self.api.openai_api_key:
                         self.api.openai_api_key = secrets["OPENAI_API_KEY"]
-                    if "ANTHROPIC_API_KEY" in secrets and not self.api.anthropic_api_key:
+                    if (
+                        "ANTHROPIC_API_KEY" in secrets
+                        and not self.api.anthropic_api_key
+                    ):
                         self.api.anthropic_api_key = secrets["ANTHROPIC_API_KEY"]
                     if "GOOGLE_API_KEY" in secrets and not self.api.google_api_key:
                         self.api.google_api_key = secrets["GOOGLE_API_KEY"]
@@ -351,12 +374,14 @@ if PYDANTIC_AVAILABLE:
 
         @property
         def has_llm_keys(self) -> bool:
-            return any([
-                self.api.openai_api_key,
-                self.api.anthropic_api_key,
-                self.api.xai_api_key,
-                self.api.google_api_key,
-            ])
+            return any(
+                [
+                    self.api.openai_api_key,
+                    self.api.anthropic_api_key,
+                    self.api.xai_api_key,
+                    self.api.google_api_key,
+                ]
+            )
 
         def get_llm_keys(self) -> Dict[str, str]:
             """Get all available LLM API keys."""
@@ -406,7 +431,6 @@ if PYDANTIC_AVAILABLE:
                 },
             }
 
-
     @lru_cache()
     def get_settings() -> Settings:
         """
@@ -415,7 +439,6 @@ if PYDANTIC_AVAILABLE:
         Uses lru_cache to ensure only one Settings instance exists.
         """
         return Settings()
-
 
     # Global settings instance
     settings = get_settings()
@@ -456,12 +479,14 @@ else:
 
         @property
         def has_llm_keys(self) -> bool:
-            return any([
-                self.openai_api_key,
-                self.anthropic_api_key,
-                self.xai_api_key,
-                self.google_api_key,
-            ])
+            return any(
+                [
+                    self.openai_api_key,
+                    self.anthropic_api_key,
+                    self.xai_api_key,
+                    self.google_api_key,
+                ]
+            )
 
     settings = FallbackSettings()
     logger.warning("pydantic-settings not installed, using fallback configuration")
@@ -470,6 +495,7 @@ else:
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
+
 
 def reload_settings():
     """Force reload of settings (clears cache)."""
@@ -483,6 +509,7 @@ def print_settings():
     """Print current settings (for debugging)."""
     if PYDANTIC_AVAILABLE:
         import json
+
         print(json.dumps(settings.to_dict(), indent=2))
     else:
         print(f"Odds API Key: {'***' if settings.odds_api_key else 'Not set'}")

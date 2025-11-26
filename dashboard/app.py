@@ -50,24 +50,28 @@ from src.strategy_registry import StrategyRegistry
 # AI Providers
 try:
     import anthropic
+
     ANTHROPIC_AVAILABLE = True
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
 try:
     from openai import OpenAI
+
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
     import google.generativeai as genai
+
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
 
 try:
     import video_engine
+
     VIDEO_AVAILABLE = True
 except ImportError:
     VIDEO_AVAILABLE = False
@@ -82,8 +86,9 @@ st.set_page_config(
     page_title="EDGE HUNTER",
     page_icon="E",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
+
 
 # -----------------------------------------------------------------------------
 # API KEYS
@@ -95,6 +100,7 @@ def get_secret(key: str) -> str:
     except:
         pass
     return os.environ.get(key, "")
+
 
 GOOGLE_API_KEY = get_secret("GOOGLE_API_KEY")
 ANTHROPIC_API_KEY = get_secret("ANTHROPIC_API_KEY")
@@ -146,26 +152,75 @@ TEAM_LOGOS = {
 }
 
 TEAM_NAMES = {
-    "ARI": "Cardinals", "ATL": "Falcons", "BAL": "Ravens", "BUF": "Bills",
-    "CAR": "Panthers", "CHI": "Bears", "CIN": "Bengals", "CLE": "Browns",
-    "DAL": "Cowboys", "DEN": "Broncos", "DET": "Lions", "GB": "Packers",
-    "HOU": "Texans", "IND": "Colts", "JAX": "Jaguars", "KC": "Chiefs",
-    "LAC": "Chargers", "LAR": "Rams", "LV": "Raiders", "MIA": "Dolphins",
-    "MIN": "Vikings", "NE": "Patriots", "NO": "Saints", "NYG": "Giants",
-    "NYJ": "Jets", "PHI": "Eagles", "PIT": "Steelers", "SEA": "Seahawks",
-    "SF": "49ers", "TB": "Buccaneers", "TEN": "Titans", "WAS": "Commanders"
+    "ARI": "Cardinals",
+    "ATL": "Falcons",
+    "BAL": "Ravens",
+    "BUF": "Bills",
+    "CAR": "Panthers",
+    "CHI": "Bears",
+    "CIN": "Bengals",
+    "CLE": "Browns",
+    "DAL": "Cowboys",
+    "DEN": "Broncos",
+    "DET": "Lions",
+    "GB": "Packers",
+    "HOU": "Texans",
+    "IND": "Colts",
+    "JAX": "Jaguars",
+    "KC": "Chiefs",
+    "LAC": "Chargers",
+    "LAR": "Rams",
+    "LV": "Raiders",
+    "MIA": "Dolphins",
+    "MIN": "Vikings",
+    "NE": "Patriots",
+    "NO": "Saints",
+    "NYG": "Giants",
+    "NYJ": "Jets",
+    "PHI": "Eagles",
+    "PIT": "Steelers",
+    "SEA": "Seahawks",
+    "SF": "49ers",
+    "TB": "Buccaneers",
+    "TEN": "Titans",
+    "WAS": "Commanders",
 }
 
 TEAM_COLORS = {
-    "ARI": "#97233F", "ATL": "#A71930", "BAL": "#241773", "BUF": "#00338D",
-    "CAR": "#0085CA", "CHI": "#0B162A", "CIN": "#FB4F14", "CLE": "#311D00",
-    "DAL": "#003594", "DEN": "#FB4F14", "DET": "#0076B6", "GB": "#203731",
-    "HOU": "#03202F", "IND": "#002C5F", "JAX": "#006778", "KC": "#E31837",
-    "LAC": "#0080C6", "LAR": "#003594", "LV": "#000000", "MIA": "#008E97",
-    "MIN": "#4F2683", "NE": "#002244", "NO": "#D3BC8D", "NYG": "#0B2265",
-    "NYJ": "#125740", "PHI": "#004C54", "PIT": "#FFB612", "SEA": "#002244",
-    "SF": "#AA0000", "TB": "#D50A0A", "TEN": "#0C2340", "WAS": "#5A1414"
+    "ARI": "#97233F",
+    "ATL": "#A71930",
+    "BAL": "#241773",
+    "BUF": "#00338D",
+    "CAR": "#0085CA",
+    "CHI": "#0B162A",
+    "CIN": "#FB4F14",
+    "CLE": "#311D00",
+    "DAL": "#003594",
+    "DEN": "#FB4F14",
+    "DET": "#0076B6",
+    "GB": "#203731",
+    "HOU": "#03202F",
+    "IND": "#002C5F",
+    "JAX": "#006778",
+    "KC": "#E31837",
+    "LAC": "#0080C6",
+    "LAR": "#003594",
+    "LV": "#000000",
+    "MIA": "#008E97",
+    "MIN": "#4F2683",
+    "NE": "#002244",
+    "NO": "#D3BC8D",
+    "NYG": "#0B2265",
+    "NYJ": "#125740",
+    "PHI": "#004C54",
+    "PIT": "#FFB612",
+    "SEA": "#002244",
+    "SF": "#AA0000",
+    "TB": "#D50A0A",
+    "TEN": "#0C2340",
+    "WAS": "#5A1414",
 }
+
 
 # -----------------------------------------------------------------------------
 # DATA LOADING
@@ -174,20 +229,20 @@ TEAM_COLORS = {
 def load_games():
     """Load real game data."""
     data_dir = project_root / "data" / "schedules"
-    
+
     games_file = data_dir / "current_week_games.json"
     if games_file.exists():
         try:
-            with open(games_file, 'r') as f:
+            with open(games_file, "r") as f:
                 data = json.load(f)
             return data.get("games", [])
         except:
             pass
-    
+
     schedule_file = data_dir / "week_schedule.json"
     if schedule_file.exists():
         try:
-            with open(schedule_file, 'r') as f:
+            with open(schedule_file, "r") as f:
                 return json.load(f)
         except:
             pass
@@ -197,60 +252,61 @@ def load_games():
 def categorize_game_slot(game):
     """Categorize game into TNF, Early, Late, SNF, MNF based on Eastern Time."""
     from datetime import datetime, timedelta, timezone
-    
-    kickoff = game.get('kickoff_str', game.get('date', ''))
-    day = game.get('day_of_week', '')
+
+    kickoff = game.get("kickoff_str", game.get("date", ""))
+    day = game.get("day_of_week", "")
     hour_et = None
-    
+
     # Parse ISO date format and convert to Eastern Time (UTC-5 for EST)
-    if 'T' in kickoff:
+    if "T" in kickoff:
         try:
-            dt_str = kickoff.replace('Z', '+00:00')
+            dt_str = kickoff.replace("Z", "+00:00")
             dt_utc = datetime.fromisoformat(dt_str)
             # Convert UTC to Eastern (approximately UTC-5)
             dt_et = dt_utc - timedelta(hours=5)
-            day = dt_et.strftime('%A')  # Get day name in ET
+            day = dt_et.strftime("%A")  # Get day name in ET
             hour_et = dt_et.hour
         except Exception as e:
             pass
-    
-    if 'Thursday' in day:
-        return 'TNF'
-    elif 'Friday' in day:
-        return 'FRIDAY'
-    elif 'Saturday' in day:
-        return 'SATURDAY'
-    elif 'Monday' in day:
-        return 'MNF'
-    elif 'Sunday' in day:
+
+    if "Thursday" in day:
+        return "TNF"
+    elif "Friday" in day:
+        return "FRIDAY"
+    elif "Saturday" in day:
+        return "SATURDAY"
+    elif "Monday" in day:
+        return "MNF"
+    elif "Sunday" in day:
         # Categorize by Eastern Time hour
         if hour_et is not None:
             if hour_et < 16:  # Before 4 PM ET
-                return 'EARLY'
+                return "EARLY"
             elif hour_et < 20:  # 4 PM - 8 PM ET
-                return 'LATE'
+                return "LATE"
             else:  # 8 PM+ ET
-                return 'SNF'
-        return 'EARLY'
-    return 'EARLY'  # Default
+                return "SNF"
+        return "EARLY"
+    return "EARLY"  # Default
 
 
 def get_game_status_label(game):
     """Get clean status label."""
-    status = game.get('status', '')
-    if status == 'STATUS_FINAL':
-        return 'FINAL'
-    elif status == 'STATUS_IN_PROGRESS':
-        return 'LIVE'
-    elif status == 'STATUS_SCHEDULED':
-        return 'UPCOMING'
-    return status.replace('STATUS_', '')
+    status = game.get("status", "")
+    if status == "STATUS_FINAL":
+        return "FINAL"
+    elif status == "STATUS_IN_PROGRESS":
+        return "LIVE"
+    elif status == "STATUS_SCHEDULED":
+        return "UPCOMING"
+    return status.replace("STATUS_", "")
 
 
 # -----------------------------------------------------------------------------
 # CSS - DARK AGGRESSIVE THEME (NO PURPLE/BLUE AI BULLSHIT)
 # -----------------------------------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
     
@@ -526,7 +582,10 @@ st.markdown("""
     ::-webkit-scrollbar-track { background: var(--dark-1); }
     ::-webkit-scrollbar-thumb { background: var(--dark-4); border-radius: 3px; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 
 # -----------------------------------------------------------------------------
 # AI FUNCTIONS
@@ -550,24 +609,24 @@ Give me:
             response = client.chat.completions.create(
                 model="grok-3-mini",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=300
+                max_tokens=300,
             )
             return response.choices[0].message.content
         except:
             pass
-    
+
     if provider == "gpt" and OPENAI_API_KEY:
         try:
             client = OpenAI(api_key=OPENAI_API_KEY)
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=300
+                max_tokens=300,
             )
             return response.choices[0].message.content
         except:
             pass
-    
+
     return "Analysis unavailable"
 
 
@@ -579,8 +638,13 @@ CURRENT_WEEK = 12
 
 # Categorize games by slot
 games_by_slot = {
-    'TNF': [], 'FRIDAY': [], 'SATURDAY': [],
-    'EARLY': [], 'LATE': [], 'SNF': [], 'MNF': []
+    "TNF": [],
+    "FRIDAY": [],
+    "SATURDAY": [],
+    "EARLY": [],
+    "LATE": [],
+    "SNF": [],
+    "MNF": [],
 }
 
 for game in games:
@@ -590,9 +654,9 @@ for game in games:
 
 # Calculate stats
 total_games = len(games)
-final_games = [g for g in games if g.get('status') == 'STATUS_FINAL']
-live_games = [g for g in games if g.get('status') == 'STATUS_IN_PROGRESS']
-upcoming_games = [g for g in games if g.get('status') == 'STATUS_SCHEDULED']
+final_games = [g for g in games if g.get("status") == "STATUS_FINAL"]
+live_games = [g for g in games if g.get("status") == "STATUS_IN_PROGRESS"]
+upcoming_games = [g for g in games if g.get("status") == "STATUS_SCHEDULED"]
 
 # -----------------------------------------------------------------------------
 # HEADER
@@ -600,14 +664,17 @@ upcoming_games = [g for g in games if g.get('status') == 'STATUS_SCHEDULED']
 col_brand, col_stats = st.columns([3, 1])
 
 with col_brand:
-    ai_count = sum([
-        bool(XAI_API_KEY),
-        bool(OPENAI_API_KEY),
-        bool(ANTHROPIC_API_KEY),
-        bool(GOOGLE_API_KEY)
-    ])
-    
-    st.markdown(f"""
+    ai_count = sum(
+        [
+            bool(XAI_API_KEY),
+            bool(OPENAI_API_KEY),
+            bool(ANTHROPIC_API_KEY),
+            bool(GOOGLE_API_KEY),
+        ]
+    )
+
+    st.markdown(
+        f"""
         <div style="margin-bottom: 20px;">
             <div style="
                 font-family: 'Bebas Neue', sans-serif;
@@ -624,10 +691,13 @@ with col_brand:
                 margin-top: 4px;
             ">AUTONOMOUS BETTING INTELLIGENCE // WEEK {CURRENT_WEEK} // {ai_count} AI ENGINES ACTIVE</div>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with col_stats:
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div style="text-align: right; padding: 10px;">
             <div style="font-family: 'Rajdhani'; font-size: 0.7rem; color: var(--text-3); letter-spacing: 2px;">GAMES TRACKED</div>
             <div style="font-family: 'Bebas Neue'; font-size: 2.5rem; color: var(--accent);">{total_games}</div>
@@ -635,7 +705,9 @@ with col_stats:
                 {len(final_games)} FINAL / {len(live_games)} LIVE / {len(upcoming_games)} UPCOMING
             </div>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 # -----------------------------------------------------------------------------
 # LIVE GAME TRACKING SETUP
@@ -654,7 +726,9 @@ should_auto_refresh = tracker.should_auto_refresh()
 
 if should_auto_refresh:
     # Check if enough time has passed for auto-refresh (5 minutes)
-    time_since_refresh = (datetime.now() - st.session_state.last_refresh).total_seconds()
+    time_since_refresh = (
+        datetime.now() - st.session_state.last_refresh
+    ).total_seconds()
     if time_since_refresh > 300:  # 5 minutes = 300 seconds
         st.session_state.last_refresh = datetime.now()
         st.rerun()  # Rerun the app to fetch fresh data
@@ -662,9 +736,27 @@ if should_auto_refresh:
 # -----------------------------------------------------------------------------
 # TABS
 # -----------------------------------------------------------------------------
-tab_live, tab_games, tab_calendar, tab_parlay, tab_tracker, tab_lab, tab_strategy, tab_intel = st.tabs([
-    "🔴 LIVE", "GAMES", "CALENDAR", "PARLAY", "TRACKER", "LAB", "📋 STRATEGIES", "INTEL"
-])
+(
+    tab_live,
+    tab_games,
+    tab_calendar,
+    tab_parlay,
+    tab_tracker,
+    tab_lab,
+    tab_strategy,
+    tab_intel,
+) = st.tabs(
+    [
+        "🔴 LIVE",
+        "GAMES",
+        "CALENDAR",
+        "PARLAY",
+        "TRACKER",
+        "LAB",
+        "📋 STRATEGIES",
+        "INTEL",
+    ]
+)
 
 # =============================================================================
 # TAB: LIVE GAMES (NEW!)
@@ -726,7 +818,9 @@ with tab_live:
 
     except Exception as e:
         st.error(f"⚠️ Error fetching live game data: {e}")
-        st.info("💡 **Troubleshooting tips:**\n- Check your internet connection\n- ESPN API might be temporarily down\n- Try the manual refresh button")
+        st.info(
+            "💡 **Troubleshooting tips:**\n- Check your internet connection\n- ESPN API might be temporarily down\n- Try the manual refresh button"
+        )
 
         # Show cached data if available
         if st.session_state.get("cached_games"):
@@ -739,58 +833,61 @@ with tab_live:
 # =============================================================================
 with tab_games:
     # Slot order
-    slot_order = ['TNF', 'FRIDAY', 'SATURDAY', 'EARLY', 'LATE', 'SNF', 'MNF']
+    slot_order = ["TNF", "FRIDAY", "SATURDAY", "EARLY", "LATE", "SNF", "MNF"]
     slot_labels = {
-        'TNF': 'THURSDAY NIGHT FOOTBALL',
-        'FRIDAY': 'FRIDAY GAMES',
-        'SATURDAY': 'SATURDAY GAMES',
-        'EARLY': 'SUNDAY EARLY (1:00 PM ET)',
-        'LATE': 'SUNDAY LATE (4:25 PM ET)',
-        'SNF': 'SUNDAY NIGHT FOOTBALL',
-        'MNF': 'MONDAY NIGHT FOOTBALL'
+        "TNF": "THURSDAY NIGHT FOOTBALL",
+        "FRIDAY": "FRIDAY GAMES",
+        "SATURDAY": "SATURDAY GAMES",
+        "EARLY": "SUNDAY EARLY (1:00 PM ET)",
+        "LATE": "SUNDAY LATE (4:25 PM ET)",
+        "SNF": "SUNDAY NIGHT FOOTBALL",
+        "MNF": "MONDAY NIGHT FOOTBALL",
     }
-    
+
     for slot in slot_order:
         slot_games = games_by_slot.get(slot, [])
         if not slot_games:
             continue
-        
-        st.markdown(f'<div class="slot-header">{slot_labels.get(slot, slot)}</div>', unsafe_allow_html=True)
-        
+
+        st.markdown(
+            f'<div class="slot-header">{slot_labels.get(slot, slot)}</div>',
+            unsafe_allow_html=True,
+        )
+
         for game in slot_games:
-            away = game.get('away_team', 'AWAY')
-            home = game.get('home_team', 'HOME')
-            away_score = game.get('away_score', '-')
-            home_score = game.get('home_score', '-')
+            away = game.get("away_team", "AWAY")
+            home = game.get("home_team", "HOME")
+            away_score = game.get("away_score", "-")
+            home_score = game.get("home_score", "-")
             status = get_game_status_label(game)
-            
-            away_logo = TEAM_LOGOS.get(away, '')
-            home_logo = TEAM_LOGOS.get(home, '')
+
+            away_logo = TEAM_LOGOS.get(away, "")
+            home_logo = TEAM_LOGOS.get(home, "")
             away_name = TEAM_NAMES.get(away, away)
             home_name = TEAM_NAMES.get(home, home)
-            away_color = TEAM_COLORS.get(away, '#333')
-            home_color = TEAM_COLORS.get(home, '#333')
-            
+            away_color = TEAM_COLORS.get(away, "#333")
+            home_color = TEAM_COLORS.get(home, "#333")
+
             # Card class based on status
-            card_class = 'game-card'
-            if status == 'LIVE':
-                card_class += ' live'
-            elif status == 'FINAL':
-                card_class += ' final'
-            
+            card_class = "game-card"
+            if status == "LIVE":
+                card_class += " live"
+            elif status == "FINAL":
+                card_class += " final"
+
             # Status badge
-            if status == 'LIVE':
+            if status == "LIVE":
                 badge = '<span class="pick-badge live">LIVE</span>'
-            elif status == 'FINAL':
+            elif status == "FINAL":
                 badge = '<span class="pick-badge pending">FINAL</span>'
             else:
                 badge = '<span class="pick-badge pending">UPCOMING</span>'
-            
+
             # Generate random confidence for demo
             conf = random.randint(55, 92)
-            spread = random.choice(['-3.5', '-6.5', '+2.5', '-7', '+3', '-4.5'])
-            
-            card_html = f'''<div class="{card_class}">
+            spread = random.choice(["-3.5", "-6.5", "+2.5", "-7", "+3", "-4.5"])
+
+            card_html = f"""<div class="{card_class}">
 <div class="game-card-overlay"></div>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: relative; z-index: 1;">
 <span style="font-family: Rajdhani; font-size: 0.75rem; color: var(--text-3); letter-spacing: 1px;">{slot}</span>
@@ -816,7 +913,7 @@ with tab_games:
 <div class="conf-fill" style="width: {conf}%;"></div>
 </div>
 </div>
-</div>'''
+</div>"""
             st.markdown(card_html, unsafe_allow_html=True)
 
 # =============================================================================
@@ -849,8 +946,10 @@ with tab_calendar:
         # SECTION 1: LIVE GAMES
         # =====================================================================
         if live_now:
-            st.markdown(f'<div class="slot-header">🔴 LIVE NOW ({len(live_now)} GAMES)</div>',
-                       unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="slot-header">🔴 LIVE NOW ({len(live_now)} GAMES)</div>',
+                unsafe_allow_html=True,
+            )
 
             for game in live_now:
                 away = game.get("away_team", "")
@@ -869,7 +968,8 @@ with tab_calendar:
                     quarter_display = f"{period-4}OT"
 
                 # Card with live styling
-                st.markdown(f'''
+                st.markdown(
+                    f"""
                 <div class="game-card live" style="background: var(--dark-2); border: 2px solid #ff0000; border-radius: 8px; padding: 16px; margin: 12px 0;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="flex: 1;">
@@ -883,14 +983,18 @@ with tab_calendar:
                         </div>
                     </div>
                 </div>
-                ''', unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
         # =====================================================================
         # SECTION 2: UPCOMING GAMES
         # =====================================================================
         if upcoming:
-            st.markdown(f'<div class="slot-header">⏰ UPCOMING ({len(upcoming)} GAMES)</div>',
-                       unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="slot-header">⏰ UPCOMING ({len(upcoming)} GAMES)</div>',
+                unsafe_allow_html=True,
+            )
 
             # Group by date
             games_by_date = {}
@@ -903,7 +1007,7 @@ with tab_calendar:
                 if date_key not in games_by_date:
                     games_by_date[date_key] = {
                         "date_display": game_time.strftime("%A, %B %d"),
-                        "games": []
+                        "games": [],
                     }
                 games_by_date[date_key]["games"].append(game)
 
@@ -912,33 +1016,42 @@ with tab_calendar:
                 date_info = games_by_date[date_key]
                 st.markdown(f"### {date_info['date_display']}")
 
-                for game in sorted(date_info["games"],
-                                  key=lambda g: g.get("game_time_local", datetime.min)):
+                for game in sorted(
+                    date_info["games"],
+                    key=lambda g: g.get("game_time_local", datetime.min),
+                ):
                     away = game.get("away_team", "")
                     home = game.get("home_team", "")
                     game_time = tracker.format_game_time(game)
 
-                    st.markdown(f'''
+                    st.markdown(
+                        f"""
                     <div class="game-card" style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin: 8px 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="font-size: 1.1rem;">{away} @ {home}</div>
                             <div style="color: #888; font-size: 0.9rem;">{game_time}</div>
                         </div>
                     </div>
-                    ''', unsafe_allow_html=True)
+                    """,
+                        unsafe_allow_html=True,
+                    )
 
         # =====================================================================
         # SECTION 3: COMPLETED GAMES
         # =====================================================================
         if completed:
             st.markdown("---")
-            st.markdown(f'<div class="slot-header">✅ COMPLETED ({len(completed)} GAMES)</div>',
-                       unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="slot-header">✅ COMPLETED ({len(completed)} GAMES)</div>',
+                unsafe_allow_html=True,
+            )
 
             # Sort by game time (most recent first)
-            completed_sorted = sorted(completed,
-                                     key=lambda g: g.get("game_time_local", datetime.min),
-                                     reverse=True)
+            completed_sorted = sorted(
+                completed,
+                key=lambda g: g.get("game_time_local", datetime.min),
+                reverse=True,
+            )
 
             for game in completed_sorted:
                 away = game.get("away_team", "")
@@ -964,7 +1077,8 @@ with tab_calendar:
                     away_style = ""
                     home_style = ""
 
-                st.markdown(f'''
+                st.markdown(
+                    f"""
                 <div class="game-card" style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin: 8px 0; opacity: 0.8;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -979,11 +1093,15 @@ with tab_calendar:
                         </div>
                     </div>
                 </div>
-                ''', unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
         # No games at all
         if not live_now and not upcoming and not completed:
-            st.info("No games found for the current week. Check back during the NFL season!")
+            st.info(
+                "No games found for the current week. Check back during the NFL season!"
+            )
 
     except Exception as e:
         st.error(f"⚠️ Error loading calendar data: {e}")
@@ -993,27 +1111,29 @@ with tab_calendar:
 # TAB 3: PARLAY BUILDER - FULLY WIRED
 # =============================================================================
 with tab_parlay:
-    st.markdown('<div class="slot-header">PARLAY ARCHITECT</div>', unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div class="slot-header">PARLAY ARCHITECT</div>', unsafe_allow_html=True
+    )
+
     # Initialize session state
-    if 'parlay_legs' not in st.session_state:
+    if "parlay_legs" not in st.session_state:
         st.session_state.parlay_legs = []
-    if 'parlay_wager' not in st.session_state:
+    if "parlay_wager" not in st.session_state:
         st.session_state.parlay_wager = 100
-    
+
     # Parlay math functions
     def american_to_decimal(american_odds):
         if american_odds > 0:
             return (american_odds / 100) + 1
         else:
             return (100 / abs(american_odds)) + 1
-    
+
     def calculate_parlay_odds(legs):
         if not legs:
             return 0, 0, "+0"
         total_mult = 1.0
         for leg in legs:
-            odds = int(leg['odds'].replace('+', ''))
+            odds = int(leg["odds"].replace("+", ""))
             total_mult *= american_to_decimal(odds)
         payout = st.session_state.parlay_wager * total_mult
         profit = payout - st.session_state.parlay_wager
@@ -1025,37 +1145,43 @@ with tab_parlay:
             final_am = round(-100 / (final_dec - 1))
             odds_str = str(final_am)
         return profit, total_mult, odds_str
-    
+
     col_picks, col_slip = st.columns([2, 1])
-    
+
     with col_picks:
-        st.markdown("""
+        st.markdown(
+            """
             <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
                 <div style="font-family: 'Rajdhani'; font-size: 0.8rem; color: var(--text-3); letter-spacing: 1px; margin-bottom: 8px;">SELECT YOUR PLAYS</div>
                 <div style="color: var(--text-2); font-size: 0.9rem;">Click to add legs to your parlay slip</div>
             </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Generate odds for each game
-        for game in (games[:10] if games else []):
-            if isinstance(game, dict) and 'away_team' in game:
-                away = game.get('away_team', 'AWAY')
-                home = game.get('home_team', 'HOME')
+        for game in games[:10] if games else []:
+            if isinstance(game, dict) and "away_team" in game:
+                away = game.get("away_team", "AWAY")
+                home = game.get("home_team", "HOME")
             else:
-                away = game.get('away', 'AWAY')
-                home = game.get('home', 'HOME')
-            
-            away_logo = TEAM_LOGOS.get(away, '')
-            home_logo = TEAM_LOGOS.get(home, '')
-            
+                away = game.get("away", "AWAY")
+                home = game.get("home", "HOME")
+
+            away_logo = TEAM_LOGOS.get(away, "")
+            home_logo = TEAM_LOGOS.get(home, "")
+
             # Generate realistic odds
             np.random.seed(hash(f"{away}{home}") % 2**32)
-            spread = np.random.choice(['-2.5', '-3', '-3.5', '-6.5', '-7', '+2.5', '+3', '+3.5', '+6.5', '+7'])
-            ml_fav = np.random.choice(['-130', '-140', '-150', '-165', '-180'])
-            ml_dog = np.random.choice(['+110', '+120', '+130', '+145', '+160'])
-            total = np.random.choice(['42.5', '43.5', '44.5', '45.5', '46.5', '47.5'])
-            
-            st.markdown(f"""
+            spread = np.random.choice(
+                ["-2.5", "-3", "-3.5", "-6.5", "-7", "+2.5", "+3", "+3.5", "+6.5", "+7"]
+            )
+            ml_fav = np.random.choice(["-130", "-140", "-150", "-165", "-180"])
+            ml_dog = np.random.choice(["+110", "+120", "+130", "+145", "+160"])
+            total = np.random.choice(["42.5", "43.5", "44.5", "45.5", "46.5", "47.5"])
+
+            st.markdown(
+                f"""
                 <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin-bottom: 8px;">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                         <img src="{away_logo}" style="width: 28px; height: 28px;"/>
@@ -1065,39 +1191,87 @@ with tab_parlay:
                         <img src="{home_logo}" style="width: 28px; height: 28px;"/>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             c1, c2, c3, c4, c5, c6 = st.columns(6)
-            
+
             with c1:
                 if st.button(f"{away} {spread}", key=f"sp_a_{away}_{home}"):
-                    st.session_state.parlay_legs.append({'game': f"{away} @ {home}", 'pick': f"{away} {spread}", 'odds': '-110', 'type': 'SPREAD'})
+                    st.session_state.parlay_legs.append(
+                        {
+                            "game": f"{away} @ {home}",
+                            "pick": f"{away} {spread}",
+                            "odds": "-110",
+                            "type": "SPREAD",
+                        }
+                    )
                     st.rerun()
             with c2:
-                if st.button(f"{home} {spread.replace('-', '+').replace('++', '+') if '-' in spread else spread.replace('+', '-')}", key=f"sp_h_{away}_{home}"):
-                    st.session_state.parlay_legs.append({'game': f"{away} @ {home}", 'pick': f"{home} {spread.replace('-', '+').replace('++', '+') if '-' in spread else spread.replace('+', '-')}", 'odds': '-110', 'type': 'SPREAD'})
+                if st.button(
+                    f"{home} {spread.replace('-', '+').replace('++', '+') if '-' in spread else spread.replace('+', '-')}",
+                    key=f"sp_h_{away}_{home}",
+                ):
+                    st.session_state.parlay_legs.append(
+                        {
+                            "game": f"{away} @ {home}",
+                            "pick": f"{home} {spread.replace('-', '+').replace('++', '+') if '-' in spread else spread.replace('+', '-')}",
+                            "odds": "-110",
+                            "type": "SPREAD",
+                        }
+                    )
                     st.rerun()
             with c3:
                 if st.button(f"{away} ML", key=f"ml_a_{away}_{home}"):
-                    st.session_state.parlay_legs.append({'game': f"{away} @ {home}", 'pick': f"{away} ML", 'odds': ml_dog, 'type': 'ML'})
+                    st.session_state.parlay_legs.append(
+                        {
+                            "game": f"{away} @ {home}",
+                            "pick": f"{away} ML",
+                            "odds": ml_dog,
+                            "type": "ML",
+                        }
+                    )
                     st.rerun()
             with c4:
                 if st.button(f"{home} ML", key=f"ml_h_{away}_{home}"):
-                    st.session_state.parlay_legs.append({'game': f"{away} @ {home}", 'pick': f"{home} ML", 'odds': ml_fav, 'type': 'ML'})
+                    st.session_state.parlay_legs.append(
+                        {
+                            "game": f"{away} @ {home}",
+                            "pick": f"{home} ML",
+                            "odds": ml_fav,
+                            "type": "ML",
+                        }
+                    )
                     st.rerun()
             with c5:
                 if st.button(f"O {total}", key=f"ov_{away}_{home}"):
-                    st.session_state.parlay_legs.append({'game': f"{away} @ {home}", 'pick': f"Over {total}", 'odds': '-110', 'type': 'TOTAL'})
+                    st.session_state.parlay_legs.append(
+                        {
+                            "game": f"{away} @ {home}",
+                            "pick": f"Over {total}",
+                            "odds": "-110",
+                            "type": "TOTAL",
+                        }
+                    )
                     st.rerun()
             with c6:
                 if st.button(f"U {total}", key=f"un_{away}_{home}"):
-                    st.session_state.parlay_legs.append({'game': f"{away} @ {home}", 'pick': f"Under {total}", 'odds': '-110', 'type': 'TOTAL'})
+                    st.session_state.parlay_legs.append(
+                        {
+                            "game": f"{away} @ {home}",
+                            "pick": f"Under {total}",
+                            "odds": "-110",
+                            "type": "TOTAL",
+                        }
+                    )
                     st.rerun()
-    
+
     with col_slip:
         profit, mult, total_odds = calculate_parlay_odds(st.session_state.parlay_legs)
-        
-        st.markdown(f"""
+
+        st.markdown(
+            f"""
             <div style="background: linear-gradient(135deg, var(--dark-2) 0%, var(--dark-3) 100%); border: 1px solid var(--accent); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     <div>
@@ -1110,13 +1284,16 @@ with tab_parlay:
                     </div>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         if st.session_state.parlay_legs:
             for i, leg in enumerate(st.session_state.parlay_legs):
                 leg_col1, leg_col2 = st.columns([4, 1])
                 with leg_col1:
-                    st.markdown(f"""
+                    st.markdown(
+                        f"""
                         <div style="background: var(--dark-3); padding: 12px; border-radius: 6px; margin: 6px 0; border-left: 3px solid var(--accent);">
                             <div style="font-size: 0.7rem; color: var(--text-3);">{leg['game']}</div>
                             <div style="font-weight: 600; color: var(--text-1);">{leg['pick']}</div>
@@ -1125,17 +1302,22 @@ with tab_parlay:
                                 <span style="font-weight: 700; color: var(--accent);">{leg['odds']}</span>
                             </div>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """,
+                        unsafe_allow_html=True,
+                    )
                 with leg_col2:
                     if st.button("X", key=f"rm_{i}"):
                         st.session_state.parlay_legs.pop(i)
                         st.rerun()
-            
+
             st.markdown("---")
-            
-            st.session_state.parlay_wager = st.number_input("WAGER ($)", min_value=1, value=st.session_state.parlay_wager, step=10)
-            
-            st.markdown(f"""
+
+            st.session_state.parlay_wager = st.number_input(
+                "WAGER ($)", min_value=1, value=st.session_state.parlay_wager, step=10
+            )
+
+            st.markdown(
+                f"""
                 <div style="background: var(--dark-2); border-radius: 8px; padding: 16px; margin-top: 12px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                         <span style="color: var(--text-3);">To Win</span>
@@ -1146,8 +1328,10 @@ with tab_parlay:
                         <span style="font-weight: 600;">${profit + st.session_state.parlay_wager:,.2f}</span>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             col_clear, col_place = st.columns(2)
             with col_clear:
                 if st.button("CLEAR ALL", use_container_width=True):
@@ -1156,61 +1340,150 @@ with tab_parlay:
             with col_place:
                 if st.button("PLACE BET", type="primary", use_container_width=True):
                     # Save to bet tracker
-                    if 'placed_bets' not in st.session_state:
+                    if "placed_bets" not in st.session_state:
                         st.session_state.placed_bets = []
-                    st.session_state.placed_bets.append({
-                        'date': datetime.now().strftime('%m/%d'),
-                        'type': f"{len(st.session_state.parlay_legs)}-Leg Parlay",
-                        'picks': [l['pick'] for l in st.session_state.parlay_legs],
-                        'odds': total_odds,
-                        'stake': f"${st.session_state.parlay_wager}",
-                        'to_win': f"${profit:,.2f}",
-                        'result': 'PENDING'
-                    })
-                    st.success(f"Bet placed! {len(st.session_state.parlay_legs)}-leg parlay at {total_odds}")
+                    st.session_state.placed_bets.append(
+                        {
+                            "date": datetime.now().strftime("%m/%d"),
+                            "type": f"{len(st.session_state.parlay_legs)}-Leg Parlay",
+                            "picks": [l["pick"] for l in st.session_state.parlay_legs],
+                            "odds": total_odds,
+                            "stake": f"${st.session_state.parlay_wager}",
+                            "to_win": f"${profit:,.2f}",
+                            "result": "PENDING",
+                        }
+                    )
+                    st.success(
+                        f"Bet placed! {len(st.session_state.parlay_legs)}-leg parlay at {total_odds}"
+                    )
                     st.session_state.parlay_legs = []
                     st.rerun()
         else:
-            st.markdown("""
+            st.markdown(
+                """
                 <div style="text-align: center; padding: 40px 20px; color: var(--text-3);">
                     <div style="font-size: 2rem; margin-bottom: 12px; opacity: 0.5;">+</div>
                     <div>Add picks to build your parlay</div>
                 </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
 # =============================================================================
 # TAB 4: BET TRACKER - FULL TRACKING SYSTEM
 # =============================================================================
 with tab_tracker:
-    st.markdown('<div class="slot-header">PERFORMANCE TRACKER</div>', unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div class="slot-header">PERFORMANCE TRACKER</div>', unsafe_allow_html=True
+    )
+
     # Initialize tracking state
-    if 'placed_bets' not in st.session_state:
+    if "placed_bets" not in st.session_state:
         st.session_state.placed_bets = []
-    if 'bet_history' not in st.session_state:
+    if "bet_history" not in st.session_state:
         # Sample historical data
         st.session_state.bet_history = [
-            {"date": "11/24", "game": "CHI @ MIN", "pick": "CHI +3", "odds": "-110", "stake": 110, "result": "WIN", "profit": 100},
-            {"date": "11/24", "game": "DET @ IND", "pick": "DET -7", "odds": "-110", "stake": 110, "result": "WIN", "profit": 100},
-            {"date": "11/24", "game": "GB @ SF", "pick": "SF ML", "odds": "-165", "stake": 165, "result": "WIN", "profit": 100},
-            {"date": "11/21", "game": "PIT @ CLE", "pick": "Under 37.5", "odds": "-110", "stake": 110, "result": "WIN", "profit": 100},
-            {"date": "11/21", "game": "BAL @ LAC", "pick": "BAL -3", "odds": "-110", "stake": 220, "result": "LOSS", "profit": -220},
-            {"date": "11/17", "game": "KC @ BUF", "pick": "Over 47", "odds": "-110", "stake": 110, "result": "LOSS", "profit": -110},
-            {"date": "11/17", "game": "DET @ JAX", "pick": "DET ML", "odds": "-180", "stake": 180, "result": "WIN", "profit": 100},
-            {"date": "11/17", "game": "PHI @ WAS", "pick": "PHI -3.5", "odds": "-110", "stake": 110, "result": "WIN", "profit": 100},
-            {"date": "11/14", "game": "CIN @ BAL", "pick": "CIN +6.5", "odds": "-110", "stake": 110, "result": "WIN", "profit": 100},
-            {"date": "11/14", "game": "MIA @ LV", "pick": "MIA ML", "odds": "-200", "stake": 200, "result": "WIN", "profit": 100},
+            {
+                "date": "11/24",
+                "game": "CHI @ MIN",
+                "pick": "CHI +3",
+                "odds": "-110",
+                "stake": 110,
+                "result": "WIN",
+                "profit": 100,
+            },
+            {
+                "date": "11/24",
+                "game": "DET @ IND",
+                "pick": "DET -7",
+                "odds": "-110",
+                "stake": 110,
+                "result": "WIN",
+                "profit": 100,
+            },
+            {
+                "date": "11/24",
+                "game": "GB @ SF",
+                "pick": "SF ML",
+                "odds": "-165",
+                "stake": 165,
+                "result": "WIN",
+                "profit": 100,
+            },
+            {
+                "date": "11/21",
+                "game": "PIT @ CLE",
+                "pick": "Under 37.5",
+                "odds": "-110",
+                "stake": 110,
+                "result": "WIN",
+                "profit": 100,
+            },
+            {
+                "date": "11/21",
+                "game": "BAL @ LAC",
+                "pick": "BAL -3",
+                "odds": "-110",
+                "stake": 220,
+                "result": "LOSS",
+                "profit": -220,
+            },
+            {
+                "date": "11/17",
+                "game": "KC @ BUF",
+                "pick": "Over 47",
+                "odds": "-110",
+                "stake": 110,
+                "result": "LOSS",
+                "profit": -110,
+            },
+            {
+                "date": "11/17",
+                "game": "DET @ JAX",
+                "pick": "DET ML",
+                "odds": "-180",
+                "stake": 180,
+                "result": "WIN",
+                "profit": 100,
+            },
+            {
+                "date": "11/17",
+                "game": "PHI @ WAS",
+                "pick": "PHI -3.5",
+                "odds": "-110",
+                "stake": 110,
+                "result": "WIN",
+                "profit": 100,
+            },
+            {
+                "date": "11/14",
+                "game": "CIN @ BAL",
+                "pick": "CIN +6.5",
+                "odds": "-110",
+                "stake": 110,
+                "result": "WIN",
+                "profit": 100,
+            },
+            {
+                "date": "11/14",
+                "game": "MIA @ LV",
+                "pick": "MIA ML",
+                "odds": "-200",
+                "stake": 200,
+                "result": "WIN",
+                "profit": 100,
+            },
         ]
-    
+
     # Calculate metrics from history
     all_bets = st.session_state.bet_history + st.session_state.placed_bets
     total_bets = len(all_bets)
-    wins = len([b for b in all_bets if b['result'] == 'WIN'])
+    wins = len([b for b in all_bets if b["result"] == "WIN"])
     win_rate = (wins / total_bets * 100) if total_bets > 0 else 0
-    total_profit = sum(b['profit'] for b in all_bets)
-    total_staked = sum(b['stake'] for b in all_bets)
+    total_profit = sum(b["profit"] for b in all_bets)
+    total_staked = sum(b["stake"] for b in all_bets)
     roi = (total_profit / total_staked * 100) if total_staked > 0 else 0
-    
+
     # Summary metrics row
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("TOTAL BETS", f"{total_bets}")
@@ -1218,126 +1491,151 @@ with tab_tracker:
     m3.metric("WIN RATE", f"{win_rate:.1f}%")
     m4.metric("PROFIT", f"${total_profit:+,.0f}")
     m5.metric("ROI", f"{roi:+.1f}%")
-    
+
     # THE BADASS PERFORMANCE CHART
     st.markdown("### EQUITY CURVE")
-    
+
     # Build cumulative equity curve
     equity = [10000]  # Starting bankroll
     dates = []
     for i, bet in enumerate(st.session_state.bet_history):
-        equity.append(equity[-1] + bet['profit'])
-        dates.append(bet['date'])
-    
+        equity.append(equity[-1] + bet["profit"])
+        dates.append(bet["date"])
+
     # Create the chart
     fig = go.Figure()
-    
+
     # Main equity line
-    fig.add_trace(go.Scatter(
-        x=list(range(len(equity))),
-        y=equity,
-        mode='lines+markers',
-        name='Equity',
-        line=dict(color='#00ff88', width=3),
-        marker=dict(size=8, color='#00ff88', line=dict(width=2, color='#0a0a0a')),
-        fill='tozeroy',
-        fillcolor='rgba(0, 255, 136, 0.1)',
-        hovertemplate='Bet #%{x}<br>Bankroll: $%{y:,.0f}<extra></extra>'
-    ))
-    
+    fig.add_trace(
+        go.Scatter(
+            x=list(range(len(equity))),
+            y=equity,
+            mode="lines+markers",
+            name="Equity",
+            line=dict(color="#00ff88", width=3),
+            marker=dict(size=8, color="#00ff88", line=dict(width=2, color="#0a0a0a")),
+            fill="tozeroy",
+            fillcolor="rgba(0, 255, 136, 0.1)",
+            hovertemplate="Bet #%{x}<br>Bankroll: $%{y:,.0f}<extra></extra>",
+        )
+    )
+
     # Add winning/losing markers
     for i, bet in enumerate(st.session_state.bet_history):
-        color = '#00ff88' if bet['result'] == 'WIN' else '#ff3333'
-        fig.add_trace(go.Scatter(
-            x=[i+1],
-            y=[equity[i+1]],
-            mode='markers',
-            marker=dict(size=12, color=color, symbol='circle', line=dict(width=2, color='#0a0a0a')),
-            name=bet['result'],
-            showlegend=False,
-            hovertemplate=f"{bet['pick']}<br>{bet['result']}: ${bet['profit']:+,}<extra></extra>"
-        ))
-    
+        color = "#00ff88" if bet["result"] == "WIN" else "#ff3333"
+        fig.add_trace(
+            go.Scatter(
+                x=[i + 1],
+                y=[equity[i + 1]],
+                mode="markers",
+                marker=dict(
+                    size=12,
+                    color=color,
+                    symbol="circle",
+                    line=dict(width=2, color="#0a0a0a"),
+                ),
+                name=bet["result"],
+                showlegend=False,
+                hovertemplate=f"{bet['pick']}<br>{bet['result']}: ${bet['profit']:+,}<extra></extra>",
+            )
+        )
+
     # Add peak line
     peak = max(equity)
-    fig.add_hline(y=peak, line_dash="dash", line_color="rgba(0, 255, 136, 0.3)", annotation_text=f"Peak: ${peak:,}")
-    
+    fig.add_hline(
+        y=peak,
+        line_dash="dash",
+        line_color="rgba(0, 255, 136, 0.3)",
+        annotation_text=f"Peak: ${peak:,}",
+    )
+
     # Styling
     fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#b0b0b0', family='Rajdhani'),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#b0b0b0", family="Rajdhani"),
         margin=dict(l=0, r=0, t=30, b=0),
         height=350,
         showlegend=False,
         xaxis=dict(
-            gridcolor='rgba(50,50,50,0.5)',
+            gridcolor="rgba(50,50,50,0.5)",
             showgrid=True,
             zeroline=False,
-            title='',
-            tickmode='linear',
-            dtick=2
+            title="",
+            tickmode="linear",
+            dtick=2,
         ),
         yaxis=dict(
-            gridcolor='rgba(50,50,50,0.5)',
+            gridcolor="rgba(50,50,50,0.5)",
             showgrid=True,
             zeroline=False,
-            title='BANKROLL ($)',
-            tickformat='$,.0f'
+            title="BANKROLL ($)",
+            tickformat="$,.0f",
         ),
-        hovermode='x unified'
+        hovermode="x unified",
     )
-    
+
     # Add gradient effect annotation
     fig.add_annotation(
-        x=len(equity)-1,
+        x=len(equity) - 1,
         y=equity[-1],
         text=f"<b>${equity[-1]:,}</b>",
         showarrow=True,
         arrowhead=2,
         arrowsize=1,
-        arrowcolor='#00ff88',
-        font=dict(size=16, color='#00ff88', family='Bebas Neue'),
+        arrowcolor="#00ff88",
+        font=dict(size=16, color="#00ff88", family="Bebas Neue"),
         ax=40,
-        ay=-40
+        ay=-40,
     )
-    
+
     st.plotly_chart(fig, use_container_width=True)
-    
+
     # Bet History Table
     st.markdown("### RECENT ACTIVITY")
-    
+
     col_filter, col_export = st.columns([3, 1])
     with col_filter:
-        result_filter = st.selectbox("Filter", ["ALL", "WINS", "LOSSES", "PENDING"], key="tracker_filter")
+        result_filter = st.selectbox(
+            "Filter", ["ALL", "WINS", "LOSSES", "PENDING"], key="tracker_filter"
+        )
     with col_export:
         if st.button("EXPORT CSV"):
             st.info("Export functionality coming soon")
-    
+
     # Display bets
     display_bets = all_bets.copy()
     if result_filter == "WINS":
-        display_bets = [b for b in display_bets if b['result'] == 'WIN']
+        display_bets = [b for b in display_bets if b["result"] == "WIN"]
     elif result_filter == "LOSSES":
-        display_bets = [b for b in display_bets if b['result'] == 'LOSS']
+        display_bets = [b for b in display_bets if b["result"] == "LOSS"]
     elif result_filter == "PENDING":
-        display_bets = [b for b in display_bets if b['result'] == 'PENDING']
-    
+        display_bets = [b for b in display_bets if b["result"] == "PENDING"]
+
     for bet in display_bets[:15]:  # Show last 15
-        if bet['result'] == 'WIN':
+        if bet["result"] == "WIN":
             result_color = "var(--accent)"
             border_color = "var(--accent)"
-        elif bet['result'] == 'LOSS':
+        elif bet["result"] == "LOSS":
             result_color = "var(--danger)"
             border_color = "var(--danger)"
         else:
             result_color = "var(--warning)"
             border_color = "var(--warning)"
-        
-        profit_str = f"${bet['profit']:+,}" if isinstance(bet['profit'], (int, float)) else bet['profit']
-        stake_str = f"${bet['stake']}" if isinstance(bet['stake'], (int, float)) else bet['stake']
-        
-        st.markdown(f"""
+
+        profit_str = (
+            f"${bet['profit']:+,}"
+            if isinstance(bet["profit"], (int, float))
+            else bet["profit"]
+        )
+        stake_str = (
+            f"${bet['stake']}"
+            if isinstance(bet["stake"], (int, float))
+            else bet["stake"]
+        )
+
+        st.markdown(
+            f"""
             <div style="
                 background: var(--dark-2);
                 border: 1px solid var(--dark-4);
@@ -1372,16 +1670,22 @@ with tab_tracker:
                     <div style="font-family: 'Bebas Neue'; font-size: 1.5rem; color: {result_color};">{profit_str}</div>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
 # =============================================================================
 # TAB 5: THE LAB - FULL BACKTESTING & TRAINING SYSTEM
 # =============================================================================
 with tab_lab:
-    st.markdown('<div class="slot-header">THE LAB // AUTONOMOUS RESEARCH ENGINE</div>', unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div class="slot-header">THE LAB // AUTONOMOUS RESEARCH ENGINE</div>',
+        unsafe_allow_html=True,
+    )
+
     # Mission control panel
-    st.markdown("""
+    st.markdown(
+        """
         <div style="background: linear-gradient(135deg, var(--dark-2) 0%, rgba(0, 255, 136, 0.05) 100%); border: 1px solid var(--accent); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
@@ -1397,43 +1701,86 @@ with tab_lab:
                 </div>
             </div>
         </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     # Three main sections
-    lab_section = st.radio("", ["BACKTEST ENGINE", "MODEL ARSENAL", "STRATEGY DISCOVERY"], horizontal=True, label_visibility="collapsed")
-    
+    lab_section = st.radio(
+        "",
+        ["BACKTEST ENGINE", "MODEL ARSENAL", "STRATEGY DISCOVERY"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
     if lab_section == "BACKTEST ENGINE":
         st.markdown("### BACKTEST CONFIGURATION")
-        
+
         col_cfg1, col_cfg2 = st.columns(2)
-        
+
         with col_cfg1:
-            st.markdown("""
+            st.markdown(
+                """
                 <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 20px;">
                     <div style="font-family: 'Rajdhani'; font-size: 0.8rem; color: var(--text-3); letter-spacing: 1px; margin-bottom: 16px;">DATA PARAMETERS</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
-            model_select = st.selectbox("Model", ["XGBoost Evolved", "LightGBM Pro", "Neural Ensemble", "Calibrated Stack", "ALL MODELS"])
-            period_select = st.selectbox("Period", ["2024 Season", "2023-2024", "2022-2024", "2020-2024", "Full History (2015+)"])
-            bet_types = st.multiselect("Bet Types", ["Spread", "Moneyline", "Totals", "Player Props"], default=["Spread", "Moneyline"])
-        
+            """,
+                unsafe_allow_html=True,
+            )
+
+            model_select = st.selectbox(
+                "Model",
+                [
+                    "XGBoost Evolved",
+                    "LightGBM Pro",
+                    "Neural Ensemble",
+                    "Calibrated Stack",
+                    "ALL MODELS",
+                ],
+            )
+            period_select = st.selectbox(
+                "Period",
+                [
+                    "2024 Season",
+                    "2023-2024",
+                    "2022-2024",
+                    "2020-2024",
+                    "Full History (2015+)",
+                ],
+            )
+            bet_types = st.multiselect(
+                "Bet Types",
+                ["Spread", "Moneyline", "Totals", "Player Props"],
+                default=["Spread", "Moneyline"],
+            )
+
         with col_cfg2:
-            st.markdown("""
+            st.markdown(
+                """
                 <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 20px;">
                     <div style="font-family: 'Rajdhani'; font-size: 0.8rem; color: var(--text-3); letter-spacing: 1px; margin-bottom: 16px;">BANKROLL SETTINGS</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
-            initial_bank = st.number_input("Starting Bankroll ($)", value=10000, step=1000, min_value=100)
+            """,
+                unsafe_allow_html=True,
+            )
+
+            initial_bank = st.number_input(
+                "Starting Bankroll ($)", value=10000, step=1000, min_value=100
+            )
             unit_size = st.slider("Unit Size (%)", min_value=1, max_value=10, value=2)
-            kelly_fraction = st.slider("Kelly Fraction", min_value=0.1, max_value=1.0, value=0.25, step=0.05)
-            min_confidence = st.slider("Min Confidence Threshold", min_value=50, max_value=80, value=60)
-        
-        if st.button("RUN WALK-FORWARD BACKTEST", type="primary", use_container_width=True):
+            kelly_fraction = st.slider(
+                "Kelly Fraction", min_value=0.1, max_value=1.0, value=0.25, step=0.05
+            )
+            min_confidence = st.slider(
+                "Min Confidence Threshold", min_value=50, max_value=80, value=60
+            )
+
+        if st.button(
+            "RUN WALK-FORWARD BACKTEST", type="primary", use_container_width=True
+        ):
             progress_bar = st.progress(0)
             status_text = st.empty()
-            
+
             # Simulate backtest phases
             phases = [
                 ("Loading historical data...", 15),
@@ -1441,20 +1788,20 @@ with tab_lab:
                 ("Training models...", 50),
                 ("Generating predictions...", 70),
                 ("Calculating metrics...", 85),
-                ("Finalizing results...", 100)
+                ("Finalizing results...", 100),
             ]
-            
+
             for phase, progress in phases:
                 status_text.text(phase)
                 progress_bar.progress(progress)
                 time.sleep(0.5)
-            
+
             status_text.empty()
             progress_bar.empty()
-            
+
             # Results
             st.markdown("### BACKTEST RESULTS")
-            
+
             # Key metrics
             r1, r2, r3, r4, r5, r6 = st.columns(6)
             r1.metric("Total Bets", "847")
@@ -1463,130 +1810,198 @@ with tab_lab:
             r4.metric("Max Drawdown", "-12.4%")
             r5.metric("Sharpe Ratio", "1.84")
             r6.metric("Final Bankroll", "$24,850", "+$14,850")
-            
+
             # Equity curve
             st.markdown("### EQUITY CURVE")
-            
+
             np.random.seed(42)
             weeks = 100
-            dates = pd.date_range(start='2023-01-01', periods=weeks, freq='W')
-            
+            dates = pd.date_range(start="2023-01-01", periods=weeks, freq="W")
+
             # Generate realistic walk-forward equity curve
             base_returns = np.random.normal(0.015, 0.04, weeks)
             # Add some regime changes
             base_returns[20:35] = np.random.normal(-0.01, 0.05, 15)  # Drawdown period
             base_returns[60:75] = np.random.normal(0.025, 0.03, 15)  # Hot streak
-            
+
             equity = [initial_bank]
             for r in base_returns:
                 equity.append(equity[-1] * (1 + r))
             equity = np.array(equity[1:])
-            
+
             # Also generate benchmark (flat betting)
             benchmark_returns = np.random.normal(0.005, 0.06, weeks)
             benchmark = [initial_bank]
             for r in benchmark_returns:
                 benchmark.append(benchmark[-1] * (1 + r))
             benchmark = np.array(benchmark[1:])
-            
-            fig = make_subplots(rows=2, cols=1, row_heights=[0.7, 0.3], shared_xaxes=True, vertical_spacing=0.05)
-            
+
+            fig = make_subplots(
+                rows=2,
+                cols=1,
+                row_heights=[0.7, 0.3],
+                shared_xaxes=True,
+                vertical_spacing=0.05,
+            )
+
             # Main equity curve
-            fig.add_trace(go.Scatter(
-                x=dates, y=equity,
-                mode='lines',
-                name='Strategy',
-                line=dict(color='#00ff88', width=2),
-                fill='tozeroy',
-                fillcolor='rgba(0, 255, 136, 0.1)'
-            ), row=1, col=1)
-            
-            fig.add_trace(go.Scatter(
-                x=dates, y=benchmark,
-                mode='lines',
-                name='Flat Betting',
-                line=dict(color='#666666', width=1, dash='dash')
-            ), row=1, col=1)
-            
+            fig.add_trace(
+                go.Scatter(
+                    x=dates,
+                    y=equity,
+                    mode="lines",
+                    name="Strategy",
+                    line=dict(color="#00ff88", width=2),
+                    fill="tozeroy",
+                    fillcolor="rgba(0, 255, 136, 0.1)",
+                ),
+                row=1,
+                col=1,
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=dates,
+                    y=benchmark,
+                    mode="lines",
+                    name="Flat Betting",
+                    line=dict(color="#666666", width=1, dash="dash"),
+                ),
+                row=1,
+                col=1,
+            )
+
             # Drawdown chart
             peak = np.maximum.accumulate(equity)
             drawdown = (equity - peak) / peak * 100
-            
-            fig.add_trace(go.Scatter(
-                x=dates, y=drawdown,
-                mode='lines',
-                name='Drawdown',
-                fill='tozeroy',
-                line=dict(color='#ff3333', width=1),
-                fillcolor='rgba(255, 51, 51, 0.2)'
-            ), row=2, col=1)
-            
+
+            fig.add_trace(
+                go.Scatter(
+                    x=dates,
+                    y=drawdown,
+                    mode="lines",
+                    name="Drawdown",
+                    fill="tozeroy",
+                    line=dict(color="#ff3333", width=1),
+                    fillcolor="rgba(255, 51, 51, 0.2)",
+                ),
+                row=2,
+                col=1,
+            )
+
             fig.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#b0b0b0', family='Rajdhani'),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#b0b0b0", family="Rajdhani"),
                 margin=dict(l=0, r=0, t=30, b=0),
                 height=500,
-                legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-                hovermode='x unified'
+                legend=dict(
+                    orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+                ),
+                hovermode="x unified",
             )
-            
-            fig.update_xaxes(gridcolor='rgba(50,50,50,0.5)', showgrid=True)
-            fig.update_yaxes(gridcolor='rgba(50,50,50,0.5)', showgrid=True, row=1, col=1, title='Bankroll ($)', tickformat='$,.0f')
-            fig.update_yaxes(gridcolor='rgba(50,50,50,0.5)', showgrid=True, row=2, col=1, title='Drawdown (%)', tickformat='.1f')
-            
+
+            fig.update_xaxes(gridcolor="rgba(50,50,50,0.5)", showgrid=True)
+            fig.update_yaxes(
+                gridcolor="rgba(50,50,50,0.5)",
+                showgrid=True,
+                row=1,
+                col=1,
+                title="Bankroll ($)",
+                tickformat="$,.0f",
+            )
+            fig.update_yaxes(
+                gridcolor="rgba(50,50,50,0.5)",
+                showgrid=True,
+                row=2,
+                col=1,
+                title="Drawdown (%)",
+                tickformat=".1f",
+            )
+
             st.plotly_chart(fig, use_container_width=True)
-            
+
             # Monthly breakdown
             st.markdown("### MONTHLY PERFORMANCE")
-            
+
             monthly_data = {
-                'Month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
-                'Bets': [72, 68, 75, 71, 80, 78, 82, 85, 79, 81, 76],
-                'Win%': [56.9, 60.3, 54.7, 59.2, 62.5, 57.7, 61.0, 55.3, 63.3, 58.0, 60.5],
-                'ROI': [8.2, 15.1, 3.4, 12.8, 21.3, 6.9, 18.4, 2.1, 19.7, 11.2, 14.8],
-                'Units': [5.9, 10.3, 2.6, 9.1, 17.0, 5.4, 15.1, 1.8, 15.6, 9.1, 11.2]
+                "Month": [
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                ],
+                "Bets": [72, 68, 75, 71, 80, 78, 82, 85, 79, 81, 76],
+                "Win%": [
+                    56.9,
+                    60.3,
+                    54.7,
+                    59.2,
+                    62.5,
+                    57.7,
+                    61.0,
+                    55.3,
+                    63.3,
+                    58.0,
+                    60.5,
+                ],
+                "ROI": [8.2, 15.1, 3.4, 12.8, 21.3, 6.9, 18.4, 2.1, 19.7, 11.2, 14.8],
+                "Units": [5.9, 10.3, 2.6, 9.1, 17.0, 5.4, 15.1, 1.8, 15.6, 9.1, 11.2],
             }
-            
+
             fig_monthly = go.Figure()
-            
-            colors = ['#00ff88' if r > 0 else '#ff3333' for r in monthly_data['ROI']]
-            
-            fig_monthly.add_trace(go.Bar(
-                x=monthly_data['Month'],
-                y=monthly_data['ROI'],
-                marker_color=colors,
-                text=[f"{r:+.1f}%" for r in monthly_data['ROI']],
-                textposition='outside',
-                hovertemplate='%{x}<br>ROI: %{y:.1f}%<br>Win Rate: %{customdata[0]:.1f}%<br>Bets: %{customdata[1]}<extra></extra>',
-                customdata=list(zip(monthly_data['Win%'], monthly_data['Bets']))
-            ))
-            
+
+            colors = ["#00ff88" if r > 0 else "#ff3333" for r in monthly_data["ROI"]]
+
+            fig_monthly.add_trace(
+                go.Bar(
+                    x=monthly_data["Month"],
+                    y=monthly_data["ROI"],
+                    marker_color=colors,
+                    text=[f"{r:+.1f}%" for r in monthly_data["ROI"]],
+                    textposition="outside",
+                    hovertemplate="%{x}<br>ROI: %{y:.1f}%<br>Win Rate: %{customdata[0]:.1f}%<br>Bets: %{customdata[1]}<extra></extra>",
+                    customdata=list(zip(monthly_data["Win%"], monthly_data["Bets"])),
+                )
+            )
+
             fig_monthly.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#b0b0b0', family='Rajdhani'),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#b0b0b0", family="Rajdhani"),
                 margin=dict(l=0, r=0, t=20, b=0),
                 height=250,
-                xaxis=dict(gridcolor='rgba(50,50,50,0.3)'),
-                yaxis=dict(gridcolor='rgba(50,50,50,0.5)', title='ROI (%)', zeroline=True, zerolinecolor='rgba(100,100,100,0.5)')
+                xaxis=dict(gridcolor="rgba(50,50,50,0.3)"),
+                yaxis=dict(
+                    gridcolor="rgba(50,50,50,0.5)",
+                    title="ROI (%)",
+                    zeroline=True,
+                    zerolinecolor="rgba(100,100,100,0.5)",
+                ),
             )
-            
+
             st.plotly_chart(fig_monthly, use_container_width=True)
-    
+
     elif lab_section == "MODEL ARSENAL":
         st.markdown("### MODEL PERFORMANCE COMPARISON")
-        
+
         # Initialize model state
-        if 'model_statuses' not in st.session_state:
+        if "model_statuses" not in st.session_state:
             st.session_state.model_statuses = {
                 "XGBoost Evolved": "ACTIVE",
-                "LightGBM Pro": "ACTIVE", 
+                "LightGBM Pro": "ACTIVE",
                 "Neural Ensemble": "ACTIVE",
                 "Calibrated Stack": "ACTIVE",
-                "Random Forest": "RETIRED"
+                "Random Forest": "RETIRED",
             }
-        
+
         models = [
             {"name": "XGBoost Evolved", "win_rate": 58.3, "roi": 14.2, "sharpe": 1.84},
             {"name": "LightGBM Pro", "win_rate": 56.8, "roi": 11.9, "sharpe": 1.62},
@@ -1594,12 +2009,17 @@ with tab_lab:
             {"name": "Calibrated Stack", "win_rate": 59.2, "roi": 15.8, "sharpe": 1.92},
             {"name": "Random Forest", "win_rate": 54.1, "roi": 6.3, "sharpe": 1.12},
         ]
-        
+
         for model in models:
-            status = st.session_state.model_statuses.get(model['name'], 'ACTIVE')
-            status_color = "#00ff88" if status == 'ACTIVE' else ("#ffaa00" if status == 'TRAINING' else "#909090")
-            
-            st.markdown(f"""
+            status = st.session_state.model_statuses.get(model["name"], "ACTIVE")
+            status_color = (
+                "#00ff88"
+                if status == "ACTIVE"
+                else ("#ffaa00" if status == "TRAINING" else "#909090")
+            )
+
+            st.markdown(
+                f"""
                 <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 20px; margin: 12px 0; display: flex; align-items: center; justify-content: space-between;">
                     <div style="flex: 2;">
                         <div style="font-family: 'Rajdhani'; font-weight: 700; font-size: 1.1rem; color: #ffffff;">{model['name']}</div>
@@ -1618,41 +2038,55 @@ with tab_lab:
                         <div style="font-family: 'Bebas Neue'; font-size: 1.4rem; color: #ffffff;">{model['sharpe']}</div>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
-        
+            """,
+                unsafe_allow_html=True,
+            )
+
         if st.button("RETRAIN ALL MODELS", type="primary", use_container_width=True):
             # Real progress feedback
             progress_container = st.container()
-            
+
             with progress_container:
                 st.markdown("### RETRAINING IN PROGRESS")
-                
+
                 for model in models:
-                    if st.session_state.model_statuses.get(model['name']) == 'RETIRED':
+                    if st.session_state.model_statuses.get(model["name"]) == "RETIRED":
                         continue
-                    
+
                     col_name, col_progress = st.columns([1, 3])
-                    
+
                     with col_name:
                         st.markdown(f"**{model['name']}**")
-                    
+
                     with col_progress:
                         progress_bar = st.progress(0)
                         status_text = st.empty()
-                        
+
                         # Simulate training stages
-                        stages = ["Loading data...", "Feature engineering...", "Training...", "Validating...", "Complete!"]
+                        stages = [
+                            "Loading data...",
+                            "Feature engineering...",
+                            "Training...",
+                            "Validating...",
+                            "Complete!",
+                        ]
                         for i, stage in enumerate(stages):
                             status_text.text(stage)
                             progress_bar.progress((i + 1) * 20)
                             time.sleep(0.3)
-                        
-                        status_text.markdown(f"<span style='color: #00ff88;'>Complete!</span>", unsafe_allow_html=True)
-                
-                st.success("All models retrained successfully! Performance metrics updated.")
-                
+
+                        status_text.markdown(
+                            f"<span style='color: #00ff88;'>Complete!</span>",
+                            unsafe_allow_html=True,
+                        )
+
+                st.success(
+                    "All models retrained successfully! Performance metrics updated."
+                )
+
                 # Show improvement summary
-                st.markdown("""
+                st.markdown(
+                    """
                     <div style="background: var(--dark-2); border: 1px solid var(--accent); border-radius: 8px; padding: 16px; margin-top: 16px;">
                         <div style="font-weight: 600; color: var(--accent); margin-bottom: 8px;">TRAINING SUMMARY</div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; color: #d0d0d0;">
@@ -1662,45 +2096,89 @@ with tab_lab:
                             <div>Duration: <strong>6.2s</strong></div>
                         </div>
                     </div>
-                """, unsafe_allow_html=True)
-    
+                """,
+                    unsafe_allow_html=True,
+                )
+
     else:  # STRATEGY DISCOVERY
         st.markdown("### EDGE FINDER")
-        st.markdown("""
+        st.markdown(
+            """
             <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
                 <div style="color: #d0d0d0; font-size: 0.95rem;">
                     The strategy discovery engine continuously scans for profitable patterns, market inefficiencies, 
                     and situational edges. Results below are statistically significant (p < 0.05) with sample size > 50.
                 </div>
             </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Initialize discoveries queue in session state
-        if 'discovered_edges' not in st.session_state:
+        if "discovered_edges" not in st.session_state:
             st.session_state.discovered_edges = [
-                {"edge": "Home dogs +3.5 to +7 after bye week", "sample": 127, "win_rate": 61.4, "roi": 18.2, "confidence": "HIGH", "status": "VERIFIED"},
-                {"edge": "Unders in divisional games (weeks 14-17)", "sample": 89, "win_rate": 58.4, "roi": 12.1, "confidence": "HIGH", "status": "VERIFIED"},
-                {"edge": "Road favorites -3 or less vs winning teams", "sample": 156, "win_rate": 56.4, "roi": 8.9, "confidence": "MEDIUM", "status": "VERIFIED"},
-                {"edge": "Overs when total drops 1.5+ points", "sample": 72, "win_rate": 59.7, "roi": 14.8, "confidence": "MEDIUM", "status": "VERIFIED"},
-                {"edge": "Monday underdogs after team covered spread", "sample": 54, "win_rate": 64.8, "roi": 24.1, "confidence": "LOW", "status": "VERIFIED"},
+                {
+                    "edge": "Home dogs +3.5 to +7 after bye week",
+                    "sample": 127,
+                    "win_rate": 61.4,
+                    "roi": 18.2,
+                    "confidence": "HIGH",
+                    "status": "VERIFIED",
+                },
+                {
+                    "edge": "Unders in divisional games (weeks 14-17)",
+                    "sample": 89,
+                    "win_rate": 58.4,
+                    "roi": 12.1,
+                    "confidence": "HIGH",
+                    "status": "VERIFIED",
+                },
+                {
+                    "edge": "Road favorites -3 or less vs winning teams",
+                    "sample": 156,
+                    "win_rate": 56.4,
+                    "roi": 8.9,
+                    "confidence": "MEDIUM",
+                    "status": "VERIFIED",
+                },
+                {
+                    "edge": "Overs when total drops 1.5+ points",
+                    "sample": 72,
+                    "win_rate": 59.7,
+                    "roi": 14.8,
+                    "confidence": "MEDIUM",
+                    "status": "VERIFIED",
+                },
+                {
+                    "edge": "Monday underdogs after team covered spread",
+                    "sample": 54,
+                    "win_rate": 64.8,
+                    "roi": 24.1,
+                    "confidence": "LOW",
+                    "status": "VERIFIED",
+                },
             ]
-        
-        if 'pending_discoveries' not in st.session_state:
+
+        if "pending_discoveries" not in st.session_state:
             st.session_state.pending_discoveries = []
-        
+
         # Show pending discoveries queue if any
         if st.session_state.pending_discoveries:
-            st.markdown("""
+            st.markdown(
+                """
                 <div style="background: linear-gradient(135deg, var(--dark-2) 0%, rgba(255, 170, 0, 0.1) 100%); border: 2px solid var(--warning); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
                     <div style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: var(--warning); margin-bottom: 12px;">NEW DISCOVERIES PENDING REVIEW</div>
                 </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             for i, disc in enumerate(st.session_state.pending_discoveries):
                 col_disc, col_actions = st.columns([4, 1])
-                
+
                 with col_disc:
-                    st.markdown(f"""
+                    st.markdown(
+                        f"""
                         <div style="background: var(--dark-3); border: 1px solid var(--warning); border-radius: 8px; padding: 16px; margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -1710,14 +2188,16 @@ with tab_lab:
                                 <div style="background: var(--warning); color: var(--dark-1); padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">NEW</div>
                             </div>
                         </div>
-                    """, unsafe_allow_html=True)
-                
+                    """,
+                        unsafe_allow_html=True,
+                    )
+
                 with col_actions:
                     col_a, col_b = st.columns(2)
                     with col_a:
                         if st.button("ACCEPT", key=f"accept_{i}"):
                             # Move to verified
-                            disc['status'] = 'VERIFIED'
+                            disc["status"] = "VERIFIED"
                             st.session_state.discovered_edges.insert(0, disc)
                             st.session_state.pending_discoveries.pop(i)
                             st.rerun()
@@ -1725,17 +2205,22 @@ with tab_lab:
                         if st.button("REJECT", key=f"reject_{i}"):
                             st.session_state.pending_discoveries.pop(i)
                             st.rerun()
-            
+
             st.markdown("---")
-        
+
         # Show verified discoveries
         st.markdown("### VERIFIED EDGES")
-        
+
         for disc in st.session_state.discovered_edges:
-            conf = disc.get('confidence', 'MEDIUM')
-            conf_color = "#00ff88" if conf == 'HIGH' else ("#ffaa00" if conf == 'MEDIUM' else "#ff6b35")
-            
-            st.markdown(f"""
+            conf = disc.get("confidence", "MEDIUM")
+            conf_color = (
+                "#00ff88"
+                if conf == "HIGH"
+                else ("#ffaa00" if conf == "MEDIUM" else "#ff6b35")
+            )
+
+            st.markdown(
+                f"""
                 <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-left: 4px solid {conf_color}; border-radius: 0 8px 8px 0; padding: 16px; margin: 12px 0;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 3;">
@@ -1755,53 +2240,82 @@ with tab_lab:
                         </div>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
-        
+            """,
+                unsafe_allow_html=True,
+            )
+
         st.markdown("---")
-        
+
         if st.button("SCAN FOR NEW EDGES", type="primary", use_container_width=True):
             # Show real scanning progress
             scan_container = st.container()
-            
+
             with scan_container:
                 st.markdown("### SCANNING IN PROGRESS")
-                
+
                 progress = st.progress(0)
                 status = st.empty()
                 findings = st.empty()
-                
+
                 scan_stages = [
                     ("Analyzing spread patterns...", 15, []),
                     ("Checking totals trends...", 30, []),
-                    ("Evaluating situational angles...", 45, ["Potential: Prime-time unders after travel"]),
+                    (
+                        "Evaluating situational angles...",
+                        45,
+                        ["Potential: Prime-time unders after travel"],
+                    ),
                     ("Cross-referencing weather data...", 60, []),
-                    ("Testing line movement patterns...", 75, ["Potential: Reverse line moves on dogs"]),
+                    (
+                        "Testing line movement patterns...",
+                        75,
+                        ["Potential: Reverse line moves on dogs"],
+                    ),
                     ("Validating statistical significance...", 90, []),
-                    ("Finalizing results...", 100, [])
+                    ("Finalizing results...", 100, []),
                 ]
-                
+
                 found_edges = []
                 for stage, pct, edges in scan_stages:
                     status.text(stage)
                     progress.progress(pct)
                     if edges:
                         found_edges.extend(edges)
-                        findings.markdown(f"<div style='color: var(--accent);'>Found: {', '.join(found_edges)}</div>", unsafe_allow_html=True)
+                        findings.markdown(
+                            f"<div style='color: var(--accent);'>Found: {', '.join(found_edges)}</div>",
+                            unsafe_allow_html=True,
+                        )
                     time.sleep(0.4)
-                
+
                 progress.empty()
                 status.empty()
                 findings.empty()
-                
+
                 # Add new discoveries to pending queue
                 new_discoveries = [
-                    {"edge": "Prime-time unders after 3+ hour travel", "sample": 67, "win_rate": 60.3, "roi": 15.1, "confidence": "MEDIUM", "status": "PENDING"},
-                    {"edge": "Dogs +4 to +6 after reverse line move", "sample": 84, "win_rate": 57.1, "roi": 10.8, "confidence": "MEDIUM", "status": "PENDING"},
+                    {
+                        "edge": "Prime-time unders after 3+ hour travel",
+                        "sample": 67,
+                        "win_rate": 60.3,
+                        "roi": 15.1,
+                        "confidence": "MEDIUM",
+                        "status": "PENDING",
+                    },
+                    {
+                        "edge": "Dogs +4 to +6 after reverse line move",
+                        "sample": 84,
+                        "win_rate": 57.1,
+                        "roi": 10.8,
+                        "confidence": "MEDIUM",
+                        "status": "PENDING",
+                    },
                 ]
-                
+
                 st.session_state.pending_discoveries.extend(new_discoveries)
-                
-                st.success(f"Scan complete! {len(new_discoveries)} new edges found. Review them above.")
+
+                st.success(
+                    f"Scan complete! {len(new_discoveries)} new edges found. Review them above."
+                )
                 st.rerun()
 
 # =============================================================================
@@ -1816,13 +2330,15 @@ with tab_strategy:
 
     # Debug info (collapsible)
     with st.expander("🔧 Debug Info", expanded=False):
-        st.code(f"""
+        st.code(
+            f"""
 Registry Path: {registry.registry_path.absolute()}
 Total Strategies: {len(registry.strategies)}
 Pending: {len(registry.get_pending_strategies())}
 Accepted: {len(registry.get_accepted_strategies())}
 Rejected: {len(registry.get_rejected_strategies())}
-        """)
+        """
+        )
         if st.button("🔄 Force Reload Registry"):
             st.rerun()
 
@@ -1832,14 +2348,16 @@ Rejected: {len(registry.get_rejected_strategies())}
     st.markdown("---")
 
     # Create tabs within the strategy tab
-    strategy_subtabs = st.tabs([
-        "⏳ Pending Review",
-        "✅ Active Strategies",
-        "❌ Rejected",
-        "📦 Archived",
-        "➕ Add New",
-        "🔍 Tools"
-    ])
+    strategy_subtabs = st.tabs(
+        [
+            "⏳ Pending Review",
+            "✅ Active Strategies",
+            "❌ Rejected",
+            "📦 Archived",
+            "➕ Add New",
+            "🔍 Tools",
+        ]
+    )
 
     # Pending strategies (need your decision!)
     with strategy_subtabs[0]:
@@ -1847,10 +2365,13 @@ Rejected: {len(registry.get_rejected_strategies())}
         st.info("💡 These are newly discovered strategies waiting for your approval.")
 
         pending = registry.get_pending_strategies()
-        render_strategy_list(pending, registry,
-                            title="Strategies Awaiting Review",
-                            key_prefix="pending",
-                            empty_message="🎉 No pending strategies! All caught up.")
+        render_strategy_list(
+            pending,
+            registry,
+            title="Strategies Awaiting Review",
+            key_prefix="pending",
+            empty_message="🎉 No pending strategies! All caught up.",
+        )
 
     # Accepted strategies (currently using)
     with strategy_subtabs[1]:
@@ -1858,10 +2379,13 @@ Rejected: {len(registry.get_rejected_strategies())}
         st.success("These are strategies you've accepted and are currently using.")
 
         accepted = registry.get_accepted_strategies()
-        render_strategy_list(accepted, registry,
-                            title="Active Betting Strategies",
-                            key_prefix="accepted",
-                            empty_message="No active strategies yet. Review some pending strategies!")
+        render_strategy_list(
+            accepted,
+            registry,
+            title="Active Betting Strategies",
+            key_prefix="accepted",
+            empty_message="No active strategies yet. Review some pending strategies!",
+        )
 
         if accepted:
             st.markdown("---")
@@ -1869,9 +2393,21 @@ Rejected: {len(registry.get_rejected_strategies())}
 
             # Calculate aggregate stats
             total_bets = sum(s.sample_size for s in accepted)
-            avg_win_rate = sum(s.win_rate * s.sample_size for s in accepted) / total_bets if total_bets > 0 else 0
-            avg_roi = sum(s.roi * s.sample_size for s in accepted) / total_bets if total_bets > 0 else 0
-            avg_edge = sum(s.edge * s.sample_size for s in accepted) / total_bets if total_bets > 0 else 0
+            avg_win_rate = (
+                sum(s.win_rate * s.sample_size for s in accepted) / total_bets
+                if total_bets > 0
+                else 0
+            )
+            avg_roi = (
+                sum(s.roi * s.sample_size for s in accepted) / total_bets
+                if total_bets > 0
+                else 0
+            )
+            avg_edge = (
+                sum(s.edge * s.sample_size for s in accepted) / total_bets
+                if total_bets > 0
+                else 0
+            )
 
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -1889,10 +2425,13 @@ Rejected: {len(registry.get_rejected_strategies())}
         st.warning("These strategies didn't meet your criteria or underperformed.")
 
         rejected = registry.get_rejected_strategies()
-        render_strategy_list(rejected, registry,
-                            title="Rejected Strategies",
-                            key_prefix="rejected",
-                            empty_message="No rejected strategies.")
+        render_strategy_list(
+            rejected,
+            registry,
+            title="Rejected Strategies",
+            key_prefix="rejected",
+            empty_message="No rejected strategies.",
+        )
 
     # Archived strategies (was good, stopped using)
     with strategy_subtabs[3]:
@@ -1900,16 +2439,22 @@ Rejected: {len(registry.get_rejected_strategies())}
         st.info("These strategies were previously active but have been archived.")
 
         from src.strategy_registry import StrategyStatus
+
         archived = registry.get_strategies_by_status(StrategyStatus.ARCHIVED)
-        render_strategy_list(archived, registry,
-                            title="Archived Strategies",
-                            key_prefix="archived",
-                            empty_message="No archived strategies.")
+        render_strategy_list(
+            archived,
+            registry,
+            title="Archived Strategies",
+            key_prefix="archived",
+            empty_message="No archived strategies.",
+        )
 
     # Add new strategy manually
     with strategy_subtabs[4]:
         st.markdown("## ➕ Add New Strategy")
-        st.info("💡 Manually add a strategy you discovered outside the automated system.")
+        st.info(
+            "💡 Manually add a strategy you discovered outside the automated system."
+        )
 
         render_add_strategy_form(registry)
 
@@ -1929,41 +2474,53 @@ Rejected: {len(registry.get_rejected_strategies())}
 # TAB 6: INTEL (AI SEARCH)
 # =============================================================================
 with tab_intel:
-    st.markdown('<div class="slot-header">INTELLIGENCE CENTER</div>', unsafe_allow_html=True)
-    
+    st.markdown(
+        '<div class="slot-header">INTELLIGENCE CENTER</div>', unsafe_allow_html=True
+    )
+
     # Quick searches
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         if st.button("INJURY REPORT"):
-            st.session_state['intel_query'] = "Latest NFL injury updates for Week 13"
+            st.session_state["intel_query"] = "Latest NFL injury updates for Week 13"
     with c2:
         if st.button("SHARP MONEY"):
-            st.session_state['intel_query'] = "Where is sharp money going NFL Week 13"
+            st.session_state["intel_query"] = "Where is sharp money going NFL Week 13"
     with c3:
         if st.button("LINE MOVES"):
-            st.session_state['intel_query'] = "Significant NFL line movements today"
+            st.session_state["intel_query"] = "Significant NFL line movements today"
     with c4:
         if st.button("WEATHER"):
-            st.session_state['intel_query'] = "NFL Week 13 weather impacts on games"
-    
-    query = st.text_input("Search:", value=st.session_state.get('intel_query', ''), placeholder="Ask anything...")
-    
+            st.session_state["intel_query"] = "NFL Week 13 weather impacts on games"
+
+    query = st.text_input(
+        "Search:",
+        value=st.session_state.get("intel_query", ""),
+        placeholder="Ask anything...",
+    )
+
     if st.button("SEARCH", type="primary") and query:
         with st.spinner("Searching..."):
-            result = get_ai_analysis({'query': query}, provider='grok')
-            st.markdown(f"""
+            result = get_ai_analysis({"query": query}, provider="grok")
+            st.markdown(
+                f"""
                 <div style="background: var(--dark-2); border-left: 3px solid var(--accent); padding: 20px; border-radius: 0 8px 8px 0; margin-top: 16px;">
                     <div style="color: var(--accent); font-size: 0.8rem; margin-bottom: 8px; font-family: 'Rajdhani'; letter-spacing: 1px;">INTEL REPORT</div>
                     <div style="color: var(--text-1); line-height: 1.6;">{result}</div>
                 </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
 # -----------------------------------------------------------------------------
 # FOOTER
 # -----------------------------------------------------------------------------
 st.markdown("---")
-st.markdown("""
+st.markdown(
+    """
     <div style="text-align: center; color: var(--text-3); font-size: 0.75rem; padding: 20px;">
         EDGE HUNTER // Autonomous Betting Intelligence // No forward-looking bias // Self-improving
     </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
