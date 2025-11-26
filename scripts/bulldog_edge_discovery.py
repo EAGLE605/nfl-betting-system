@@ -18,6 +18,10 @@ import warnings
 import pandas as pd
 from scipy import stats
 
+# Import strategy registry
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from strategy_registry import StrategyRegistry, Strategy, StrategyStatus
+
 warnings.filterwarnings("ignore")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -31,6 +35,11 @@ class BulldogEdgeDiscovery:
         self.data = None
         self.edges_found = []
         self.tests_run = 0
+
+        # Initialize strategy registry
+        self.registry = StrategyRegistry()
+        self.new_strategies_count = 0
+        self.duplicate_strategies_count = 0
 
     def load_data(self):
         """Load all available data."""
@@ -105,6 +114,9 @@ class BulldogEdgeDiscovery:
 
         # Only report if significant and positive edge
         if p_value < 0.05 and win_rate > break_even:
+            # Calculate ROI
+            roi = (win_rate * 0.909 - (1 - win_rate)) * 100
+
             edge = {
                 "name": name,
                 "sample_size": total,
@@ -115,7 +127,46 @@ class BulldogEdgeDiscovery:
                 "p_value": p_value,
                 "significance": "High" if p_value < 0.01 else "Medium",
                 "seasons": f"{sample['season'].min()}-{sample['season'].max()}",
+                "roi": roi,
             }
+
+            # Check if similar strategy already exists in registry
+            similar = self.registry.find_similar_strategy(name, threshold=0.85)
+
+            if similar:
+                # Duplicate found - skip
+                edge["registry_status"] = f"DUPLICATE ({similar.name})"
+                edge["is_new"] = False
+                self.duplicate_strategies_count += 1
+            else:
+                # New strategy - add to registry
+                strategy_id = (
+                    name.lower()
+                    .replace(" ", "_")
+                    .replace(":", "")
+                    .replace("+", "and")
+                    .replace("-", "_")
+                    .replace("__", "_")
+                    + "_v1"
+                )
+
+                strategy = Strategy(
+                    strategy_id=strategy_id,
+                    name=name,
+                    description=f"Discovered edge: {name}",
+                    pattern=name,  # Use name as pattern
+                    win_rate=win_rate * 100,  # Convert to percentage
+                    roi=roi,
+                    sample_size=total,
+                    edge=effect_size * 100,  # Convert to percentage
+                    conditions={"seasons": f"{sample['season'].min()}-{sample['season'].max()}"},
+                )
+
+                success, message = self.registry.add_strategy(strategy)
+                edge["registry_status"] = "NEW" if success else "ERROR"
+                edge["is_new"] = success
+                if success:
+                    self.new_strategies_count += 1
 
             self.edges_found.append(edge)
             return edge
@@ -410,6 +461,21 @@ class BulldogEdgeDiscovery:
         logger.info(f"\nTests run: {self.tests_run}")
         logger.info(f"Edges found: {len(self.edges_found)}")
 
+        # Registry summary
+        logger.info("\n" + "=" * 80)
+        logger.info("STRATEGY REGISTRY SUMMARY")
+        logger.info("=" * 80)
+        logger.info(f"New strategies added: {self.new_strategies_count}")
+        logger.info(f"Duplicates skipped: {self.duplicate_strategies_count}")
+
+        registry_stats = self.registry.get_stats()
+        logger.info(f"\nRegistry totals:")
+        logger.info(f"  - Pending review: {registry_stats['pending']}")
+        logger.info(f"  - Accepted: {registry_stats['accepted']}")
+        logger.info(f"  - Rejected: {registry_stats['rejected']}")
+        logger.info(f"  - Archived: {registry_stats['archived']}")
+        logger.info(f"  - TOTAL: {registry_stats['total']}")
+
         if not self.edges_found:
             logger.info("\nNO EDGES FOUND")
             logger.info(
@@ -424,8 +490,11 @@ class BulldogEdgeDiscovery:
         logger.info("=" * 80)
 
         for idx, edge in df.head(10).iterrows():
+            # Show registry status
+            status_marker = "[NEW]" if edge.get("is_new", False) else "[KNOWN]"
+
             logger.info(f"\n{'-'*80}")
-            logger.info(f"EDGE #{df.index.get_loc(idx) + 1}: {edge['name']}")
+            logger.info(f"EDGE #{df.index.get_loc(idx) + 1}: {edge['name']} {status_marker}")
             logger.info(f"{'-'*80}")
             logger.info(
                 f"Win Rate: {edge['win_rate']:.1%} ({edge['wins']}/{edge['sample_size']} bets)"
@@ -438,10 +507,12 @@ class BulldogEdgeDiscovery:
             logger.info(f"Strength Score: {edge['score']:.1f}")
 
             # ROI estimation
-            if edge["win_rate"] > 0.524:
-                # Assuming -110 odds (need 52.4% to break even)
-                roi = (edge["win_rate"] * 0.909 - (1 - edge["win_rate"])) * 100
-                logger.info(f"Estimated ROI: +{roi:.1f}% (at -110 odds)")
+            if "roi" in edge:
+                logger.info(f"Estimated ROI: +{edge['roi']:.1f}% (at -110 odds)")
+
+            # Registry status
+            if "registry_status" in edge:
+                logger.info(f"Registry Status: {edge['registry_status']}")
 
         # Save to CSV
         output_path = Path("reports/bulldog_edges_discovered.csv")
@@ -452,6 +523,12 @@ class BulldogEdgeDiscovery:
         logger.info("\n" + "=" * 80)
         logger.info("BULLDOG MODE COMPLETE")
         logger.info("=" * 80)
+        logger.info(f"\nNext steps:")
+        logger.info(
+            f"1. Review new strategies in dashboard: python -m streamlit run dashboard/app.py"
+        )
+        logger.info(f"2. Click the 'STRATEGIES' tab")
+        logger.info(f"3. Accept or reject the {self.new_strategies_count} pending strategies")
 
 
 def main():
@@ -465,6 +542,15 @@ def main():
     print("=" * 80 + "\n")
 
     bulldog = BulldogEdgeDiscovery()
+
+    # Show existing registry stats
+    registry_stats = bulldog.registry.get_stats()
+    print(f"Strategy Registry loaded: {registry_stats['total']} existing strategies")
+    print(
+        f"  - {registry_stats['pending']} pending | {registry_stats['accepted']} accepted | "
+        f"{registry_stats['rejected']} rejected | {registry_stats['archived']} archived"
+    )
+    print(f"  - Duplicate detection enabled (85% similarity threshold)\n")
 
     if not bulldog.load_data():
         print("ERROR: Could not load data")

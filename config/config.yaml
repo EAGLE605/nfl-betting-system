@@ -38,7 +38,7 @@ betting:
     daily_limit: 5
   
   # Default profile (you can change this)
-  active_profile: small
+  active_profile: medium  # UPGRADED: Now using 1/4 Kelly for better growth!
   
   bankroll:
     initial: 500  # Starting bankroll (adjust to yours)

@@ -24,6 +24,29 @@ from plotly.subplots import make_subplots
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# Import live game tracking
+sys.path.insert(0, str(Path(__file__).parent))
+from live_game_display import (
+    render_live_games_section,
+    render_upcoming_games_section,
+    render_completed_games_section,
+    render_scoreboard_ticker,
+    render_auto_refresh_control,
+    render_game_window_indicator,
+    render_timezone_display,
+)
+from src.api.live_game_tracker import LiveGameTracker
+
+# Import strategy management
+from strategy_manager import (
+    render_strategy_list,
+    render_add_strategy_form,
+    render_strategy_stats,
+    render_duplicate_checker,
+    render_version_update_form,
+)
+from src.strategy_registry import StrategyRegistry
+
 # AI Providers
 try:
     import anthropic
@@ -615,14 +638,104 @@ with col_stats:
     """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
+# LIVE GAME TRACKING SETUP
+# -----------------------------------------------------------------------------
+# Initialize session state for live tracking
+if "game_tracker" not in st.session_state:
+    st.session_state.game_tracker = LiveGameTracker(timezone_str="America/New_York")
+    st.session_state.last_refresh = datetime.now()
+
+tracker = st.session_state.game_tracker
+
+# Auto-refresh logic
+# BEGINNER NOTE: Streamlit reruns the entire script on interaction.
+# We use session_state to preserve data between reruns.
+should_auto_refresh = tracker.should_auto_refresh()
+
+if should_auto_refresh:
+    # Check if enough time has passed for auto-refresh (5 minutes)
+    time_since_refresh = (datetime.now() - st.session_state.last_refresh).total_seconds()
+    if time_since_refresh > 300:  # 5 minutes = 300 seconds
+        st.session_state.last_refresh = datetime.now()
+        st.rerun()  # Rerun the app to fetch fresh data
+
+# -----------------------------------------------------------------------------
 # TABS
 # -----------------------------------------------------------------------------
-tab_games, tab_calendar, tab_parlay, tab_tracker, tab_lab, tab_intel = st.tabs([
-    "GAMES", "CALENDAR", "PARLAY", "TRACKER", "LAB", "INTEL"
+tab_live, tab_games, tab_calendar, tab_parlay, tab_tracker, tab_lab, tab_strategy, tab_intel = st.tabs([
+    "🔴 LIVE", "GAMES", "CALENDAR", "PARLAY", "TRACKER", "LAB", "📋 STRATEGIES", "INTEL"
 ])
 
 # =============================================================================
-# TAB 1: GAMES BY SLOT
+# TAB: LIVE GAMES (NEW!)
+# =============================================================================
+with tab_live:
+    st.markdown("## 🔴 LIVE GAME TRACKER")
+
+    # Auto-refresh controls
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        render_game_window_indicator(tracker)
+    with col2:
+        manual_refresh = render_auto_refresh_control()
+
+    # Manual refresh button was clicked
+    if manual_refresh:
+        st.session_state.last_refresh = datetime.now()
+        st.rerun()
+
+    # Timezone display
+    render_timezone_display(tracker)
+
+    st.markdown("---")
+
+    # Fetch games with cache (force refresh if manual button clicked)
+    try:
+        all_games = tracker.get_current_games(force_refresh=manual_refresh)
+
+        # Add status display string to each game
+        for game in all_games:
+            game["status_display"] = tracker.get_game_display_status(game)
+
+        # Live scoreboard ticker (top of page)
+        render_scoreboard_ticker(all_games)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Create three sections
+        col_live, col_upcoming = st.columns(2)
+
+        with col_live:
+            # Live games section
+            live_games = [g for g in all_games if g.get("is_live", False)]
+            render_live_games_section(live_games)
+
+        with col_upcoming:
+            # Upcoming games (next 7 days)
+            upcoming_games = tracker.get_upcoming_games(days_ahead=7)
+            for game in upcoming_games:
+                game["status_display"] = tracker.get_game_display_status(game)
+            render_upcoming_games_section(upcoming_games)
+
+        # Completed games (full width)
+        st.markdown("---")
+        completed_games = tracker.get_completed_games(days_back=7)
+        for game in completed_games:
+            game["status_display"] = tracker.get_game_display_status(game)
+        render_completed_games_section(completed_games)
+
+    except Exception as e:
+        st.error(f"⚠️ Error fetching live game data: {e}")
+        st.info("💡 **Troubleshooting tips:**\n- Check your internet connection\n- ESPN API might be temporarily down\n- Try the manual refresh button")
+
+        # Show cached data if available
+        if st.session_state.get("cached_games"):
+            st.warning("📦 Showing cached data from last successful fetch")
+            all_games = st.session_state.cached_games
+            render_scoreboard_ticker(all_games)
+
+# =============================================================================
+# TAB: GAMES BY SLOT
 # =============================================================================
 with tab_games:
     # Slot order
@@ -710,129 +823,171 @@ with tab_games:
 # TAB 2: CALENDAR VIEW - DYNAMIC FROM LIVE DATA
 # =============================================================================
 with tab_calendar:
-    from datetime import datetime, timedelta
+    st.markdown("## 📅 WEEKLY SCHEDULE")
 
-    # Group games by date from live data
-    def parse_game_datetime(game):
-        """Parse ISO date and return datetime in ET."""
-        date_str = game.get('date', '')
-        if not date_str:
-            return None
-        try:
-            # Parse ISO format
-            dt_str = date_str.replace('Z', '+00:00')
-            dt_utc = datetime.fromisoformat(dt_str)
-            # Convert UTC to Eastern Time (approximately UTC-5)
-            dt_et = dt_utc - timedelta(hours=5)
-            return dt_et
-        except:
-            return None
-    
-    def format_time_et(dt):
-        """Format datetime to readable time string."""
-        if not dt:
-            return "TBD"
-        if hasattr(dt, 'strftime'):
-            # Use %I and strip leading zero manually for cross-platform compatibility
-            time_str = dt.strftime("%I:%M %p")
-            if time_str.startswith('0'):
-                time_str = time_str[1:]
-            return time_str
-        return "TBD"
-    
-    # Group games by day
-    games_by_date = {}
-    for game in games:
-        dt = parse_game_datetime(game)
-        if dt:
-            date_key = dt.strftime('%Y-%m-%d')
-            day_name = dt.strftime('%A')
-            if date_key not in games_by_date:
-                games_by_date[date_key] = {
-                    'day_name': day_name,
-                    'date_str': dt.strftime('%m/%d'),
-                    'games': []
-                }
-            game_info = {
-                'away': game.get('away_team', ''),
-                'home': game.get('home_team', ''),
-                'time': format_time_et(dt),
-                'hour': dt.hour,
-                'status': game.get('status', ''),
-                'away_score': game.get('away_score', ''),
-                'home_score': game.get('home_score', '')
-            }
-            games_by_date[date_key]['games'].append(game_info)
-    
-    # Sort dates
-    sorted_dates = sorted(games_by_date.keys())
-    
-    st.markdown(f'<div class="slot-header">WEEK {CURRENT_WEEK} SCHEDULE</div>', unsafe_allow_html=True)
-    
-    if not sorted_dates:
-        st.info("No games loaded. Check data source.")
-    
-    for date_key in sorted_dates:
-        day_data = games_by_date[date_key]
-        day_name = day_data['day_name']
-        date_str = day_data['date_str']
-        day_games = sorted(day_data['games'], key=lambda x: x['hour'])
-        
-        # Determine header style based on day
-        if day_name == 'Thursday':
-            header_color = 'var(--accent)'
-            border_color = 'var(--accent)'
-            label = f'THURSDAY {date_str}'
-        elif day_name == 'Friday':
-            header_color = '#00d4aa'
-            border_color = '#00d4aa'
-            label = f'FRIDAY {date_str} - BLACK FRIDAY'
-        elif day_name == 'Saturday':
-            header_color = '#d0d0d0'
-            border_color = 'var(--dark-4)'
-            label = f'SATURDAY {date_str}'
-        elif day_name == 'Sunday':
-            header_color = '#d0d0d0'
-            border_color = 'var(--dark-4)'
-            label = f'SUNDAY {date_str}'
-        elif day_name == 'Monday':
-            header_color = '#ff6b35'
-            border_color = '#ff6b35'
-            label = f'MONDAY {date_str}'
-        else:
-            header_color = '#d0d0d0'
-            border_color = 'var(--dark-4)'
-            label = f'{day_name.upper()} {date_str}'
-        
-        st.markdown(f'''<div style="background: var(--dark-2); border: 1px solid {border_color}; border-radius: 8px; padding: 16px; margin: 12px 0;">
-<div style="font-family: 'Bebas Neue'; font-size: 1.3rem; color: {header_color}; margin-bottom: 12px;">{label}</div>''', unsafe_allow_html=True)
-        
-        for game in day_games:
-            away = game['away']
-            home = game['home']
-            away_logo = TEAM_LOGOS.get(away, '')
-            home_logo = TEAM_LOGOS.get(home, '')
-            game_time = game['time']
-            status = game['status']
-            
-            # Show score if game is final or in progress
-            if status == 'STATUS_FINAL':
-                score_display = f"<span style='color: var(--text-2);'>{game['away_score']} - {game['home_score']}</span> <span style='color: var(--text-3); font-size: 0.8rem;'>FINAL</span>"
-            elif status == 'STATUS_IN_PROGRESS':
-                score_display = f"<span style='color: var(--accent);'>{game['away_score']} - {game['home_score']}</span> <span style='color: #00ff88; font-size: 0.8rem;'>LIVE</span>"
-            else:
-                score_display = f"<span style='color: var(--accent);'>{game_time}</span>"
-            
-            st.markdown(f'''<div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--dark-4);">
-<img src="{away_logo}" style="width: 32px; height: 32px;"/>
-<span style="width: 45px; font-weight: 500;">{away}</span>
-<span style="color: var(--text-3); margin: 0 4px;">@</span>
-<span style="width: 45px; font-weight: 500;">{home}</span>
-<img src="{home_logo}" style="width: 32px; height: 32px;"/>
-<span style="margin-left: auto;">{score_display}</span>
-</div>''', unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Fetch games from live tracker
+    try:
+        all_games = tracker.get_current_games()
+
+        # Separate into three sections
+        live_now = [g for g in all_games if g.get("is_live", False)]
+        upcoming = [g for g in all_games if g.get("is_upcoming", False)]
+        completed = [g for g in all_games if g.get("is_final", False)]
+
+        # Summary stats
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("🔴 Live Now", len(live_now))
+        with col2:
+            st.metric("⏰ Upcoming", len(upcoming))
+        with col3:
+            st.metric("✅ Completed", len(completed))
+
+        st.markdown("---")
+
+        # =====================================================================
+        # SECTION 1: LIVE GAMES
+        # =====================================================================
+        if live_now:
+            st.markdown(f'<div class="slot-header">🔴 LIVE NOW ({len(live_now)} GAMES)</div>',
+                       unsafe_allow_html=True)
+
+            for game in live_now:
+                away = game.get("away_team", "")
+                home = game.get("home_team", "")
+                away_score = game.get("away_score", 0)
+                home_score = game.get("home_score", 0)
+                period = game.get("period", 1)
+                clock = game.get("clock", "0:00")
+
+                # Quarter display
+                if period <= 4:
+                    quarter_display = f"Q{period}"
+                elif period == 5:
+                    quarter_display = "OT"
+                else:
+                    quarter_display = f"{period-4}OT"
+
+                # Card with live styling
+                st.markdown(f'''
+                <div class="game-card live" style="background: var(--dark-2); border: 2px solid #ff0000; border-radius: 8px; padding: 16px; margin: 12px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="font-size: 1.2rem; font-weight: bold;">{away} @ {home}</div>
+                            <div style="color: #ff0000; font-weight: bold; margin-top: 4px;">
+                                🔴 LIVE - {quarter_display} {clock}
+                            </div>
+                        </div>
+                        <div style="text-align: right; font-size: 1.5rem; font-weight: bold;">
+                            {away_score} - {home_score}
+                        </div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+        # =====================================================================
+        # SECTION 2: UPCOMING GAMES
+        # =====================================================================
+        if upcoming:
+            st.markdown(f'<div class="slot-header">⏰ UPCOMING ({len(upcoming)} GAMES)</div>',
+                       unsafe_allow_html=True)
+
+            # Group by date
+            games_by_date = {}
+            for game in upcoming:
+                game_time = game.get("game_time_local")
+                if not game_time:
+                    continue
+
+                date_key = game_time.strftime("%Y-%m-%d")
+                if date_key not in games_by_date:
+                    games_by_date[date_key] = {
+                        "date_display": game_time.strftime("%A, %B %d"),
+                        "games": []
+                    }
+                games_by_date[date_key]["games"].append(game)
+
+            # Sort dates
+            for date_key in sorted(games_by_date.keys()):
+                date_info = games_by_date[date_key]
+                st.markdown(f"### {date_info['date_display']}")
+
+                for game in sorted(date_info["games"],
+                                  key=lambda g: g.get("game_time_local", datetime.min)):
+                    away = game.get("away_team", "")
+                    home = game.get("home_team", "")
+                    game_time = tracker.format_game_time(game)
+
+                    st.markdown(f'''
+                    <div class="game-card" style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin: 8px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 1.1rem;">{away} @ {home}</div>
+                            <div style="color: #888; font-size: 0.9rem;">{game_time}</div>
+                        </div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+
+        # =====================================================================
+        # SECTION 3: COMPLETED GAMES
+        # =====================================================================
+        if completed:
+            st.markdown("---")
+            st.markdown(f'<div class="slot-header">✅ COMPLETED ({len(completed)} GAMES)</div>',
+                       unsafe_allow_html=True)
+
+            # Sort by game time (most recent first)
+            completed_sorted = sorted(completed,
+                                     key=lambda g: g.get("game_time_local", datetime.min),
+                                     reverse=True)
+
+            for game in completed_sorted:
+                away = game.get("away_team", "")
+                home = game.get("home_team", "")
+                away_score = game.get("away_score", 0)
+                home_score = game.get("home_score", 0)
+                game_time = game.get("game_time_local")
+
+                # Game day display
+                if game_time:
+                    day_display = game_time.strftime("%A %I:%M %p")
+                else:
+                    day_display = "Recently"
+
+                # Determine winner (bold)
+                if away_score > home_score:
+                    away_style = "font-weight: bold; color: #00ff00;"
+                    home_style = "color: #888;"
+                elif home_score > away_score:
+                    away_style = "color: #888;"
+                    home_style = "font-weight: bold; color: #00ff00;"
+                else:
+                    away_style = ""
+                    home_style = ""
+
+                st.markdown(f'''
+                <div class="game-card" style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 16px; margin: 8px 0; opacity: 0.8;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 1.1rem;">
+                                <span style="{away_style}">{away} {away_score}</span>
+                                @
+                                <span style="{home_style}">{home} {home_score}</span>
+                            </div>
+                            <div style="color: #666; font-size: 0.8rem; margin-top: 4px;">
+                                ✅ FINAL - {day_display}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+        # No games at all
+        if not live_now and not upcoming and not completed:
+            st.info("No games found for the current week. Check back during the NFL season!")
+
+    except Exception as e:
+        st.error(f"⚠️ Error loading calendar data: {e}")
+        st.info("Try refreshing or check the LIVE tab for real-time data.")
 
 # =============================================================================
 # TAB 3: PARLAY BUILDER - FULLY WIRED
@@ -1648,6 +1803,127 @@ with tab_lab:
                 
                 st.success(f"Scan complete! {len(new_discoveries)} new edges found. Review them above.")
                 st.rerun()
+
+# =============================================================================
+# TAB: STRATEGY MANAGEMENT
+# =============================================================================
+with tab_strategy:
+    st.markdown("## 📋 STRATEGY MANAGEMENT")
+
+    # Always load fresh from file to ensure we have latest data
+    # (Don't cache in session_state - it causes stale data issues)
+    registry = StrategyRegistry()
+
+    # Debug info (collapsible)
+    with st.expander("🔧 Debug Info", expanded=False):
+        st.code(f"""
+Registry Path: {registry.registry_path.absolute()}
+Total Strategies: {len(registry.strategies)}
+Pending: {len(registry.get_pending_strategies())}
+Accepted: {len(registry.get_accepted_strategies())}
+Rejected: {len(registry.get_rejected_strategies())}
+        """)
+        if st.button("🔄 Force Reload Registry"):
+            st.rerun()
+
+    # Summary stats at top
+    render_strategy_stats(registry)
+
+    st.markdown("---")
+
+    # Create tabs within the strategy tab
+    strategy_subtabs = st.tabs([
+        "⏳ Pending Review",
+        "✅ Active Strategies",
+        "❌ Rejected",
+        "📦 Archived",
+        "➕ Add New",
+        "🔍 Tools"
+    ])
+
+    # Pending strategies (need your decision!)
+    with strategy_subtabs[0]:
+        st.markdown("## ⏳ Pending Review")
+        st.info("💡 These are newly discovered strategies waiting for your approval.")
+
+        pending = registry.get_pending_strategies()
+        render_strategy_list(pending, registry,
+                            title="Strategies Awaiting Review",
+                            key_prefix="pending",
+                            empty_message="🎉 No pending strategies! All caught up.")
+
+    # Accepted strategies (currently using)
+    with strategy_subtabs[1]:
+        st.markdown("## ✅ Active Strategies")
+        st.success("These are strategies you've accepted and are currently using.")
+
+        accepted = registry.get_accepted_strategies()
+        render_strategy_list(accepted, registry,
+                            title="Active Betting Strategies",
+                            key_prefix="accepted",
+                            empty_message="No active strategies yet. Review some pending strategies!")
+
+        if accepted:
+            st.markdown("---")
+            st.markdown("### 📊 Performance Summary")
+
+            # Calculate aggregate stats
+            total_bets = sum(s.sample_size for s in accepted)
+            avg_win_rate = sum(s.win_rate * s.sample_size for s in accepted) / total_bets if total_bets > 0 else 0
+            avg_roi = sum(s.roi * s.sample_size for s in accepted) / total_bets if total_bets > 0 else 0
+            avg_edge = sum(s.edge * s.sample_size for s in accepted) / total_bets if total_bets > 0 else 0
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Bets", total_bets)
+            with col2:
+                st.metric("Avg Win Rate", f"{avg_win_rate:.1f}%")
+            with col3:
+                st.metric("Avg ROI", f"{avg_roi:.1f}%")
+            with col4:
+                st.metric("Avg Edge", f"{avg_edge:.1f}%")
+
+    # Rejected strategies (tested, didn't work)
+    with strategy_subtabs[2]:
+        st.markdown("## ❌ Rejected Strategies")
+        st.warning("These strategies didn't meet your criteria or underperformed.")
+
+        rejected = registry.get_rejected_strategies()
+        render_strategy_list(rejected, registry,
+                            title="Rejected Strategies",
+                            key_prefix="rejected",
+                            empty_message="No rejected strategies.")
+
+    # Archived strategies (was good, stopped using)
+    with strategy_subtabs[3]:
+        st.markdown("## 📦 Archived Strategies")
+        st.info("These strategies were previously active but have been archived.")
+
+        from src.strategy_registry import StrategyStatus
+        archived = registry.get_strategies_by_status(StrategyStatus.ARCHIVED)
+        render_strategy_list(archived, registry,
+                            title="Archived Strategies",
+                            key_prefix="archived",
+                            empty_message="No archived strategies.")
+
+    # Add new strategy manually
+    with strategy_subtabs[4]:
+        st.markdown("## ➕ Add New Strategy")
+        st.info("💡 Manually add a strategy you discovered outside the automated system.")
+
+        render_add_strategy_form(registry)
+
+    # Tools (duplicate checker, version updater)
+    with strategy_subtabs[5]:
+        st.markdown("## 🔍 Strategy Tools")
+
+        # Duplicate checker
+        render_duplicate_checker(registry)
+
+        st.markdown("---")
+
+        # Version updater
+        render_version_update_form(registry)
 
 # =============================================================================
 # TAB 6: INTEL (AI SEARCH)
