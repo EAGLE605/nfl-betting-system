@@ -2107,74 +2107,43 @@ with tab_lab:
             """
             <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
                 <div style="color: #d0d0d0; font-size: 0.95rem;">
-                    The strategy discovery engine continuously scans for profitable patterns, market inefficiencies, 
-                    and situational edges. Results below are statistically significant (p < 0.05) with sample size > 50.
+                    The strategy discovery engine scans for profitable patterns, market inefficiencies,
+                    and situational edges. All data is REAL from the Strategy Registry - no fake or static data.
                 </div>
             </div>
         """,
             unsafe_allow_html=True,
         )
 
-        # Initialize discoveries queue in session state
-        if "discovered_edges" not in st.session_state:
-            st.session_state.discovered_edges = [
-                {
-                    "edge": "Home dogs +3.5 to +7 after bye week",
-                    "sample": 127,
-                    "win_rate": 61.4,
-                    "roi": 18.2,
-                    "confidence": "HIGH",
-                    "status": "VERIFIED",
-                },
-                {
-                    "edge": "Unders in divisional games (weeks 14-17)",
-                    "sample": 89,
-                    "win_rate": 58.4,
-                    "roi": 12.1,
-                    "confidence": "HIGH",
-                    "status": "VERIFIED",
-                },
-                {
-                    "edge": "Road favorites -3 or less vs winning teams",
-                    "sample": 156,
-                    "win_rate": 56.4,
-                    "roi": 8.9,
-                    "confidence": "MEDIUM",
-                    "status": "VERIFIED",
-                },
-                {
-                    "edge": "Overs when total drops 1.5+ points",
-                    "sample": 72,
-                    "win_rate": 59.7,
-                    "roi": 14.8,
-                    "confidence": "MEDIUM",
-                    "status": "VERIFIED",
-                },
-                {
-                    "edge": "Monday underdogs after team covered spread",
-                    "sample": 54,
-                    "win_rate": 64.8,
-                    "roi": 24.1,
-                    "confidence": "LOW",
-                    "status": "VERIFIED",
-                },
-            ]
+        # Load REAL data from Strategy Registry
+        edge_registry = StrategyRegistry()
+        pending_strategies = edge_registry.get_pending_strategies()
+        accepted_strategies = edge_registry.get_accepted_strategies()
 
-        if "pending_discoveries" not in st.session_state:
-            st.session_state.pending_discoveries = []
+        # Helper function to determine confidence level based on metrics
+        def get_confidence(strategy):
+            """Determine confidence level based on sample size and ROI."""
+            if strategy.sample_size >= 100 and strategy.roi >= 15:
+                return "HIGH"
+            elif strategy.sample_size >= 50 and strategy.roi >= 8:
+                return "MEDIUM"
+            else:
+                return "LOW"
 
         # Show pending discoveries queue if any
-        if st.session_state.pending_discoveries:
+        if pending_strategies:
             st.markdown(
-                """
+                f"""
                 <div style="background: linear-gradient(135deg, var(--dark-2) 0%, rgba(255, 170, 0, 0.1) 100%); border: 2px solid var(--warning); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                    <div style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: var(--warning); margin-bottom: 12px;">NEW DISCOVERIES PENDING REVIEW</div>
+                    <div style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: var(--warning); margin-bottom: 12px;">
+                        {len(pending_strategies)} NEW DISCOVERIES PENDING REVIEW
+                    </div>
                 </div>
             """,
                 unsafe_allow_html=True,
             )
 
-            for i, disc in enumerate(st.session_state.pending_discoveries):
+            for strategy in pending_strategies:
                 col_disc, col_actions = st.columns([4, 1])
 
                 with col_disc:
@@ -2183,8 +2152,8 @@ with tab_lab:
                         <div style="background: var(--dark-3); border: 1px solid var(--warning); border-radius: 8px; padding: 16px; margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <div style="font-weight: 600; color: #ffffff; margin-bottom: 4px;">{disc['edge']}</div>
-                                    <div style="font-size: 0.85rem; color: #b0b0b0;">Sample: {disc['sample']} | Win: {disc['win_rate']}% | ROI: +{disc['roi']}%</div>
+                                    <div style="font-weight: 600; color: #ffffff; margin-bottom: 4px;">{strategy.name}</div>
+                                    <div style="font-size: 0.85rem; color: #b0b0b0;">Sample: {strategy.sample_size} | Win: {strategy.win_rate:.1f}% | ROI: +{strategy.roi:.1f}%</div>
                                 </div>
                                 <div style="background: var(--warning); color: var(--dark-1); padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">NEW</div>
                             </div>
@@ -2196,59 +2165,63 @@ with tab_lab:
                 with col_actions:
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        if st.button("ACCEPT", key=f"accept_{i}"):
-                            # Move to verified
-                            disc["status"] = "VERIFIED"
-                            st.session_state.discovered_edges.insert(0, disc)
-                            st.session_state.pending_discoveries.pop(i)
+                        if st.button("ACCEPT", key=f"edge_accept_{strategy.id}"):
+                            edge_registry.accept_strategy(
+                                strategy.id, "Accepted from Edge Finder"
+                            )
                             st.rerun()
                     with col_b:
-                        if st.button("REJECT", key=f"reject_{i}"):
-                            st.session_state.pending_discoveries.pop(i)
+                        if st.button("REJECT", key=f"edge_reject_{strategy.id}"):
+                            edge_registry.reject_strategy(
+                                strategy.id, "Rejected from Edge Finder"
+                            )
                             st.rerun()
 
             st.markdown("---")
 
-        # Show verified discoveries
+        # Show verified/accepted edges
         st.markdown("### VERIFIED EDGES")
 
-        for disc in st.session_state.discovered_edges:
-            conf = disc.get("confidence", "MEDIUM")
-            conf_color = (
-                "#00ff88"
-                if conf == "HIGH"
-                else ("#ffaa00" if conf == "MEDIUM" else "#ff6b35")
-            )
+        if not accepted_strategies:
+            st.info("No verified edges yet. Run a scan or accept pending strategies.")
+        else:
+            for strategy in accepted_strategies:
+                conf = get_confidence(strategy)
+                conf_color = (
+                    "#00ff88"
+                    if conf == "HIGH"
+                    else ("#ffaa00" if conf == "MEDIUM" else "#ff6b35")
+                )
 
-            st.markdown(
-                f"""
-                <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-left: 4px solid {conf_color}; border-radius: 0 8px 8px 0; padding: 16px; margin: 12px 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div style="flex: 3;">
-                            <div style="font-weight: 600; color: #ffffff; margin-bottom: 8px;">{disc['edge']}</div>
-                            <div style="font-size: 0.85rem; color: #a0a0a0;">Sample: {disc['sample']} games</div>
-                        </div>
-                        <div style="flex: 1; text-align: center;">
-                            <div style="font-size: 0.75rem; color: #a0a0a0;">WIN</div>
-                            <div style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: #ffffff;">{disc['win_rate']}%</div>
-                        </div>
-                        <div style="flex: 1; text-align: center;">
-                            <div style="font-size: 0.75rem; color: #a0a0a0;">ROI</div>
-                            <div style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: var(--accent);">+{disc['roi']}%</div>
-                        </div>
-                        <div style="flex: 1; text-align: right;">
-                            <div style="display: inline-block; padding: 4px 12px; border-radius: 4px; background: {conf_color}20; color: {conf_color}; font-size: 0.75rem; font-weight: 600;">{conf}</div>
+                st.markdown(
+                    f"""
+                    <div style="background: var(--dark-2); border: 1px solid var(--dark-4); border-left: 4px solid {conf_color}; border-radius: 0 8px 8px 0; padding: 16px; margin: 12px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 3;">
+                                <div style="font-weight: 600; color: #ffffff; margin-bottom: 8px;">{strategy.name}</div>
+                                <div style="font-size: 0.85rem; color: #a0a0a0;">Sample: {strategy.sample_size} games</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 0.75rem; color: #a0a0a0;">WIN</div>
+                                <div style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: #ffffff;">{strategy.win_rate:.1f}%</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 0.75rem; color: #a0a0a0;">ROI</div>
+                                <div style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: var(--accent);">+{strategy.roi:.1f}%</div>
+                            </div>
+                            <div style="flex: 1; text-align: right;">
+                                <div style="display: inline-block; padding: 4px 12px; border-radius: 4px; background: {conf_color}20; color: {conf_color}; font-size: 0.75rem; font-weight: 600;">{conf}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            """,
-                unsafe_allow_html=True,
-            )
+                """,
+                    unsafe_allow_html=True,
+                )
 
         st.markdown("---")
 
         if st.button("SCAN FOR NEW EDGES", type="primary", use_container_width=True):
-            # Show real scanning progress
+            # Run REAL edge discovery
             scan_container = st.container()
 
             with scan_container:
@@ -2256,68 +2229,60 @@ with tab_lab:
 
                 progress = st.progress(0)
                 status = st.empty()
-                findings = st.empty()
 
-                scan_stages = [
-                    ("Analyzing spread patterns...", 15, []),
-                    ("Checking totals trends...", 30, []),
-                    (
-                        "Evaluating situational angles...",
-                        45,
-                        ["Potential: Prime-time unders after travel"],
-                    ),
-                    ("Cross-referencing weather data...", 60, []),
-                    (
-                        "Testing line movement patterns...",
-                        75,
-                        ["Potential: Reverse line moves on dogs"],
-                    ),
-                    ("Validating statistical significance...", 90, []),
-                    ("Finalizing results...", 100, []),
-                ]
+                try:
+                    # Import and run real discovery engine
+                    import subprocess
+                    import sys
 
-                found_edges = []
-                for stage, pct, edges in scan_stages:
-                    status.text(stage)
-                    progress.progress(pct)
-                    if edges:
-                        found_edges.extend(edges)
-                        findings.markdown(
-                            f"<div style='color: var(--accent);'>Found: {', '.join(found_edges)}</div>",
-                            unsafe_allow_html=True,
+                    status.text("Loading historical data...")
+                    progress.progress(10)
+
+                    # Run the bulldog discovery script
+                    status.text("Running edge discovery engine...")
+                    progress.progress(30)
+
+                    result = subprocess.run(
+                        [sys.executable, "scripts/bulldog_edge_discovery.py"],
+                        capture_output=True,
+                        text=True,
+                        cwd=str(project_root),
+                        timeout=120,  # 2 minute timeout
+                    )
+
+                    progress.progress(80)
+                    status.text("Analyzing results...")
+
+                    # Reload registry to get new strategies
+                    edge_registry = StrategyRegistry()
+                    new_pending = edge_registry.get_pending_strategies()
+
+                    progress.progress(100)
+                    progress.empty()
+                    status.empty()
+
+                    # Show results
+                    if new_pending:
+                        st.success(
+                            f"Scan complete! Found {len(new_pending)} strategies pending review. "
+                            "Better strategies automatically replace worse ones."
                         )
-                    time.sleep(0.4)
+                    else:
+                        st.info(
+                            "Scan complete. No new edges found that beat existing strategies. "
+                            "Market appears efficient or all good edges already discovered."
+                        )
 
-                progress.empty()
-                status.empty()
-                findings.empty()
+                    st.rerun()
 
-                # Add new discoveries to pending queue
-                new_discoveries = [
-                    {
-                        "edge": "Prime-time unders after 3+ hour travel",
-                        "sample": 67,
-                        "win_rate": 60.3,
-                        "roi": 15.1,
-                        "confidence": "MEDIUM",
-                        "status": "PENDING",
-                    },
-                    {
-                        "edge": "Dogs +4 to +6 after reverse line move",
-                        "sample": 84,
-                        "win_rate": 57.1,
-                        "roi": 10.8,
-                        "confidence": "MEDIUM",
-                        "status": "PENDING",
-                    },
-                ]
-
-                st.session_state.pending_discoveries.extend(new_discoveries)
-
-                st.success(
-                    f"Scan complete! {len(new_discoveries)} new edges found. Review them above."
-                )
-                st.rerun()
+                except subprocess.TimeoutExpired:
+                    progress.empty()
+                    status.empty()
+                    st.error("Scan timed out. Try again or check data availability.")
+                except Exception as e:
+                    progress.empty()
+                    status.empty()
+                    st.error(f"Scan failed: {str(e)}")
 
 # =============================================================================
 # TAB: STRATEGY MANAGEMENT

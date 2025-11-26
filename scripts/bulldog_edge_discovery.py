@@ -134,10 +134,64 @@ class BulldogEdgeDiscovery:
             similar = self.registry.find_similar_strategy(name, threshold=0.85)
 
             if similar:
-                # Duplicate found - skip
-                edge["registry_status"] = f"DUPLICATE ({similar.name})"
-                edge["is_new"] = False
-                self.duplicate_strategies_count += 1
+                # Similar strategy found - compare metrics to decide if we should update
+                new_roi = roi
+                old_roi = similar.roi
+
+                if new_roi > old_roi:
+                    # New strategy is BETTER - archive old and add new
+                    logger.info(
+                        f"  UPGRADE: '{name}' ROI {old_roi:.1f}% -> {new_roi:.1f}%"
+                    )
+
+                    # Archive the old strategy
+                    self.registry.archive_strategy(
+                        similar.strategy_id,
+                        f"Replaced by better version (ROI: {old_roi:.1f}% -> {new_roi:.1f}%)",
+                    )
+
+                    # Create new strategy
+                    strategy_id = (
+                        name.lower()
+                        .replace(" ", "_")
+                        .replace(":", "")
+                        .replace("+", "and")
+                        .replace("-", "_")
+                        .replace("__", "_")
+                        + f"_v{similar.version + 1}"
+                    )
+
+                    strategy = Strategy(
+                        strategy_id=strategy_id,
+                        name=name,
+                        description=f"Discovered edge: {name} (upgraded from v{similar.version})",
+                        pattern=name,
+                        win_rate=win_rate * 100,
+                        roi=roi,
+                        sample_size=total,
+                        edge=effect_size * 100,
+                        version=similar.version + 1,
+                        conditions={
+                            "seasons": f"{sample['season'].min()}-{sample['season'].max()}"
+                        },
+                    )
+
+                    success, message = self.registry.add_strategy(
+                        strategy, skip_duplicate_check=True
+                    )
+                    edge["registry_status"] = (
+                        f"UPGRADED (v{similar.version} -> v{similar.version + 1})"
+                    )
+                    edge["is_new"] = success
+                    if success:
+                        self.new_strategies_count += 1
+                else:
+                    # Existing strategy is BETTER or EQUAL - skip
+                    edge["registry_status"] = (
+                        f"SKIPPED (existing {similar.name} has ROI {old_roi:.1f}% >= {new_roi:.1f}%)"
+                    )
+                    edge["is_new"] = False
+                    self.duplicate_strategies_count += 1
             else:
                 # New strategy - add to registry
                 strategy_id = (
