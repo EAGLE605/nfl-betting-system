@@ -140,17 +140,21 @@ class ModelCalibrator:
         return (proba >= threshold).astype(int)
 
     def evaluate_calibration(
-        self, X: pd.DataFrame, y: pd.Series
+        self, X: pd.DataFrame, y: pd.Series, n_bins: int = 10
     ) -> Dict[str, float]:
         """
-        Evaluate calibration quality.
+        Evaluate calibration quality with comprehensive metrics.
+
+        Metrics based on Guo et al. (2017) "On Calibration of Modern Neural Networks"
+        and Walsh & Joshi (2024) sports betting calibration research.
 
         Args:
             X: Test features
             y: True labels
+            n_bins: Number of bins for ECE/MCE calculation
 
         Returns:
-            Dict with brier_uncalibrated, brier_calibrated, improvement_pct
+            Dict with brier scores, ECE, MCE, and improvement metrics
         """
         if not self._is_calibrated:
             raise ValueError("Calibrator not fit. Call calibrate() first.")
@@ -172,6 +176,14 @@ class ModelCalibrator:
         brier_uncalibrated = brier_score_loss(y, uncalibrated_proba)
         brier_calibrated = brier_score_loss(y, calibrated_proba)
 
+        # Calculate ECE and MCE for both
+        ece_uncalibrated, mce_uncalibrated = self._calculate_ece_mce(
+            y.values, uncalibrated_proba, n_bins
+        )
+        ece_calibrated, mce_calibrated = self._calculate_ece_mce(
+            y.values, calibrated_proba, n_bins
+        )
+
         # Calculate improvement
         if brier_uncalibrated > 0:
             improvement_pct = (
@@ -180,17 +192,75 @@ class ModelCalibrator:
         else:
             improvement_pct = 0.0
 
+        if ece_uncalibrated > 0:
+            ece_improvement_pct = (
+                (ece_uncalibrated - ece_calibrated) / ece_uncalibrated
+            ) * 100
+        else:
+            ece_improvement_pct = 0.0
+
         metrics = {
             "brier_uncalibrated": brier_uncalibrated,
             "brier_calibrated": brier_calibrated,
             "improvement_pct": improvement_pct,
+            "ece_uncalibrated": ece_uncalibrated,
+            "ece_calibrated": ece_calibrated,
+            "ece_improvement_pct": ece_improvement_pct,
+            "mce_uncalibrated": mce_uncalibrated,
+            "mce_calibrated": mce_calibrated,
         }
 
         logger.info(f"Brier (uncalibrated): {brier_uncalibrated:.4f}")
         logger.info(f"Brier (calibrated):   {brier_calibrated:.4f}")
-        logger.info(f"Improvement:          {improvement_pct:.2f}%")
+        logger.info(f"Brier improvement:    {improvement_pct:.2f}%")
+        logger.info(f"ECE (uncalibrated):   {ece_uncalibrated:.4f}")
+        logger.info(f"ECE (calibrated):     {ece_calibrated:.4f}")
+        logger.info(f"ECE improvement:      {ece_improvement_pct:.2f}%")
+        logger.info(f"MCE (calibrated):     {mce_calibrated:.4f}")
 
         return metrics
+
+    def _calculate_ece_mce(
+        self, y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10
+    ) -> Tuple[float, float]:
+        """
+        Calculate Expected Calibration Error (ECE) and Maximum Calibration Error (MCE).
+
+        ECE = Σ (|Bm|/n) * |acc(Bm) - conf(Bm)|
+        MCE = max_m |acc(Bm) - conf(Bm)|
+
+        Based on Guo et al. (2017) "On Calibration of Modern Neural Networks"
+
+        Args:
+            y_true: True binary labels
+            y_prob: Predicted probabilities
+            n_bins: Number of bins
+
+        Returns:
+            (ECE, MCE) tuple
+        """
+        bin_boundaries = np.linspace(0, 1, n_bins + 1)
+        ece = 0.0
+        mce = 0.0
+        n_samples = len(y_true)
+
+        for i in range(n_bins):
+            # Find samples in this bin
+            in_bin = (y_prob > bin_boundaries[i]) & (y_prob <= bin_boundaries[i + 1])
+            prop_in_bin = in_bin.sum() / n_samples
+
+            if in_bin.sum() > 0:
+                # Accuracy in bin (fraction of positives)
+                accuracy_in_bin = y_true[in_bin].mean()
+                # Average confidence in bin
+                avg_confidence_in_bin = y_prob[in_bin].mean()
+                # Calibration error for this bin
+                calibration_error = abs(accuracy_in_bin - avg_confidence_in_bin)
+
+                ece += prop_in_bin * calibration_error
+                mce = max(mce, calibration_error)
+
+        return ece, mce
 
     def plot_calibration_curve(
         self,
