@@ -215,3 +215,36 @@ python scripts/deep_correlation_audit.py
 5. If you don't know, say you don't know
 6. Never confuse descriptive stats with predictions
 7. Always validate with walk-forward testing
+
+---
+
+## New Package (May 2026)
+
+Branch: `claude/implement-logic-layer-01VgpL6wwzu41UHkXsSDc2wX`
+
+```bash
+pip install -e .
+picks --week 1 --season 2026   # Generate picks
+picks --serve                   # Start web app at localhost:8000
+```
+
+Package: `src/nfl_picks/` with 28 passing tests.
+
+---
+
+## Machine-Readable Data
+
+All research and config stored as JSON for programmatic access:
+
+- `src/nfl_picks/data/model_config.json` - Model performance, features, thresholds
+- `src/nfl_picks/data/novel_edges.json` - Future ideas with priority and data sources
+- `src/nfl_picks/data/package_structure.json` - Package layout and commands
+
+---
+
+## Session Persistence
+
+To resume without losing context:
+- Use `/resume` or `claude --continue`
+- Key findings are in this CLAUDE.md (auto-loaded every session)
+- Detailed research in `data/*.json` (read on demand)

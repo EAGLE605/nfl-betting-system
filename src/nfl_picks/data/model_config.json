@@ -1,0 +1,38 @@
+{
+  "model": {
+    "name": "V4 RB-NGS",
+    "version": "1.0.0",
+    "type": "GradientBoostingClassifier",
+    "validated": true
+  },
+  "performance": {
+    "accuracy": 65.6,
+    "roi": 25.3,
+    "sample_size": 317,
+    "test_years": [2023, 2024],
+    "train_years": [2021, 2022],
+    "p_value": 0.0001,
+    "z_score": 4.95
+  },
+  "features": [
+    {"name": "epa_diff", "importance": 0.263, "source": "nflverse_pbp"},
+    {"name": "diff_rb_efficiency_roll", "importance": 0.175, "source": "nfl_ngs_rushing"},
+    {"name": "diff_rb_stacked_box_pct_roll", "importance": 0.161, "source": "nfl_ngs_rushing"},
+    {"name": "diff_rb_time_to_los_roll", "importance": 0.095, "source": "nfl_ngs_rushing"},
+    {"name": "diff_rb_ypc_roll", "importance": 0.095, "source": "nfl_ngs_rushing"}
+  ],
+  "thresholds": {
+    "strong": 0.68,
+    "lean": 0.62,
+    "skip": 0.62
+  },
+  "rolling_windows": {
+    "epa": 5,
+    "ngs": 3
+  },
+  "validated_correlations": {
+    "qb_wr1_yards": {"theoretical": 0.72, "empirical": 0.68, "n": 2278, "status": "validated"},
+    "wr_receptions_yards": {"theoretical": 0.75, "empirical": 0.80, "n": 16327, "status": "validated"},
+    "rb_rush_rec_same_player": {"theoretical": 0.40, "empirical": -0.13, "n": 4581, "status": "busted"}
+  }
+}

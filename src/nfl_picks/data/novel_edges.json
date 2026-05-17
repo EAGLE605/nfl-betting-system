@@ -1,0 +1,93 @@
+{
+  "version": "2026-05-17",
+  "status": "research_complete",
+  "edges": [
+    {
+      "id": "referee_tendencies",
+      "priority": 1,
+      "name": "Referee Tracking",
+      "signal": "Crew assignments Tuesday, lines adjust Thursday = 2-day window",
+      "data_source": "nfl.import_officials()",
+      "data_available": true,
+      "build_effort": "medium",
+      "examples": [
+        {"crew": "Alex Kemp", "finding": "Under hits 11/16, favorites 30-3 SU"},
+        {"crew": "Shawn Smith", "finding": "23 DPI calls 2025, favors passing"}
+      ]
+    },
+    {
+      "id": "year2_rb",
+      "priority": 2,
+      "name": "Second-Year Running Backs",
+      "signal": "RBs improve +93% Year 1 to Year 2",
+      "data_source": "nfl.import_weekly_data()",
+      "data_available": true,
+      "build_effort": "low",
+      "position_leaps": {
+        "RB": "+93%",
+        "WR": "+19%",
+        "QB": "-6%"
+      }
+    },
+    {
+      "id": "sharp_money",
+      "priority": 3,
+      "name": "Follow Big Money",
+      "signal": "When 30% bets get 60% money = pro action",
+      "data_source": "odds_api_bet_splits",
+      "data_available": false,
+      "build_effort": "medium",
+      "requirement": "Need bet%/money% from Action Network or VegasInsider"
+    },
+    {
+      "id": "wind_alerts",
+      "priority": 4,
+      "name": "Wind Threshold",
+      "signal": "Wind >15mph = -20 pass yards/team",
+      "data_source": "noaa_weather",
+      "data_available": true,
+      "build_effort": "low",
+      "thresholds": {
+        "wind_15mph": "-20 pass yards/team",
+        "rain": "-12% passing",
+        "snow": "FG conversion 76%",
+        "heavy_snow": "-25% points"
+      }
+    },
+    {
+      "id": "triage_agent",
+      "priority": 5,
+      "name": "Roster Change Triage",
+      "signal": "Route roster moves by impact level",
+      "data_source": "nfl.import_weekly_rosters(), nfl.import_injuries()",
+      "data_available": true,
+      "build_effort": "medium",
+      "priority_levels": {
+        "critical": ["qb_starter_change", "trade_deadline_star", "top_50_pick_signs"],
+        "medium": ["pro_bowl_injury", "fa_signing", "depth_chart_change"],
+        "low": ["practice_squad", "ir_move"]
+      }
+    },
+    {
+      "id": "sentiment",
+      "priority": 6,
+      "name": "Social Sentiment",
+      "signal": "Fan anxiety correlates with outcomes",
+      "data_source": "twitter_api",
+      "data_available": false,
+      "build_effort": "high",
+      "requirement": "Twitter API + NLP pipeline"
+    }
+  ],
+  "busted_myths": [
+    {"myth": "West coast travel disadvantage", "reality": "Markets adjusted"},
+    {"myth": "QB breakout Year 2", "reality": "-6% production"},
+    {"myth": "Immediate trade impact", "reality": "3-4 weeks to integrate"}
+  ],
+  "sources": [
+    "Carnegie Mellon Twitter+NFL research",
+    "Covers.com weather analysis",
+    "NXTBets referee data",
+    "nflverse"
+  ]
+}

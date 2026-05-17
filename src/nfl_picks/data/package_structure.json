@@ -1,0 +1,42 @@
+{
+  "package": "nfl_picks",
+  "version": "1.0.0",
+  "branch": "claude/implement-logic-layer-01VgpL6wwzu41UHkXsSDc2wX",
+  "structure": {
+    "src/nfl_picks/": {
+      "__init__.py": "Main exports: Pick, PickSignal, Predictor, Settings",
+      "config.py": "Pydantic settings (bankroll, thresholds, ports)",
+      "cli.py": "Commands: --week, --history, --settle, --serve",
+      "server.py": "FastAPI + PWA serving",
+      "core/": {
+        "pick.py": "Pick dataclass, PickSignal enum (STRONG/LEAN/SKIP)",
+        "predictor.py": "V4 RB-NGS model (65.6% accuracy)"
+      },
+      "mlops/": {
+        "registry.py": "Model versioning (dev/staging/production)",
+        "features.py": "FeaturePipeline for data refresh",
+        "train.py": "Training with auto-registration"
+      }
+    },
+    "app/": {
+      "index.html": "PWA frontend (Anthropic-style dark UI)",
+      "manifest.json": "PWA manifest",
+      "sw.js": "Service worker for offline",
+      "static/": "Icons (SVG, PNG)"
+    },
+    "tests/": {
+      "test_core.py": "14 tests for Pick/PickSignal/Config",
+      "test_api.py": "6 tests for API endpoints",
+      "test_mlops.py": "8 tests for registry/pipeline"
+    }
+  },
+  "commands": {
+    "install": "pip install -e .",
+    "generate_picks": "picks --week 1 --season 2026",
+    "view_history": "picks --history",
+    "record_results": "picks --settle",
+    "start_server": "picks --serve",
+    "run_tests": "python -m pytest tests/test_core.py tests/test_api.py tests/test_mlops.py"
+  },
+  "tests_passing": 28
+}
