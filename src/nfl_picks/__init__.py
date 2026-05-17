@@ -10,5 +10,13 @@ __version__ = "1.0.0"
 
 from .core.pick import Pick, PickSignal
 from .core.predictor import Predictor
+from .config import Settings, settings
 
-__all__ = ["Pick", "PickSignal", "Predictor", "__version__"]
+__all__ = [
+    "Pick",
+    "PickSignal",
+    "Predictor",
+    "Settings",
+    "settings",
+    "__version__",
+]

@@ -1,9 +1,34 @@
-# Session Checkpoint - May 17, 2026
+# Session Checkpoint - May 17, 2026 (Updated)
+
+## Build Status: COMPLETE
+
+### Phases Completed
+1. **Foundation** - Core package, Pick/Predictor, config, CLI
+2. **Testing** - 28 passing tests (core, API, MLOps)
+3. **Documentation** - Updated README with accurate metrics
+4. **MLOps** - Model registry, feature pipeline, training scripts
+5. **PWA Frontend** - Anthropic-style dark UI with DK/FD deep links
+
+### Package Structure
+```
+src/nfl_picks/
+├── __init__.py          # Main exports
+├── config.py            # Pydantic settings
+├── cli.py               # picks --week, --serve, etc.
+├── server.py            # FastAPI + PWA
+├── core/
+│   ├── pick.py          # Pick dataclass + PickSignal
+│   └── predictor.py     # V4 RB-NGS model
+└── mlops/
+    ├── registry.py      # Model versioning
+    ├── features.py      # Feature pipeline
+    └── train.py         # Training with registration
+```
 
 ## What Was Built & Validated
 
 ### The Winning Model: V4 RB-NGS Optimized
-- **Location**: `scripts/v4_rb_optimized_model.py`, `src/models/rb_ngs_model.py`
+- **Location**: `src/nfl_picks/core/predictor.py`
 - **Accuracy**: 65.6% on high-confidence picks
 - **ROI**: +25.3% at -110 odds
 - **Statistical Significance**: p < 0.0001 (z = 4.95)
