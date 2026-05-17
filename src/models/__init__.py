@@ -1,4 +1,4 @@
-"""Model training, calibration, and ensemble modules.
+"""Model training, calibration, ensemble, and correlation modules.
 
 Research-backed implementations:
 - XGBoostNFLModel: Base model with proper evaluation metrics
@@ -6,6 +6,8 @@ Research-backed implementations:
 - StackedEnsembleModel: Heterogeneous ensemble (Nature Scientific Reports 2025)
 - MCDropoutPredictor: Uncertainty quantification (Gal & Ghahramani 2016)
 - ConformalPredictor: Distribution-free prediction intervals (Shafer & Vovk 2008)
+- GaussianCopula: Professional SGP correlation modeling (sportsbook standard)
+- EmpiricalCorrelationEngine: Data-validated correlations from 4 seasons nflverse
 """
 
 from .calibration import ModelCalibrator
@@ -42,6 +44,28 @@ except ImportError:
     odds_to_probability = None
     spread_to_probability = None
 
+try:
+    from .advanced_copula import (
+        GaussianCopula, MultivariateGaussianCopula, VineCopulaSimplified,
+        CorrelationDiscovery
+    )
+except ImportError:
+    GaussianCopula = None
+    MultivariateGaussianCopula = None
+    VineCopulaSimplified = None
+    CorrelationDiscovery = None
+
+try:
+    from .empirical_correlations import (
+        EmpiricalCorrelationEngine, EmpiricalCorrelation,
+        VALIDATED_CORRELATIONS, get_recommended_sgp_combinations
+    )
+except ImportError:
+    EmpiricalCorrelationEngine = None
+    EmpiricalCorrelation = None
+    VALIDATED_CORRELATIONS = None
+    get_recommended_sgp_combinations = None
+
 __all__ = [
     "XGBoostNFLModel",
     "ModelCalibrator",
@@ -56,4 +80,13 @@ __all__ = [
     "stack_for_week",
     "odds_to_probability",
     "spread_to_probability",
+    # Copula and correlation models
+    "GaussianCopula",
+    "MultivariateGaussianCopula",
+    "VineCopulaSimplified",
+    "CorrelationDiscovery",
+    "EmpiricalCorrelationEngine",
+    "EmpiricalCorrelation",
+    "VALIDATED_CORRELATIONS",
+    "get_recommended_sgp_combinations",
 ]
