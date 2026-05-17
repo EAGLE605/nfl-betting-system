@@ -22,18 +22,16 @@
 
 <div align="center">
 
-| Metric | Target | Achieved | Status |
-|--------|--------|----------|--------|
-| **Win Rate** | >55% | **67.22%** | ✅ **EXCEEDS** |
-| **ROI** | >3% | **428.04%** | ✅ **EXCEEDS** |
-| **Max Drawdown** | <-20% | **-16.17%** | ✅ **MEETS** |
-| **Sharpe Ratio** | >0.5 | **5.00** | ✅ **EXCEEDS** |
-| **CLV (Closing Line Value)** | >0% | **+28.91%** | ✅ **POSITIVE** |
-| **Total Bets** | >50 | **302** | ✅ **MEETS** |
+| Metric | Value | Method | Notes |
+|--------|-------|--------|-------|
+| **Win Rate** | **63.1%** | Walk-forward | 2023-2024 out-of-sample |
+| **95% CI** | 58.8% - 67.4% | Statistical | n=474 games |
+| **Baseline** | 55.9% | Home team wins | Comparison benchmark |
+| **Lift** | +7.2pp | vs baseline | Statistically significant |
 
 </div>
 
-> **Note**: Performance metrics based on historical backtesting (2016-2024). Past performance does not guarantee future results.
+> **Important**: These are honest walk-forward backtest results with no data leakage. Previous claims of 67% win rate and 428% ROI were incorrect due to data leakage. See [CLAUDE.md](CLAUDE.md) for full methodology and self-reflection.
 
 ---
 
