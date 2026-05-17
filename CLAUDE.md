@@ -26,6 +26,8 @@
 
 6. **NO DATA LEAKAGE**: Never use same-game data to predict same-game outcomes.
 
+7. **NO PROSE IN CODE BLOCKS**: Use markdown for explanations. Code blocks for executable code only. Never use `"""docstrings"""` as a formatting trick in chat responses.
+
 ---
 
 ## Project Overview
