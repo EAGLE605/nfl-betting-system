@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "source": "README.md",
+    "project": "NFL Picks",
+    "version": "1.0.0"
+  },
+  "tagline": "High-Confidence NFL Betting Intelligence",
+  "performance": {
+    "accuracy": 65.6,
+    "accuracy_description": "High-confidence picks (>62% model probability)",
+    "roi": 25.3,
+    "roi_description": "At standard -110 odds",
+    "sample_size": 317,
+    "test_years": [2023, 2024],
+    "p_value": 0.0001,
+    "z_score": 4.95,
+    "statistically_significant": true
+  },
+  "validation_method": {
+    "type": "walk_forward",
+    "train_years": [2021, 2022],
+    "test_years": [2023, 2024],
+    "data_leakage": false
+  },
+  "quick_start": {
+    "install": "pip install -e .",
+    "generate_picks": "picks --week 1 --season 2026",
+    "view_history": "picks --history",
+    "record_results": "picks --settle",
+    "start_server": "picks --serve"
+  },
+  "model": {
+    "name": "V4 RB-NGS",
+    "type": "Gradient Boosting with Next Gen Stats",
+    "features": [
+      {"name": "epa_diff", "importance": 0.26, "description": "EPA differential"},
+      {"name": "rb_efficiency_roll", "importance": null, "description": "RB rushing efficiency (3-game rolling)"},
+      {"name": "rb_stacked_box_pct", "importance": null, "description": "RB stacked box percentage"},
+      {"name": "rb_time_to_los", "importance": null, "description": "RB time to line of scrimmage"},
+      {"name": "rb_ypc", "importance": null, "description": "RB yards per carry"}
+    ]
+  },
+  "confidence_thresholds": {
+    "strong": {"min": 0.68, "action": "High conviction, bet this"},
+    "lean": {"min": 0.62, "max": 0.68, "action": "Consider, smaller size"},
+    "skip": {"max": 0.62, "action": "Below threshold, pass"}
+  },
+  "architecture": {
+    "core": ["pick.py", "predictor.py"],
+    "config": "config.py",
+    "cli": "cli.py",
+    "server": "server.py",
+    "frontend": ["index.html", "manifest.json", "sw.js"]
+  }
+}

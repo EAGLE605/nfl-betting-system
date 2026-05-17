@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "source": "SESSION_CHECKPOINT.md",
+    "date": "2026-05-17",
+    "status": "complete"
+  },
+  "phases_completed": [
+    {"phase": 1, "name": "Foundation", "items": ["Core package", "Pick/Predictor", "Config", "CLI"]},
+    {"phase": 2, "name": "Testing", "items": ["28 passing tests", "Core", "API", "MLOps"]},
+    {"phase": 3, "name": "Documentation", "items": ["README updated", "Accurate metrics"]},
+    {"phase": 4, "name": "MLOps", "items": ["Model registry", "Feature pipeline", "Training scripts"]},
+    {"phase": 5, "name": "PWA Frontend", "items": ["Anthropic-style UI", "DraftKings links", "FanDuel links"]}
+  ],
+  "package_structure": {
+    "src/nfl_picks/__init__.py": "Main exports",
+    "src/nfl_picks/config.py": "Pydantic settings",
+    "src/nfl_picks/cli.py": "CLI commands",
+    "src/nfl_picks/server.py": "FastAPI + PWA",
+    "src/nfl_picks/core/pick.py": "Pick dataclass, PickSignal enum",
+    "src/nfl_picks/core/predictor.py": "V4 RB-NGS model",
+    "src/nfl_picks/mlops/registry.py": "Model versioning",
+    "src/nfl_picks/mlops/features.py": "Feature pipeline",
+    "src/nfl_picks/mlops/train.py": "Training with registration"
+  },
+  "validated_edges": [
+    {"edge": "target_share_22pct", "effect": "+62 yards vs <15%", "confidence": "high"},
+    {"edge": "qb_wr_stack_sgp", "effect": "+21% correlation boost", "confidence": "high"},
+    {"edge": "1h_full_game_combo", "effect": "+37.5% correlation boost", "confidence": "high"},
+    {"edge": "game_script_rb_leading", "effect": "+12 yards", "confidence": "high"},
+    {"edge": "red_zone_targets_3plus", "effect": "56% TD rate", "confidence": "high"},
+    {"edge": "positive_script_weak_defense", "effect": "+26% RB yards", "confidence": "high"}
+  ],
+  "busted_myths": [
+    {"myth": "rest_advantage_after_bye", "reality": "-0.8 yards (none)"},
+    {"myth": "rb_dual_threat_correlation", "reality": "-0.13 (negative)"},
+    {"myth": "rising_usage_momentum", "reality": "only +3 yards"},
+    {"myth": "matchups_alone", "reality": "r=0.02 (nearly zero)"},
+    {"myth": "committee_rb_negative", "reality": "actually +0.38"}
+  ],
+  "parlay_performance": [
+    {"legs": 2, "win_rate": 0.439, "roi": 0.60, "n": 1056},
+    {"legs": 3, "win_rate": 0.301, "roi": 1.09, "n": 2003},
+    {"legs": 4, "win_rate": 0.206, "roi": 1.74, "n": 2837},
+    {"legs": 5, "win_rate": 0.140, "roi": 2.55, "n": 3021},
+    {"legs": 6, "win_rate": 0.093, "roi": 3.52, "n": 2428}
+  ],
+  "tests": {
+    "total_passing": 28,
+    "test_files": ["test_core.py", "test_api.py", "test_mlops.py"]
+  },
+  "branch": "claude/implement-logic-layer-01VgpL6wwzu41UHkXsSDc2wX"
+}
