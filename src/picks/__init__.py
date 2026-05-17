@@ -1,4 +1,4 @@
-"""Picks module for parlays, props, and SGPs."""
+"""Picks module for parlays, props, SGPs, and high-accuracy angles."""
 
 from .parlay_builder import (
     ParlayBuilder,
@@ -15,6 +15,13 @@ from .player_props import (
     format_prop_sheet,
     format_sgp,
 )
+from .high_accuracy_picks import (
+    HighAccuracyEngine,
+    HighAccuracyPick,
+    PickConfidence,
+    analyze_week_for_accuracy,
+    print_high_accuracy_card,
+)
 
 __all__ = [
     'ParlayBuilder',
@@ -28,4 +35,9 @@ __all__ = [
     'SGP',
     'format_prop_sheet',
     'format_sgp',
+    'HighAccuracyEngine',
+    'HighAccuracyPick',
+    'PickConfidence',
+    'analyze_week_for_accuracy',
+    'print_high_accuracy_card',
 ]
