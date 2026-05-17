@@ -26,7 +26,7 @@
 
 6. **NO DATA LEAKAGE**: Never use same-game data to predict same-game outcomes.
 
-7. **NO PROSE IN CODE BLOCKS**: Use markdown for explanations. Code blocks for executable code only. Never use `"""docstrings"""` as a formatting trick in chat responses.
+7. **ESCAPE PROPERLY IN CODE BLOCKS**: When writing large code blocks, avoid nested quotes that break parsing. Use single quotes inside double quotes, or escape with backslash. Test: if the block splits unexpectedly, fix the escaping.
 
 ---
 
