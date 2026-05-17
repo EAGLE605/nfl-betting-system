@@ -37,12 +37,12 @@ class Pick:
     # Teams
     home_team: str
     away_team: str
-    game_time: Optional[datetime] = None
 
     # The pick
     pick_team: str
     pick_type: str = "ML"  # ML, spread, total
     line: Optional[float] = None  # e.g., -3.5 for spread
+    game_time: Optional[datetime] = None
 
     # Confidence
     confidence: float = 0.0  # 0-100
