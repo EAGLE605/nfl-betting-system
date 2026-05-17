@@ -37,23 +37,42 @@ NFL betting system for **recreational bettors** focused on:
 
 ### ACTUAL Performance (Walk-Forward, No Leakage)
 
-Tested: May 2026 | Data: nflverse 2021-2024 | Method: Train on prior seasons, test on future
+Tested: May 2026 | Data: nflverse 2021-2024 | Method: Train on 2021-22, test on 2023-24
 
-| Test Year | Accuracy | 95% CI | N Games |
-|-----------|----------|--------|---------|
-| 2023 | 61.2% | 55.0% - 67.4% | 237 |
-| 2024 | 65.0% | 58.9% - 71.1% | 237 |
-| **Overall** | **63.1%** | **58.8% - 67.4%** | **474** |
+**Overall (all games):**
+| Test Year | Accuracy | N Games |
+|-----------|----------|---------|
+| 2023 | 58.6% | 237 |
+| 2024 | 62.0% | 237 |
+| **Overall** | **60.3%** | **474** |
 
-**Baseline (always pick home): 55.9%**
-**Model lift: +7.2 percentage points**
+**High Confidence Only (model prob >58% or <42%):**
+| Test Year | Accuracy | ROI | N Games |
+|-----------|----------|-----|---------|
+| 2023 | 59.3% | +13.3% | 150 |
+| 2024 | 72.0% | +37.5% | 150 |
+| **Overall** | **65.7%** | **+25.4%** | **300** |
+
+**By Confidence Bucket:**
+| Bucket | Accuracy | ROI | N |
+|--------|----------|-----|---|
+| 65-70% | 79.7% | +52.2% | 69 |
+| 80%+ | 76.3% | +45.8% | 38 |
 
 ### What These Numbers Mean
 
-- The model is better than random (55.9% baseline)
-- It is NOT 67% or 428% ROI as README claims
-- 63% accuracy with -110 odds = roughly break-even to small profit
-- This is realistic for NFL game prediction
+- High-confidence picks (65.7%) are profitable at -110 odds
+- BUT: 2023 vs 2024 variance is large (59% vs 72%)
+- Sample size is small (300 games, 150/year)
+- Could be skill, could be luck - more data needed
+- Baseline (home team): 55.9%
+
+### Key Features (by importance)
+1. EPA differential (26.3%)
+2. Success rate differential (24.3%)
+3. Efficiency differential (17.5%)
+4. Defensive EPA differential (16.1%)
+5. Week of season (9.5%)
 
 ### Prop Hit Rates (DESCRIPTIVE, Not Predictive)
 
