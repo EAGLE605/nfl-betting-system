@@ -1,0 +1,557 @@
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-card: #1a1a24;
+  --bg-card-hover: #222230;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0b0;
+  --text-muted: #6b6b7b;
+  --accent-green: #00d26a;
+  --accent-green-dim: rgba(0, 210, 106, 0.15);
+  --accent-red: #ff4757;
+  --accent-red-dim: rgba(255, 71, 87, 0.15);
+  --accent-gold: #ffd700;
+  --accent-gold-dim: rgba(255, 215, 0, 0.15);
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --border-color: #2a2a3a;
+  --gradient-fire: linear-gradient(135deg, #ff6b35, #f7931e);
+  --gradient-ice: linear-gradient(135deg, #667eea, #764ba2);
+  --gradient-gold: linear-gradient(135deg, #f5af19, #f12711);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 40px 20px;
+  margin-bottom: 30px;
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: var(--gradient-fire);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.header .subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.header .week-badge {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 8px 20px;
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Performance Banner */
+.performance-banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+}
+
+.stat-card .label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.stat-card .value {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.stat-card .value.positive {
+  color: var(--accent-green);
+}
+
+.stat-card .value.negative {
+  color: var(--accent-red);
+}
+
+.stat-card .value.gold {
+  color: var(--accent-gold);
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 40px 0 20px;
+}
+
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.section-header .badge {
+  padding: 4px 12px;
+  background: var(--accent-green-dim);
+  color: var(--accent-green);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Pick Card */
+.pick-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.pick-card:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.pick-card.high-confidence {
+  border-left: 4px solid var(--accent-green);
+}
+
+.pick-card.medium-confidence {
+  border-left: 4px solid var(--accent-gold);
+}
+
+.pick-card.low-confidence {
+  border-left: 4px solid var(--text-muted);
+}
+
+.pick-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.pick-header .game-info {
+  flex: 1;
+}
+
+.pick-header .matchup {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pick-header .edge-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--accent-purple);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pick-header .confidence {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.pick-header .confidence-badge {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.pick-header .confidence-badge.high {
+  background: var(--accent-green-dim);
+  color: var(--accent-green);
+}
+
+.pick-header .confidence-badge.medium {
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+}
+
+.pick-header .confidence-badge.low {
+  background: rgba(107, 107, 123, 0.2);
+  color: var(--text-muted);
+}
+
+.pick-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pick-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pick-details .prediction {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent-green);
+}
+
+.pick-details .odds {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.pick-details .win-prob {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pick-details .win-prob .bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pick-details .win-prob .fill {
+  height: 100%;
+  background: var(--gradient-fire);
+  border-radius: 4px;
+}
+
+.pick-reasoning {
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Parlay Card */
+.parlay-card {
+  background: var(--bg-card);
+  border: 2px solid var(--accent-gold);
+  border-radius: 20px;
+  padding: 28px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.parlay-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-gold);
+}
+
+.parlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.parlay-header .name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.parlay-header .odds-display {
+  text-align: right;
+}
+
+.parlay-header .total-odds {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+.parlay-header .ev-tag {
+  font-size: 0.85rem;
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+.parlay-legs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.parlay-leg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.parlay-leg .leg-number {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gold);
+  color: var(--bg-primary);
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.parlay-leg .leg-details {
+  flex: 1;
+}
+
+.parlay-leg .leg-pick {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.parlay-leg .leg-game {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.parlay-leg .leg-odds {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.parlay-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.parlay-footer .metric {
+  text-align: center;
+}
+
+.parlay-footer .metric-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.parlay-footer .metric-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Player Prop Card */
+.prop-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.prop-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.prop-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prop-player .avatar {
+  width: 50px;
+  height: 50px;
+  background: var(--gradient-ice);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.prop-player .info .name {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.prop-player .info .team {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.prop-matchup-grade {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.prop-matchup-grade.smash {
+  background: var(--accent-green-dim);
+  color: var(--accent-green);
+}
+
+.prop-matchup-grade.plus {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.prop-matchup-grade.neutral {
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+}
+
+.prop-matchup-grade.tough {
+  background: var(--accent-red-dim);
+  color: var(--accent-red);
+}
+
+.prop-body {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  text-align: center;
+}
+
+.prop-stat {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.prop-stat .label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.prop-stat .value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.prop-stat .value.over {
+  color: var(--accent-green);
+}
+
+.prop-stat .value.under {
+  color: var(--accent-red);
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+}
+
+.loading .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading .text {
+  margin-top: 20px;
+  color: var(--text-secondary);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state .icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 1.8rem;
+  }
+
+  .performance-banner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pick-body {
+    grid-template-columns: 1fr;
+  }
+
+  .prop-body {
+    grid-template-columns: 1fr;
+  }
+}

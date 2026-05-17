@@ -1,9 +1,15 @@
 # Core Dependencies
+nfl-data-py>=0.3.0
 nflreadpy>=0.1.0
 polars>=0.20.0
 pandas>=2.0.0
 pyarrow>=12.0.0
-numpy>=1.24.0  # Python 3.10-3.12 uses numpy 1.x, Python 3.13+ uses numpy 2.x
+numpy>=1.24.0
+duckdb>=0.9.0
+
+# Scheduling & Tracking
+apscheduler>=3.10.0
+mlflow>=2.8.0
 
 # Machine Learning (for future phases)
 xgboost>=2.0.0

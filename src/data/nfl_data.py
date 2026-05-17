@@ -142,7 +142,8 @@ def calculate_team_stats(pbp_df: pd.DataFrame, n_games: int = 5) -> pd.DataFrame
 def prepare_features(
     schedules_df: pd.DataFrame,
     team_stats_df: Optional[pd.DataFrame] = None,
-    n_rolling: int = 5
+    n_rolling: int = 5,
+    for_prediction: bool = False,
 ) -> pd.DataFrame:
     """
     Prepare features for prediction.
@@ -151,6 +152,7 @@ def prepare_features(
         schedules_df: Schedule data
         team_stats_df: Team stats from PBP
         n_rolling: Rolling window for averages
+        for_prediction: If True, don't filter to completed games
 
     Returns:
         DataFrame with features ready for modeling
@@ -159,17 +161,24 @@ def prepare_features(
 
     df = schedules_df.copy()
 
-    # Filter to completed games for training
-    df = df[df['home_score'].notna()].copy()
-
-    # Create target
-    df['target'] = (df['home_score'] > df['away_score']).astype(int)
+    if not for_prediction:
+        # Filter to completed games for training
+        df = df[df['home_score'].notna()].copy()
+        # Create target
+        df['target'] = (df['home_score'] > df['away_score']).astype(int)
+    else:
+        # For prediction, keep all games
+        df['target'] = 0  # Placeholder
 
     # Basic features that are always available
     features = []
 
     # 1. Home field advantage (baseline)
     df['home_field'] = 1
+
+    # Ensure gameday is datetime
+    if 'gameday' in df.columns:
+        df['gameday'] = pd.to_datetime(df['gameday'])
 
     # 2. Rest days
     df = df.sort_values(['home_team', 'gameday'])
