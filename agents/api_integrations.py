@@ -275,6 +275,12 @@ class TheOddsAPI:
                 # Update rate limit tracking
                 if remaining:
                     self.cache.update_api_usage(int(remaining), response_time_ms)
+
+                # Consume token bucket quota
+                try:
+                    self.cache.record_api_call("odds_api")
+                except Exception:
+                    pass
             
             return games
         
