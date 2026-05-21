@@ -12,8 +12,31 @@ from typing import Dict, List, Optional
 import pandas as pd
 import requests
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+try:
+    from tenacity import (
+        retry,
+        retry_if_exception_type,
+        stop_after_attempt,
+        wait_exponential,
+    )
+
+    _api_retry = retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type(
+            (
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+            )
+        ),
+        reraise=True,
+    )
+except ImportError:
+
+    def _api_retry(fn):
+        return fn
 
 
 # ============================================================================
@@ -168,6 +191,11 @@ class TheOddsAPI:
         else:
             self.cache = None
     
+    @_api_retry
+    def _fetch_with_retry(self, url: str, params: dict) -> requests.Response:
+        """HTTP GET with tenacity retry on transient failures."""
+        return self.session.get(url, params=params, timeout=15)
+
     def _extract_games_from_cache(self, cached_data: Dict) -> List[Dict]:
         """Extract games list from cached data structure."""
         data = cached_data.get('data', {})
@@ -251,7 +279,7 @@ class TheOddsAPI:
             }
             
             logger.info(f"Fetching NFL odds from The Odds API...")
-            response = self.session.get(url, params=params, timeout=10)
+            response = self._fetch_with_retry(url, params)
             response.raise_for_status()
             
             response_time_ms = int((time.time() - start_time) * 1000)

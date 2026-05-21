@@ -733,28 +733,48 @@ class MasterPipeline:
 
 
 async def main():
-    """Main entry point for the daily pipeline."""
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-        datefmt="%H:%M:%S",
+    """Main entry point with startup validation, lease, and result update."""
+    from src.config.logging_config import setup_logging
+    from src.config.startup import startup_check
+    from src.utils.leader_lease import LeaderLease
+
+    setup_logging(
+        level=os.environ.get("LOG_LEVEL", "INFO"),
+        json_format=os.environ.get("LOG_FORMAT") == "json",
     )
 
-    # Load config
+    if not startup_check():
+        logger.error("Startup checks failed — aborting")
+        return []
+
+    lease = LeaderLease("daily_pipeline", ttl_seconds=300)
+    if not lease.acquire():
+        logger.error("Another daily pipeline is running — aborting")
+        return []
+
     config = PipelineConfig(
         bankroll=float(os.getenv("BANKROLL", "10000")),
         generate_visuals=True,
         save_picks_to_db=True,
     )
 
-    # Run pipeline
     pipeline = MasterPipeline(config)
 
     try:
+        # Step A: Update results from yesterday's games
+        try:
+            from src.learning.result_updater import ResultUpdater
+
+            updater = ResultUpdater()
+            updates = await asyncio.to_thread(updater.update_from_espn)
+            if updates:
+                logger.info("Updated %d prediction results from ESPN", len(updates))
+        except Exception as e:
+            logger.warning("Result update failed (non-blocking): %s", e)
+
+        # Step B: Run today's pipeline
         picks = await pipeline.run_daily_pipeline()
 
-        # Print picks to stdout for easy copy/paste
         print("\n" + "=" * 50)
         print("TODAY'S RECOMMENDED BETS")
         print("=" * 50)
@@ -775,6 +795,7 @@ async def main():
 
     finally:
         await pipeline.cleanup()
+        lease.release()
 
 
 if __name__ == "__main__":
