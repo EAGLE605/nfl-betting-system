@@ -19,13 +19,17 @@ The dashboard is the primary UI. There is no separate backend service to start �
 Standard commands are documented in the `Makefile` and `README.md`. Quick reference:
 
 - **Lint**: `ruff check src/ scripts/ tests/` and `black --check src/ scripts/ tests/`
-- **Tests**: `pytest tests/ -v` (33 tests, all pass)
+- **Tests**: `pytest tests/ -v` (63 tests)
 - **Type check**: `mypy src/ --ignore-missing-imports --no-strict-optional`
+
+Line length is standardized to **88** (matching Black's default) across `pyproject.toml`, `.pre-commit-config.yaml`, and ruff config.
 
 ### Gotchas discovered during setup
 
-- `pytz` is required at runtime by the dashboard but is **not** listed in `requirements.txt`. The update script installs it explicitly.
-- Scripts in `/home/ubuntu/.local/bin` (pytest, ruff, black, streamlit, etc.) require `$HOME/.local/bin` on `PATH`. The update script adds this to `~/.bashrc` if not already present.
-- The codebase has ~78 pre-existing `ruff` warnings and 3 files needing `black` formatting. These are not regressions — they exist on `master`.
+- Scripts in `/home/ubuntu/.local/bin` (pytest, ruff, black, streamlit, etc.) require `$HOME/.local/bin` on `PATH`. The update script ensures this.
 - External API keys (`ODDS_API_KEY`, `XAI_API_KEY`, etc.) are optional for running tests and the dashboard UI. They are only needed for live odds data and AI-powered analysis features.
 - `dashboard/app.py` imports from `src/` using `sys.path` manipulation. Always run from the repo root (`/workspace`).
+- Admin credentials for the auth system are loaded from environment variables (`NFL_ADMIN_EMAIL`, `NFL_ADMIN_USERNAME`, `NFL_ADMIN_PASSWORD`); they are **not** hardcoded.
+- `ModelCalibrator` uses sklearn's `CalibratedClassifierCV` — the `cv="prefit"` parameter was removed in sklearn 1.8; the implementation handles this automatically.
+- `BacktestEngine.run_monte_carlo()` provides bootstrap confidence intervals; the validation swarm's `_stress_testing` uses this for strategy approval.
+- Two env file conventions coexist: `settings.py`/`secrets.py` load root `.env`, while dashboard/scripts load `config/api_keys.env`. Prefer root `.env` for new code.

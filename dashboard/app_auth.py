@@ -53,8 +53,10 @@ st.set_page_config(
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+import os
+
 # JWT settings
-SECRET_KEY = "your-secret-key-here-change-in-production"
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
