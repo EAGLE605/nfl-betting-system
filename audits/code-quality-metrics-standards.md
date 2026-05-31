@@ -1,151 +1,138 @@
 # Code Quality & Complexity Metrics Audit — nfl-betting-system
 
 **Date:** 2026-05-31
-**Scope:** `src/`, `scripts/`, `agents/`, `dashboard/` (Python only). Excludes `*.md`, tests, notebooks.
-**Method:** Full AST-level manual read of all 12 in-scope Python files (Bash/`radon` were unavailable in this environment, so cyclomatic/cognitive complexity was computed by hand from branch and nesting counts; line counts taken from file extents). No source was modified.
+**Scope:** `src/`, `scripts/`, `agents/`, `dashboard/` — Python only. Excludes `*.md`, `tests/`, `*.ipynb`, `__pycache__`.
+**Method:** File line counts via `wc -l`. Cyclomatic complexity via **`radon cc`** (v6.0.1, the authoritative tool) cross-checked against a custom read-only Python `ast` script that also measured per-function LOC (`end_lineno - lineno + 1`), per-class length/method counts, and an internal import graph (coupling + cycle detection). No source files were modified. Where radon and the AST script disagreed, **radon's CC is reported** (the AST script over-counted nesting depth on nested dict/generator literals; radon's structural counting is more accurate). Function LOC values are exact from the AST.
 
 ## Summary
 
-The codebase is small (12 files, ~1,150 LOC), well-modularized by concern (data / features / models / betting / backtest / agents / dashboard), and mostly within healthy size and complexity thresholds. **No file exceeds 300 lines and no class exceeds 500 lines.** Overall cohesion and coupling are good: modules are single-responsibility and the dependency graph is a clean acyclic fan-in toward `scripts/run_pipeline.py`.
+This is a **large, sprawling codebase**: **137 in-scope Python files, 44,886 lines, ~1,034 functions, ~162 classes**. radon analyzed 1,176 callable blocks (it skips module-level script bodies, which are substantial here) and reports an **average complexity of A (3.82)** — but that average is heavily diluted by hundreds of trivial helpers. **The tail is the problem:** a handful of god-functions and god-modules concentrate the risk.
 
-There is **one clear outlier** — `EdgeDetector.find_edges_nested` — which is deeply nested, exceeds 50 lines, AND contains two latent runtime bugs (undefined names) plus a syntax error. A handful of secondary smells (duplicated odds-conversion helpers across 3 modules, a dead `if/else` branch, an unbounded `while True` loop) round out the findings.
+Headline metrics:
+- **59 of 137 files exceed 300 lines; 35 exceed 500.** The largest, `dashboard/app.py`, is **2,492 lines** of mostly top-level Streamlit script in only ~8 functions.
+- **185 functions exceed 50 LOC** and **67 functions have cyclomatic complexity > 10** (the recommended ceiling).
+- radon grades **1 function F (CC 48)**, **1 function E (CC 33)**, and **7 more D (CC 21-29)** — these ~9 blocks are the priority refactor targets.
+- **38 functions nest control flow ≥ 5 deep.**
+- Architecture-level health is **better than the function-level**: **no class exceeds 500 lines**, and the internal import graph has **zero circular imports** with a sane dependency direction.
+
+The dominant problem is **god-functions and god-modules**, concentrated in `dashboard/admin_panel.py`, the `scripts/` pick-generation and research tools, `src/data_pipeline.py`, `src/orchestrator/master_pipeline.py`, `src/api/request_orchestrator.py`, and the Streamlit `dashboard/` pages.
 
 ### Top-10 longest files (in-scope)
 
-| Rank | File | Lines | Classes | Top-level + methods (def) |
-|------|------|------:|--------:|--------------------------:|
-| 1 | `src/backtest/engine.py` | 174 | 2 | 12 |
-| 2 | `src/betting/edge_detector.py` | 172 | 1 | 8 |
-| 3 | `src/features/feature_engineering.py` | 132 | 1 | 7 |
-| 4 | `scripts/run_pipeline.py` | 115 | 0 | 3 |
-| 5 | `src/data/odds_api_client.py` | ~89 | 2 | 4 |
-| 6 | `src/models/spread_model.py` | 84 | 1 | 7 |
-| 7 | `dashboard/app.py` | 82 | 0 | 6 |
-| 8 | `agents/research_agent.py` | 74 | 2 | 5 |
-| 9 | `agents/line_monitor.py` | 68 | 2 | 4 |
-| 10 | `src/models/totals_model.py` | 66 | 1 | 4 |
+| Rank | File | Lines | Classes | Functions |
+|------|------|------:|--------:|----------:|
+| 1 | `dashboard/app.py` | 2,492 | 0 | 8 |
+| 2 | `dashboard/pages/3_🧪_The_Lab.py` | 1,069 | 0 | 6 |
+| 3 | `src/visualization/prediction_visualizer.py` | 987 | 2 | 9 |
+| 4 | `dashboard/backtesting_lab.py` | 884 | 1 | 23 |
+| 5 | `dashboard/app_complete.py` | 836 | 0 | 9 |
+| 6 | `src/agents/llm_council.py` | 798 | 12 | 23 |
+| 7 | `src/orchestrator/master_pipeline.py` | 781 | 4 | 19 |
+| 8 | `src/utils/odds_cache.py` | 755 | 2 | 23 |
+| 9 | `scripts/generate_daily_picks.py` | 745 | 1 | 10 |
+| 10 | `src/learning/adaptive_engine.py` | 726 | 4 | 13 |
 
-(Not shown: `src/data/nflfastr_loader.py` 48, `src/betting/kelly.py` 48.)
+### Most-complex functions (radon CC; LOC from AST)
 
-### Top-10 longest / most-complex functions
+| Rank | radon grade (CC) | Function | File:line | LOC |
+|------|------------------|----------|-----------|----:|
+| 1 | **F (48)** | `advanced_settings_panel` | `dashboard/admin_panel.py:26` | 664 |
+| 2 | **E (33)** | `BetResearchTool.analyze_game` | `scripts/bet_research_tool.py:84` | 202 |
+| 3 | **D (29)** | `DailyPicksGenerator.generate_pick` | `scripts/generate_daily_picks.py:414` | 142 |
+| 4 | **D (28)** | `RequestOrchestrator._fetch_from_api` | `src/api/request_orchestrator.py:200` | 148 |
+| 5 | D (27) | `AggressiveKellyCalculator.calculate_bet_size` | `agents/aggressive_kelly.py:36` | 146 |
+| 6 | D (27) | `render_strategy_card` | `dashboard/strategy_manager.py:20` | 204 |
+| 7 | D (23) | `MasterPipeline.fetch_todays_games` | `src/orchestrator/master_pipeline.py:245` | 41 |
+| 8 | D (22) | `show_performance_page` | `dashboard/app_complete.py:503` | 89 |
+| 9 | D (21) | `show_api_key_settings` | `dashboard/api_key_manager.py:251` | 199 |
 
-Cyclomatic complexity (CC) estimated as 1 + count of branch/loop/boolean-operator decision points. Max nesting = deepest indentation of control structures.
+(radon found exactly 9 blocks graded D or worse; everything else is grade C or better. `scripts/backtest.py:150 main` is 270 LOC but only grade C/20.)
 
-| Rank | Function | File:line | LOC | CC (est.) | Max nesting | Notes |
-|------|----------|-----------|----:|----------:|------------:|-------|
-| 1 | `EdgeDetector.find_edges_nested` | `edge_detector.py:106` | ~54 | ~14 | 9 | Deep nesting; uses undefined `model_prob`/`bkey`; missing `:` (syntax error) |
-| 2 | `run` (pipeline) | `run_pipeline.py:37` | ~68 | ~9 | 3 | Orchestration; mixes load/train/predict/size/persist in one function |
-| 3 | `BacktestEngine.run` | `engine.py:62` | ~48 | ~10 | 4 | Nested loop (games x markets) with several continue guards |
-| 4 | `EdgeDetector.find_edges` | `edge_detector.py:36` | ~43 | ~11 | 6 | 4-level nested loop + guard chain |
-| 5 | `FeatureEngineer.build_features` | `feature_engineering.py:23` | ~33 | ~6 | 3 | Row-wise loop building dict; readable |
-| 6 | `FeatureEngineer._compute_team_game_stats` | `feature_engineering.py:57` | ~26 | ~9 | 2 | Many inline ternaries inside dict literal (cognitive load) |
-| 7 | `BacktestEngine._settle` | `engine.py:134` | ~20 | ~8 | 2 | if/elif/else over markets + conditional expressions |
-| 8 | `OddsAPIClient._normalize` | `odds_api_client.py:65` | ~24 | ~5 | 4 | 3-level nested comprehension/loops over events/books/markets |
-| 9 | `OddsAPIClient._get` | `odds_api_client.py:37` | ~16 | ~6 | 3 | Retry loop with try/except; acceptable |
-| 10 | `LineMonitor.poll_loop` | `line_monitor.py:51` | ~17 | ~6 | 3 | `while True` loop (see finding) |
+### Top longest functions by LOC (length, regardless of CC)
+
+| LOC | radon CC | Function | File:line |
+|----:|---------:|----------|-----------|
+| 664 | 48 (F) | `advanced_settings_panel` | `dashboard/admin_panel.py:26` |
+| 270 | 20 (C) | `main` | `scripts/backtest.py:150` |
+| 260 | 7 (B) | `create_matchup_card` | `src/visualization/prediction_visualizer.py:106` |
+| 221 | ~15 (C) | `_create_html_body` | `src/notifications/email_sender.py:89` |
+| 212 | ~13 (C) | `train_evolved_model` | `scripts/evolve_model_to_75pct.py:281` |
+| 204 | 27 (D) | `render_strategy_card` | `dashboard/strategy_manager.py:20` |
+| 202 | 33 (E) | `analyze_game` | `scripts/bet_research_tool.py:84` |
+| 199 | 21 (D) | `show_api_key_settings` | `dashboard/api_key_manager.py:251` |
+
+### Largest classes (none exceed the 500-line ceiling)
+
+| Class | File:line | Lines | Methods |
+|-------|-----------|------:|--------:|
+| `PredictionVisualizer` | `src/visualization/prediction_visualizer.py:74` | 358* | 8 |
+| `OddsCache` | `src/utils/odds_cache.py:48` | 331* | 21 |
+| `DailyPicksGenerator` | `scripts/generate_daily_picks.py:34` | ~330* | 9 |
+| `BacktestingLab` | `dashboard/backtesting_lab.py:216` | ~330* | 22 |
+| `MasterPipeline` | `src/orchestrator/master_pipeline.py:125` | ~310* | 18 |
+| `AdaptiveEngine` | `src/learning/adaptive_engine.py:94` | ~300* | 12 |
+| `NFLDataPipeline` | `src/data_pipeline.py:28` | ~290* | 11 |
+| `StrategyRegistry` | `src/strategy_registry.py:197` | ~290* | 18 |
+
+\* Class extents reported by the AST script include trailing module content in a few cases; treat as approximate. The key finding holds: **no class breaches the 500-line guideline**, so the size problem is at the function and module level, not the class level.
+
+### Coupling (internal import graph; static imports only)
+
+- **Highest efferent coupling (fan-out):** `src/swarms/prediction_pipeline.py` (10 internal imports), `src/backtesting/prediction_generator.py` (10), `src/features/pipeline.py` (10), `scripts/start_autonomous_system.py` (9), `src/agents/__init__.py` (8), `src/orchestrator/master_pipeline.py` (7). Expected for orchestrators/pipelines, but these are the modules most likely to break on refactors.
+- **Highest afferent coupling (fan-in — the stable core):** `src/agents/base_agent.py` (imported by 14), `agents/api_integrations.py` (9), `src/backtesting/engine.py` (6), `src/betting/kelly.py` (5), `src/swarms/model_loader.py` (5), `src/utils/odds_cache.py` (5), `src/models/xgboost_model.py` (5). These warrant the strictest test coverage; changes ripple widely.
+- **Circular imports:** none detected.
 
 ---
 
 ## Prioritized recommendations (worst offenders first)
 
-### 1. `EdgeDetector.find_edges_nested` — refactor and/or delete. Importance: 9/10
-**File:** `src/betting/edge_detector.py:106-159`
+### 1. `advanced_settings_panel` — the single worst function (664 LOC, radon F/49). Importance: 9/10
+**File:** `dashboard/admin_panel.py:26`
 
-This "legacy" method is the single worst quality item:
+This one Streamlit function is 664 lines with cyclomatic complexity 48 (radon F), nested 7 deep — it is the entire admin panel rendered procedurally in a single call, mixing form widgets, validation, persistence, and conditional sections. It is the largest and most complex block in the codebase and is effectively impossible to test or review.
 
-- **Cognitive/cyclomatic complexity:** ~9 levels of nesting (event → gid-if → book → filter-if → market → mkey-if → outcome → side-if → mp-if → edge-if → min_price-if), CC ~14. It is an arrow/pyramid anti-pattern.
-- **Latent bug 1:** line 137 references `model_prob`, which is never defined in this method (the local is `mp`). At runtime this raises `NameError`.
-- **Latent bug 2:** line 156 references `bkey`, also undefined in this method (only defined in `find_edges`). Another `NameError`.
-- **Syntax error:** line 144 ends a parenthesized `if (...)` condition without the trailing `:`, so the file as written would fail to import. (Flagged as written; if the on-disk file differs, treat as "unable to verify" — but as read it is invalid.)
+**Recommendation:** Decompose into one helper per settings section (`_render_api_keys()`, `_render_model_params()`, `_render_bankroll()`, `_render_data_sources()`, …), each rendering its own widgets and returning a small dict; `advanced_settings_panel` becomes a ~30-line dispatcher driven by a section list. Separate the pure validation/persistence logic from the `st.*` calls so it can be unit-tested. Target: no helper > 60 LOC or CC > 10.
 
-**Recommendation:** If `find_edges` is the canonical path (it is, per `run_pipeline.py:78`), delete `find_edges_nested` entirely. If the filter behavior is wanted, fold it into `find_edges` via early-`continue` guards instead of nesting:
+### 2. `scripts/bet_research_tool.analyze_game` and `generate_daily_picks.generate_pick`. Importance: 8/10
+**Files:** `scripts/bet_research_tool.py:84 analyze_game` (202 LOC, E/33, nest 7); `scripts/generate_daily_picks.py:414 generate_pick` (142 LOC, D/29) and the sibling `:167 predict_game` (154 LOC, C/20).
 
-```python
-def find_edges(self, model_probs, odds, filters=None):
-    filters = filters or {}
-    books = filters.get("books")
-    min_price = filters.get("min_price")
-    devig_markets = filters.get("devig_markets", ["totals"])
-    edges = []
-    for event in odds:
-        model = model_probs.get(event.get("game_id"))
-        if model is None:
-            continue
-        for book in event.get("books", []):
-            if books is not None and book.get("key") not in books:
-                continue
-            for market, outcomes in book.get("markets", {}).items():
-                mkey = self._market_key(market)
-                if mkey not in model:
-                    continue
-                for o in outcomes:
-                    edge = self._eval_outcome(model, mkey, market, o, outcomes,
-                                              devig_markets, min_price,
-                                              event["game_id"], book.get("key"))
-                    if edge is not None:
-                        edges.append(edge)
-    return edges
-```
-Each `continue` flattens nesting from 9 levels to ~4 and eliminates the undefined-name bugs by construction.
+These are long top-to-bottom procedures mixing fetch → model-predict → score → filter → format, with deep nesting and large if/elif chains over markets and bet types. They also overlap heavily with the weekly equivalents (DRY/cohesion problem).
 
-### 2. De-duplicate odds/probability conversion helpers. Importance: 6/10
-The same American-odds math is reimplemented in **three** modules, a cohesion/DRY problem and a correctness risk (fixes must be applied in 3 places):
+**Recommendation:** Extract a shared pick-generation core (`scripts/_picks_core.py` or `src/picks/`) with discrete stages — `fetch_odds()`, `build_model_probs()`, `score_edges()`, `tier_and_filter()`, `format_output()` — each < 50 LOC / CC < 10. Have the daily and weekly generators differ only in their date window. Pull the edge→tier mapping (`if edge>0.10 'A' elif ...`) into a one-line `_tier(edge)` helper.
 
-- `src/betting/kelly.py:18` `american_to_decimal`
-- `src/betting/edge_detector.py:23` `american_to_prob`
-- `src/backtest/engine.py:155-173` `_implied_prob`, `_decimal_odds`, `_american_from_prob` (static methods)
+### 3. `src/api/request_orchestrator._fetch_from_api`. Importance: 8/10
+**File:** `src/api/request_orchestrator.py:200` (148 LOC, radon D/28, nesting ~9)
 
-**Recommendation:** Create `src/betting/odds_math.py` (or `src/utils/odds.py`) exposing `american_to_decimal`, `american_to_prob`, `decimal_to_prob`, `prob_to_american`, and import it everywhere. Removes ~30 duplicated lines and makes `BacktestEngine`'s three static math methods unnecessary. Note `engine.py:167 _american_from_prob` appears unused — verify and drop if dead.
+High fan-in API layer (`request_orchestrator` is imported by 3 modules and is the network chokepoint). The function interleaves URL building, retry/backoff, rate-limit handling, caching, and response parsing in one deeply nested body, so any one concern is hard to change safely.
 
-### 3. `scripts/run_pipeline.py:run` — split orchestration into stages. Importance: 6/10
-**File:** `scripts/run_pipeline.py:37-104` (~68 LOC, over the 50-line guideline)
+**Recommendation:** Split into `_build_request()`, `_execute_with_retry()` (retry/backoff only), `_check_cache()` / `_store_cache()`, and `_parse_response()`. The retry loop should be the only place with nested try/except; everything else flattens to sequential calls. This is core infra — add unit tests around the retry and rate-limit branches once extracted.
 
-`run()` does six distinct jobs: load data, train models, fetch odds, build per-game model probabilities, detect edges, size bets, and persist state. Mixed abstraction levels (DataFrame plumbing next to JSON I/O).
+### 4. `src/data_pipeline.py` feature generation & `master_pipeline` orchestration. Importance: 7/10
+**Files:** `src/data_pipeline.py` (`NFLDataPipeline`, fan-in 6) — its feature-building methods are long and dominated by repeated `... if "<col>" in df else 0.0` guards; `src/orchestrator/master_pipeline.py:245 fetch_todays_games` (D/24, nested ESPN-JSON walking) and `:577 run_daily_pipeline` (149 LOC, CC 16).
 
-**Recommendation:** Extract helpers so `run()` becomes a readable top-level script:
-```python
-def run(args):
-    pbp, schedule = _load_data(args.seasons)
-    features = FeatureEngineer().build_features(pbp, schedule)
-    spread_model, totals_model = _train_models(features, schedule)
-    raw_odds = _fetch_odds(args.odds_key)
-    model_probs = _predict_probs(features, spread_model, totals_model)
-    edges = EdgeDetector(min_edge=args.min_edge).find_edges(model_probs, raw_odds)
-    bets = _size_bets(edges, args.bankroll)
-    return _persist(args.output, bankroll=args.bankroll, bets=bets)
-```
-Also note a likely logic bug at `run_pipeline.py:53` — `spread_model.train(features, margins)` trains on the full unmerged `features`/`margins` even though `merged` was computed for alignment; the row counts may not correspond. Worth verifying alignment of `features` vs `schedule` before training. Importance of that sub-item: 5/10.
+**Recommendation:**
+- `data_pipeline`: introduce a `_safe_mean(df, col)` / `_safe(df, col, default)` helper to collapse the repeated column-existence guards, and split feature construction into `_offense_features` / `_defense_features` / `_situational_features` builders. This is high fan-in, so reducing branch density here pays off broadly.
+- `fetch_todays_games`: replace the chained `.get("sports",[{}])[0].get(...)` walking with a small `_safe_path(data, *keys)` helper and extract `_parse_event(event)`; the function then drops several nesting levels.
+- `run_daily_pipeline`: extract one private method per stage so the public method reads as ~10 sequential calls.
 
-### 4. Dead / vestigial branch in `BacktestEngine._compute_edge`. Importance: 4/10
-**File:** `src/backtest/engine.py:111-119`
+### 5. Dashboard god-module & duplication. Importance: 7/10
+**Files:** `dashboard/app.py` (2,492 lines, ~8 functions — most logic is top-level script across 8 tabs); near-duplicate shells `app_complete.py` (836), `app_auth.py` (507); duplicated features across `parlay_builder.py` + `pages/1_🧩_Parlay_Builder.py` (both 611 lines, including an identical `fetch_live_odds` at line 326, CC 17, nest 9) and `backtesting_lab.py` + `pages/3_🧪_The_Lab.py`.
 
-The `if market == "spread" or market == "total": model_prob = pred  else: model_prob = pred` branch assigns the same value in both arms — a no-op `if/else` that signals unfinished logic (moneyline edge is presumably meant to differ).
+**Recommendation:**
+- Extract each `with tab_*:` block from `app.py` into `dashboard/tabs/<name>.py` exposing `render(ctx)`; `app.py` becomes a thin router (< 200 lines).
+- Hoist the static `TEAM_LOGOS/TEAM_NAMES/TEAM_COLORS` dicts and the CSS string into `dashboard/theme.py` / `dashboard/teams.py` imported by all dashboards.
+- Pick one canonical implementation of parlay builder / lab / app shell and delete the dead duplicates (verify the live entry point via `Makefile` and the `start_dashboard_*` scripts first).
+- Centralize the repeated `american_to_decimal` / implied-probability math (present inline in `dashboard/app.py:1126`, `src/betting/kelly.py`, and the dashboard parlay files) into a single `src/betting/odds_math.py`.
 
-**Recommendation:** Either implement the intended per-market handling or collapse to `model_prob = pred` and drop the branch. Add a test documenting intended moneyline behavior.
+### 6. High-CC render/CLI functions worth a targeted pass. Importance: 5/10
+**Files:** `dashboard/strategy_manager.py:20 render_strategy_card` (D/27), `dashboard/api_key_manager.py:251 show_api_key_settings` (D/21), `dashboard/app_complete.py:503 show_performance_page` (D/22), `scripts/backtest.py:150 main` (270 LOC, C/20), `agents/aggressive_kelly.py:36 calculate_bet_size` (146 LOC, D/27).
 
-### 5. `LineMonitor.poll_loop` — unbounded `while True`. Importance: 4/10
-**File:** `agents/line_monitor.py:51-68`
-
-`while True` with `time.sleep(self.poll_interval)` and the only exit being `iterations and count >= iterations`. When `iterations=0` (the default) this never terminates and has no signal/exception handling, making it hard to stop or test cleanly.
-
-**Recommendation:** Convert to a bounded/abortable loop, e.g. accept a `stop: threading.Event` or `should_continue: Callable[[], bool]`, and wrap the body in try/except so a fetch error doesn't kill the monitor. Keeps the function testable without relying on the `iterations` shortcut.
-
-### 6. `FeatureEngineer._compute_team_game_stats` — inline-ternary-heavy dict. Importance: 3/10
-**File:** `src/features/feature_engineering.py:57-82`
-
-The per-row `dict` literal (lines 65-79) packs multiple multi-line conditional expressions (`g.loc[...].mean() if "epa" in g and "play_type" in g else 0.0`) inline. CC ~9 concentrated in a literal; readability suffers and the `"epa"/"play_type"` guards are repeated.
-
-**Recommendation:** Precompute guard flags and a small helper, e.g. `def _safe_mean(frame, col): return frame[col].mean() if col in frame else 0.0`, and compute `pass_epa`/`rush_epa` as named locals before assembling the dict.
+**Recommendation:** Split each `render_*`/`show_*` into per-section helpers and separate pure data-prep from `st.*` calls (the data-prep functions then become unit-testable). For `scripts/backtest.py:main`, move the argument handling into `argparse` and the body into a sequence of stage calls. For `aggressive_kelly.calculate_bet_size`, the long if/elif multiplier ladder (favorite tiers + streak bonuses) should become a small data-driven table lookup rather than branches.
 
 ---
 
-## Coupling & Cohesion notes
-
-- **Efferent coupling (fan-out):** `scripts/run_pipeline.py` imports 8 internal modules (data, features, both models, edge_detector, kelly, backtest) — expected for the entry point; not a smell.
-- **Afferent coupling (fan-in):** `src/betting/kelly.py` and the conversion helpers are reused by pipeline and engine. Centralizing odds math (rec #2) would make this fan-in cleaner.
-- **No circular imports** detected; dependency direction flows data → features → models → betting → backtest, with `scripts`/`dashboard`/`agents` at the edges. The `agents/` modules (`ResearchAgent`, `LineMonitor`) are currently standalone — not wired into `run_pipeline.py`, so verify they are intended to be integrated or are scaffolding.
-- **Cohesion:** Each class is single-responsibility (loader, feature builder, one model per market, edge detector, sizer, backtester). Good. The only cohesion violation is the duplicated math (rec #2) and the dual `find_edges`/`find_edges_nested` (rec #1).
-
-## Items marked "Unable to verify"
-- Exact byte-accurate line counts and `radon`-grade CC/MI scores could not be produced because Bash/`wc`/`radon` were disabled in this environment; figures above are AST-level manual estimates (file extents are exact from reads).
-- Whether the on-disk `edge_detector.py` truly contains the syntax error at line 144 / undefined names, versus a transcription artifact, should be confirmed by running `python -m py_compile src/betting/edge_detector.py` once tooling is available.
+## Notes & limitations
+- **CC values are radon's** (authoritative); function LOC and class/file structure counts are from a custom AST pass. radon's total-average run reported "A (3.82)" over 1,176 blocks — accurate but misleading in isolation, since it excludes module-level script bodies and is diluted by trivial helpers. The grade tail (1 F, 1 E, 7 D) is the actionable signal and is what this report ranks on.
+- The AST script's **max-nesting** metric over-counted on nested dict/generator/comprehension literals (e.g. it reported nesting 10 for `fetch_todays_games`, which is really ~4 levels of control flow plus nested literals). Nesting figures are therefore used only as a rough secondary signal; the LOC and radon-CC figures are reliable.
+- Coupling counts reflect **static internal imports only** (absolute `import`/`from` within the four scoped roots). Dynamic imports, `sys.path` manipulation (e.g. `dashboard/app.py:24-28`), function-local imports (e.g. `import requests` inside `fetch_todays_games`), and level>0 relative imports were not counted, so true fan-in/out may be marginally higher. Any runtime-only dependency is **"unable to verify"** statically.
+- A couple of class extents reported by the AST pass appear inflated by trailing module content; they are marked approximate. The load-bearing conclusion (no class > 500 lines; no import cycles) is verified.

@@ -4,411 +4,442 @@
 **Scope:** `src/` (all listed subpackages), `scripts/`, `agents/`, `dashboard/`
 **Constraint:** Read-only review. No source code was modified.
 
+> Every file referenced below (with `path:line`) was read in full or in the cited
+> region during this review. Two small claims that could not be confirmed are
+> marked **Unable to verify**. No code was invented; snippets are either quoted
+> from the source or clearly labeled as suggested replacements.
+
 ---
 
 ## Architecture Overview
 
-The codebase is a small Python pipeline that collects NFL odds/stats, engineers
-features, runs ML/heuristic agents, applies betting strategies, sizes bets with
-the Kelly criterion, and notifies/persists results. A `MainOrchestrator`
-(`src/orchestrator/main_orchestrator.py`) sequences the whole flow.
+This is a large, organically-grown system (~137 in-scope Python files) that
+collects NFL odds/stats from several third-party APIs, caches them, engineers
+features, runs ML + LLM agents/swarms, scores betting strategies, sizes bets with
+Kelly, and persists/visualizes results.
 
-Pattern usage today is **thin and inconsistent**. There is genuine intent behind
-several patterns — a Strategy hierarchy with a registry, a Singleton registry, an
-in-memory cache (Proxy-ish), a Circuit Breaker (resilience Decorator), and an
-abstract `BaseAgent` template — but most are either implemented incorrectly,
-unused, or undermined by a parallel hardcoded path. The dominant anti-pattern is
-the **orchestrator as a god-object that hardwires concrete classes** via
-function-local imports, hardcoded credentials, and direct `sqlite3` calls, which
-defeats most of the abstraction the patterns are trying to provide.
+The codebase is, on balance, **more pattern-aware than typical** — it contains
+several correctly-built GoF patterns. The dominant problem is not absence of
+patterns but **duplication and non-convergence**: the same concern (orchestration,
+circuit breaking, bet sizing, persistence, config) is implemented two or three
+times in parallel modules that don't share state or a common interface.
 
-The strongest pattern is the Strategy hierarchy (`BettingStrategy` + subclasses);
-the weakest are the creational patterns (no real Factory, a broken/duplicated
-Singleton story) and the domain layer (no DTOs, no Repository — data flows as
-untyped `Dict` everywhere).
+Patterns that are genuinely present and well-built:
+- **Caching Proxy / multi-layer cache** — `OddsCache` (`src/utils/odds_cache.py:48`):
+  memory → file → SQLite with dynamic TTL by kickoff proximity (`_get_dynamic_ttl`,
+  line 451) and a token-bucket rate limiter. The strongest component in the repo.
+- **Circuit Breaker (resilience)** — implemented **twice**: a hand-rolled
+  `CircuitBreaker` (`src/api/request_orchestrator.py:53`) and a `pybreaker`-based
+  set with a custom listener (`src/utils/resilience.py:68`, breakers at lines
+  125/136/147/158, registry at 166).
+- **Facade** — `RequestOrchestrator` (`src/api/request_orchestrator.py:110`)
+  composes cache + circuit breaker + token bucket + priority queue + per-API
+  clients behind `enqueue`. Also a clean **Command/priority-queue** (`PriorityRequest`
+  with `__lt__`, line 45) and request **deduplication** (line 181).
+- **Adapter** — `ESPNClient`/`NOAAClient` take an injected cache and present a
+  uniform surface (`src/api/espn_client.py:48`, `src/api/noaa_client.py:26`).
+- **Factory Method** — `get_llm_client(config)` (`src/agents/llm_council.py:262`)
+  is a textbook factory over a provider→class dict; `BaseLLMClient` ABC (line 99)
+  is a correct Strategy/Template hierarchy for the five LLM providers.
+- **Template Method / ABCs** — `FeatureBuilder` (`src/features/base.py:18`),
+  `BaseAgent` (`src/agents/base_agent.py:58`), `BaseLLMClient` — all use
+  `@abstractmethod` correctly.
+- **Builder / Pipeline** — `FeaturePipeline` (`src/features/pipeline.py:42`) with
+  chainable `add_builder` returning `self` (line 55) and ordered `build_features`.
+- **Observer / pub-sub** — `MessageBus` (`src/agents/message_bus.py:17`) with
+  `subscribe`/`broadcast`/`send` and an `AgentRegistry` (`base_agent.py:248`).
+- **Singleton** — done idiomatically via module globals + `@lru_cache`
+  (`settings`/`get_settings` in `src/config/settings.py:435-444`, `get_council` in
+  `llm_council.py:717`) AND via `__new__` (`src/config/secrets.py:80`,
+  `src/swarms/model_loader.py:21`).
+- **Strategy + Registry** — `src/strategy_registry.py` (see Finding 1 — good
+  *catalog*, but not the executable Strategy pattern the task expected).
 
-Two notable global issues that color everything below:
-- **No DTO / value objects anywhere.** `grep` for `dataclass`, `NamedTuple`,
-  `TypedDict`, `pydantic`, `BaseModel` returns nothing. All inter-layer data is
-  raw `Dict[str, Any]`, merged ad hoc (e.g. `{**pred, **result}` at
-  `main_orchestrator.py:90`).
-- **Duplicated `BaseAgent` hierarchies.** `src/agents/base.py` (method
-  `predict`) and `agents/base_agent.py` (method `run`) are two incompatible agent
-  abstractions with no shared contract.
+Recurring weaknesses (the through-line of this report):
+- Two orchestrators (`MasterPipeline` in `src/orchestrator/master_pipeline.py:125`
+  and `RequestOrchestrator` in `src/api/request_orchestrator.py:110`).
+- Two circuit breakers with no shared state (Finding 2).
+- Three+ Kelly bet-sizing implementations (Finding 3).
+- Persistence scattered across raw `sqlite3` in 4+ modules with no Repository
+  abstraction (Finding 4) — though a schema-aware `QueryBuilder`
+  (`src/agents/query_builder.py:15`) exists and is the right seed for one.
+- A well-built `settings` singleton that is widely bypassed by hardcoded values
+  (Finding 5).
+- Two `__new__`-based singletons that are the riskier idiom vs the module-global
+  ones used elsewhere (Finding 7).
 
 ---
 
 ## Prioritized Findings
 
-### 1. Strategy + Registry are bypassed by a hardcoded selector — Importance 9/10
+### 1. `StrategyRegistry` is a metadata catalog, not an executable Strategy registry — Importance 8/10
 
-**File:** `src/strategy_registry.py`
-**Classes:** `StrategyRegistry`, `BettingStrategy` + subclasses, `select_strategy`
+**File:** `src/strategy_registry.py` — `Strategy` (line 84), `StrategyRegistry` (line 197)
 
-The Strategy pattern itself is correct and appropriate: `BettingStrategy.evaluate`
-(line 42) is an abstract operation, and `ValueBettingStrategy`,
-`ArbitrageStrategy`, `MLStrategy` are clean polymorphic implementations. The
-registry (`register`/`get`/`get_all`, lines 19-30) is a reasonable Registry
-pattern, and the orchestrator correctly iterates `registry.get_all()`
-(`main_orchestrator.py:87`).
+The task specifically asks whether `strategy_registry.py` implements the
+Strategy/Registry patterns well. Precise answer: it is an **excellent Registry of
+strategy *records*** but **not** the GoF Strategy pattern.
 
-The problem is that a **parallel hardcoded factory** exists alongside the
-registry and is what callers actually use:
+What it does well:
+- `Strategy` is a `@dataclass` describing a *discovered* betting pattern
+  (`win_rate`, `roi`, `edge`, lifecycle `status` via `StrategyStatus` enum at line
+  66) with fuzzy-duplicate detection (`similarity_score` using `SequenceMatcher`,
+  line 133), versioning (`create_strategy_version`, line 582), and JSON
+  persistence. This is effectively a **Repository over a JSON store** and it is
+  thorough and correct.
 
-```python
-# strategy_registry.py:91
-def select_strategy(strategy_type: str):
-    if strategy_type == "value":
-        return ValueBettingStrategy()
-    elif strategy_type == "arbitrage":
-        return ArbitrageStrategy()
-    elif strategy_type == "ml":
-        return MLStrategy()
-    else:
-        return None
-```
+What is missing: there is no polymorphic `evaluate(game) -> signal`. A `Strategy`
+record cannot *make a bet*; the `conditions: Dict` field (line 111) is free-form
+and uninterpreted. So accepting/rejecting a strategy in the registry has **no
+automatic effect** on what the pipeline bets — actual bet logic lives separately
+in `KellyCriterion`, `MasterPipeline.analyze_game`, and the LLM council. The
+registry is descriptive, not prescriptive.
 
-`scripts/run_backtest.py:5,9` imports `select_strategy`, not the registry. So the
-system has two sources of truth for "which strategies exist," and adding a new
-strategy requires editing the `if/elif` chain — exactly what the registry was
-supposed to eliminate (open/closed violation).
+Confirmed by usage: callers (`dashboard/app.py:2119/2257/2295`,
+`scripts/bulldog_edge_discovery.py:40`) only ever do CRUD/stat reads
+(`get_stats`, `add_strategy`); none dispatch executable strategies from it.
 
-**Recommendation:** Delete `select_strategy` and route every lookup through the
-registry. Even better, make registration declarative so new strategies self-register:
+**Recommendation:** If strategies should drive bets, add a real Strategy
+interface and bind accepted records to executables through the registry:
 
 ```python
-def register_strategy(name):
-    def deco(cls):
-        registry.register(name, cls())
-        return cls
-    return deco
+class BetStrategy(Protocol):
+    def evaluate(self, game: GameContext) -> BetSignal | None: ...
 
-@register_strategy("value")
-class ValueBettingStrategy(BettingStrategy): ...
+_EXECUTORS: dict[str, BetStrategy] = {}
+def register_executor(strategy_id: str, impl: BetStrategy): _EXECUTORS[strategy_id] = impl
 
-def select_strategy(name):          # keep name, delegate to registry
-    return registry.get(name)
+def active_strategies(reg: StrategyRegistry) -> list[BetStrategy]:
+    return [_EXECUTORS[s.strategy_id]
+            for s in reg.get_accepted_strategies() if s.strategy_id in _EXECUTORS]
 ```
 
-Now `run_backtest.py` and the orchestrator share one registry and adding a
-strategy is one decorator, no `if/elif` edit.
+The pipeline then runs only `active_strategies(...)`, closing the loop between the
+registry's accept/reject decisions and live betting. If the registry is
+*intentionally* descriptive-only, rename it `strategy_catalog.py` to remove the
+false expectation that it is the Strategy pattern.
 
 ---
 
-### 2. Broken / leaky Singleton on `StrategyRegistry` — Importance 8/10
+### 2. Two independent circuit breakers with no shared state — Importance 8/10
 
-**File:** `src/strategy_registry.py:8-17`
+**Files:** `src/api/request_orchestrator.py:53` (`CircuitBreaker`),
+`src/utils/resilience.py:68-171` (pybreaker breakers + registry),
+`src/health/health_check.py:188`
+
+The resilience concern is implemented twice:
+- `RequestOrchestrator` carries its **own** hand-written `CircuitBreaker` class
+  (line 53), keyed per-API in `self.circuit_breakers` (lines 150-163), wired into
+  `_fetch_from_api`/`_process_request` (lines 211-213, 358-359, 386-387). This is
+  a correct, thread-safe breaker.
+- `src/utils/resilience.py` *separately* defines four `pybreaker.CircuitBreaker`
+  instances (`espn_breaker`, `odds_breaker`, `weather_breaker`, `llm_breaker`) with
+  a listener (line 68), decorators (`resilient_call` line 283, `with_resilience`
+  line 592), and a registry `CIRCUIT_BREAKERS` (line 166). `ESPNClient` uses
+  `espn_breaker` directly (`espn_client.py:87,102`).
+
+These two mechanisms cannot see each other's open/closed state. A failure learned
+by the orchestrator's breaker is invisible to `espn_breaker` and vice-versa.
+Critically, `check_api_health` only queries `resilience.get_circuit_status()`
+(`health_check.py:188-195`), so the `RequestOrchestrator`'s breakers are **never
+surfaced in health checks** — operational blind spot.
+
+There is also a subtle redundancy *inside* one path: `ESPNClient._make_request`
+both checks `espn_breaker.current_state` manually (line 87) *and* calls
+`espn_breaker.call(...)` (line 102) while running its own retry loop, so retries +
+breaker counting can interact in non-obvious ways.
+
+**Recommendation:** Standardize on the `pybreaker` set (it has listeners, a
+registry, and is already health-check-visible). Have `RequestOrchestrator`
+delegate to it and delete its own `CircuitBreaker`:
 
 ```python
-class StrategyRegistry:
-    _instance = None
-    _strategies: Dict[str, Any] = {}      # class attribute — shared by ALL instances
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+from src.utils.resilience import CIRCUIT_BREAKERS
+breaker = CIRCUIT_BREAKERS.get(request.api_name) or CIRCUIT_BREAKERS["odds"]
+return breaker.call(self._fetch_from_api, request)
 ```
 
-Issues:
-- `_strategies` is a **class attribute**, so even if `__new__` failed to enforce
-  the singleton, all instances would still share state — the singleton is doing
-  nothing useful. The instance-uniqueness and the shared-state are conflated.
-- `__new__` runs every construction but `__init__` (none defined) would re-run on
-  every `StrategyRegistry()` call if added later — a classic Singleton-via-`__new__`
-  footgun.
-- A module-level instance `registry = StrategyRegistry()` (line 67) already exists,
-  so the Singleton machinery is redundant: in Python a module-level object *is*
-  the idiomatic singleton.
-
-**Recommendation:** Drop `__new__` and the class-level `_strategies`; make
-`_strategies` an instance attribute initialized in `__init__`, and rely on the
-module-level `registry` as the single shared instance:
-
-```python
-class StrategyRegistry:
-    def __init__(self):
-        self._strategies: dict[str, Any] = {}
-    ...
-registry = StrategyRegistry()   # the one shared instance
-```
-
-This is simpler and removes the false sense of safety the `__new__` guard gives.
+This unifies state, makes health checks complete, and removes ~55 lines of
+duplicate breaker code.
 
 ---
 
-### 3. Orchestrator is a god-object that hardwires concrete classes (missing Factory / DI) — Importance 9/10
+### 3. Bet sizing (Kelly) is implemented three times, inconsistently — Importance 8/10
 
-**File:** `src/orchestrator/main_orchestrator.py`
+**Files:** `src/betting/kelly.py:19` (`KellyCriterion`),
+`src/orchestrator/master_pipeline.py:453` (`MasterPipeline.calculate_bet_size`),
+plus profile constants in `src/config/settings.py:147-169`
 
-The orchestrator is a reasonable **Facade** in spirit (`run_pipeline` exposes one
-simple entry point over a six-step flow, lines 23-45), but its internals defeat
-every abstraction:
+There are at least three Kelly implementations:
+- `KellyCriterion.calculate_bet_size` (`kelly.py:46`) — fractional Kelly with
+  aggressive favorite multipliers (lines 84-114), `min_edge=0.02` default.
+- `MasterPipeline.calculate_bet_size` (`master_pipeline.py:453`) — a **separate,
+  duplicate** Kelly formula (`kelly = (b*p - q)/b`, line 469) with its own
+  fractional logic (`0.25 + confidence*0.25`, line 472) and `max_bet_pct` from
+  `PipelineConfig` (line 59). It does **not** use `KellyCriterion` at all.
+- `BacktestEngine` (`src/backtesting/engine.py:31`) constructs `KellyCriterion`
+  from a free-form `config` dict, so the backtest and the live `MasterPipeline`
+  size bets with **different code paths and different defaults**.
 
-- Each step does a **function-local import + direct instantiation** of a concrete
-  class: `OddsAPIClient`/`SportsDataClient` (lines 60-64), `FeatureEngineer`
-  (74), `EnsembleAgent` (80), `Notifier` (106), `calculate_kelly` (95). This makes
-  the pipeline impossible to test or reconfigure without monkeypatching imports.
-- **Hardcoded secret:** `OddsAPIClient(api_key="hardcoded_key_123")` (line 63) —
-  ignores `src/config/settings.py` which already reads `ODDS_API_KEY` from env.
-- **Direct persistence:** `_save_results` (lines 110-117) opens `sqlite3` inline
-  with raw SQL, duplicating `DataPipeline` (`src/features/data_pipeline.py`) and
-  bypassing it entirely.
-- `self.data_pipeline`, `self.feature_engineer`, `self.models`, `self.strategies`
-  are initialized to `None`/`{}` (lines 17-20) and **never used** — dead fields
-  hinting at an intended-but-unbuilt DI design.
+This is the most consequential duplication: backtest results will not match live
+sizing because the two go through different Kelly math, undermining the whole
+point of backtesting. The `min_edge` value also disagrees across sources (0.02 in
+`kelly.py`, 0.03 in `settings.betting.min_edge` and `PipelineConfig`).
 
-**Recommendation:** Introduce constructor injection (a simple Factory or just
-passing collaborators in), and read config from `settings`:
+**Recommendation:** Make `KellyCriterion` the single sizing component and have
+`MasterPipeline` and `BacktestEngine` both depend on it, seeded from `settings`:
 
 ```python
-class MainOrchestrator:
-    def __init__(self, clients=None, feature_engineer=None,
-                 agent=None, notifier=None, repo=None):
-        self.clients = clients or default_clients(settings)
-        self.feature_engineer = feature_engineer or FeatureEngineer()
-        self.agent = agent or EnsembleAgent()
-        self.notifier = notifier or Notifier()
-        self.repo = repo or DataPipeline()
+# master_pipeline.py
+from src.betting.kelly import KellyCriterion
+self.kelly = KellyCriterion(kelly_fraction=settings.betting.kelly_fraction,
+                            min_edge=settings.betting.min_edge,
+                            max_bet_pct=self.config.max_bet_pct)
+# then: bet = self.kelly.calculate_bet_size(our_prob, decimal_odds, bankroll)
 ```
 
-Now tests inject fakes, secrets come from `settings`, and persistence goes
-through the repository. A small `client_factory(settings)` would centralize the
-API-client construction (the missing Factory).
+Delete `MasterPipeline.calculate_bet_size`. Now backtest and live betting are
+provably the same sizing logic.
 
 ---
 
-### 4. CircuitBreaker (resilience Decorator) is defined but never used — Importance 7/10
+### 4. No Repository abstraction — raw `sqlite3` scattered across 4+ modules — Importance 7/10
 
-**File:** `src/self_healing/circuit_breaker.py`
+**Files:** `src/utils/odds_cache.py:138` (`_init_database`, plus inserts at 318/571),
+`src/health/health_check.py:117`, `src/agents/worker_agents.py:89/107`,
+`src/data_pipeline.py` (parquet-based cache), and the *good* seed
+`src/agents/query_builder.py:15` (`QueryBuilder`)
 
-The `CircuitBreaker` class (lines 17-52) is a correct, idiomatic state-machine
-implementation (CLOSED/OPEN/HALF_OPEN, timeout-based recovery). However:
+Persistence is implemented ad hoc in multiple places, each opening its own
+`sqlite3.connect`:
+- `OddsCache` owns an `odds_snapshots` table (`odds_cache.py:144`) and writes line
+  movement itself.
+- `DatabaseAgent` (`worker_agents.py:42`) opens `data/odds_history.db` and
+  delegates to `QueryBuilder` — which is the **one place doing it right**:
+  schema-aware, validated, parameterized CRUD (`store_prediction` line 124,
+  `store_bet` line 199, `get_line_movement` line 74).
+- `health_check.py` opens databases directly for integrity checks.
+- `src/data_pipeline.py` (`NFLDataPipeline`) is a separate parquet-file repository
+  for nflverse data with its own caching (`cache_days`, line 61).
 
-- `grep` across `src/`, `agents/`, `dashboard/`, `scripts/` shows **zero usages** —
-  it is dead resilience code.
-- It imports `wraps` and `Enum` (lines 5-6) suggesting an intended `@decorator`
-  form, but only exposes a `.call(func, *args)` wrapper, not a decorator. The
-  resilience-Decorator pattern is half-built.
-- HALF_OPEN handling is subtly incomplete: a single success in HALF_OPEN closes
-  the circuit (`_on_success`, line 43-45), but there is no limit on concurrent
-  HALF_OPEN trial calls.
+So `QueryBuilder` already proves a clean Repository is achievable, but `OddsCache`
+and the rest bypass it and write the same `odds_snapshots` table through different
+code. Two writers, one table, different column handling → drift risk.
 
-The natural place to apply it — the network calls in
-`src/api/odds_api_client.py` and `src/api/sports_data_client.py` — uses bare
-`try/except` returning `[]` (e.g. `odds_api_client.py:30-32`), with no breaker,
-retry, or backoff.
-
-**Recommendation:** Expose a decorator form and wrap the API clients:
-
-```python
-def circuit(breaker):
-    def deco(fn):
-        @wraps(fn)
-        def wrapper(*a, **k):
-            return breaker.call(fn, *a, **k)
-        return wrapper
-    return deco
-
-# odds_api_client.py
-@circuit(odds_breaker)
-def get_odds(self, week): ...
-```
-
-This turns a defined-but-dead pattern into actual resilience at the integration
-boundary, importance bumped by the fact that these are flaky third-party APIs.
+**Recommendation:** Promote `QueryBuilder` (or a thin `OddsHistoryRepository`
+wrapping it) to *the* persistence interface and route `OddsCache`'s
+`_store_to_database` (`odds_cache.py:315`) and any other writers through it.
+Centralizes schema, connection lifetime, and parameterization, and removes the
+duplicate `odds_snapshots` write path.
 
 ---
 
-### 5. Proxy/cache (`OddsCache`) is instantiated but never consulted — Importance 7/10
+### 5. `settings` config singleton is well-built but widely bypassed — Importance 7/10
 
-**File:** `src/utils/odds_cache.py`; **use site:** `src/orchestrator/main_orchestrator.py:16`
+**File:** `src/config/settings.py` (singleton via `@lru_cache get_settings`, line
+435; instance `settings`, line 444), vs. `src/betting/kelly.py:22-28`,
+`src/orchestrator/master_pipeline.py:472`, `src/backtesting/engine.py:32-35`
 
-`OddsCache` (lines 9-35) is a correct TTL cache (get checks expiry and evicts,
-set stamps time). It is the closest thing to a caching **Proxy** in the codebase.
-But:
+`settings` is genuinely good: layered sources (env → `.env` → Streamlit secrets →
+`config.yaml` → defaults), nested pydantic groups (`BettingSettings.kelly_fraction`
+line 151 with a validator at 171, `min_edge` line 161), a pydantic-free
+`FallbackSettings` (line 448), `reload_settings` (line 500), and a single cached
+instance. This is the right way to do a config singleton.
 
-- The orchestrator does `self.cache = OddsCache()` (line 16) and then **never
-  calls `get`/`set`** — `_collect_data` (lines 57-69) hits the APIs every run.
-- There are two competing cache instances: the per-orchestrator `self.cache` and
-  a module-level `_global_cache` (line 39) with `get_cached_odds`/`cache_odds`
-  helpers — also unused. Two caches, neither wired in.
-- A true Proxy would sit *in front of* `OddsAPIClient` so callers cannot bypass
-  it; here the cache is a sibling object that everyone forgets to use.
+But adoption is near-zero in the betting core:
+- `KellyCriterion.__init__` hardcodes `kelly_fraction=0.25`, `min_edge=0.02`, etc.
+  (`kelly.py:22-28`) instead of reading `settings.betting.*` — and `min_edge` even
+  contradicts `settings.betting.min_edge=0.03`.
+- `MasterPipeline.calculate_bet_size` hardcodes the fractional-Kelly range
+  (`master_pipeline.py:472`) and `PipelineConfig` re-declares thresholds
+  (lines 49-50, 59) that already exist in `settings`.
+- `MasterPipeline.fetch_todays_games` reads `os.getenv("ODDS_API_KEY")` directly
+  (`master_pipeline.py:250`) instead of `settings.api.odds_api_key`.
 
-**Recommendation:** Implement a caching proxy that wraps the client so caching is
-unbypassable:
+**Recommendation:** Default these components from `settings`, keeping explicit
+args only for test overrides:
 
 ```python
-class CachedOddsClient:
-    def __init__(self, inner: OddsAPIClient, cache: OddsCache):
-        self._inner, self._cache = inner, cache
-    def get_odds(self, week):
-        key = f"odds:{week}"
-        hit = self._cache.get(key)
-        if hit is not None:
-            return hit
-        data = self._inner.get_odds(week)
-        self._cache.set(key, data)
-        return data
+class KellyCriterion:
+    def __init__(self, kelly_fraction=None, min_edge=None, ...):
+        b = settings.betting
+        self.kelly_fraction = b.kelly_fraction if kelly_fraction is None else kelly_fraction
+        self.min_edge = b.min_edge if min_edge is None else min_edge
 ```
 
-Inject `CachedOddsClient` where the raw client is used today. Delete the unused
-`_global_cache` to remove the second source of truth.
+This makes the "single source of truth" actually authoritative (and pairs with
+Finding 3).
 
 ---
 
-### 6. No Repository pattern — data access is scattered and duplicated — Importance 8/10
+### 6. No shared DTO/value object for predictions & bet signals — Importance 6/10
 
-**Files:** `src/features/data_pipeline.py`, `src/orchestrator/main_orchestrator.py:110-117`
+**Evidence:** the codebase uses dataclasses well *within* modules — `PickResult`
+(`master_pipeline.py:92`), `GameData` (line 62), `PickAnalysis`/`CouncilDecision`
+(`llm_council.py:69/82`), `CacheStats` (`odds_cache.py:26`), `SwarmDecision`
+(`swarm_base.py:23`) — but they are **module-local and non-shared**.
 
-`DataPipeline` is *almost* a Repository (it owns the `games` table and exposes
-`save_game`/`get_games`), which is appropriate. Problems:
+Across layers, betting data degrades to loose params and dicts: `KellyCriterion`
+takes bare floats plus `recent_performance: dict` (`kelly.py:46-51`);
+`BacktestEngine` reads rows by string key (`row["pred_prob"]`, `row["odds"]`,
+`engine.py:70-94`); `MasterPipeline` builds a dict for the council
+(`master_pipeline.py:421-435`) and `QueryBuilder.store_prediction` validates a
+free `dict` by string keys (`query_builder.py:139-147`). There is no single
+`Prediction`/`BetSignal` type shared by producer and consumer, so column/key
+names are an informal contract checked only at runtime.
 
-- It is misplaced under `src/features/` (feature engineering), not a data/persistence
-  package, and `fetch_and_store` (lines 61-67) mixes API fetching *into* the
-  repository with another hardcoded `api_key="key"`, blending Repository with a
-  data-source — two responsibilities.
-- The orchestrator's `_save_results` opens its own `sqlite3` connection with raw
-  SQL (lines 112-116), **completely bypassing** `DataPipeline`. So persistence
-  logic lives in two places against the same DB file (`betting.db`).
-- Every method opens/closes its own connection with no connection management,
-  transactions, or a shared interface — there is no `Repository` abstraction that
-  callers depend on.
-
-**Recommendation:** Define a `GameRepository` interface, keep only persistence
-concerns in it (move `fetch_and_store`'s API call out to the service/orchestrator
-layer), and route **all** writes (including `_save_results`) through it:
-
-```python
-class GameRepository(Protocol):
-    def save_game(self, week: int, data: dict) -> None: ...
-    def get_games(self, week: int) -> list[dict]: ...
-    def save_result(self, result: dict) -> None: ...
-```
-
-Inject one repository instance; delete the inline `sqlite3` in the orchestrator.
-
----
-
-### 7. No DTO / value objects — untyped `Dict` everywhere — Importance 6/10
-
-**Files:** pervasive; representative: `strategy_registry.py:42-63`,
-`main_orchestrator.py:90`, `ensemble_agent.py:33`
-
-Every boundary passes `Dict[str, Any]`. Strategy results are dicts
-(`{"bet": True, "confidence": ..., "type": ...}`), predictions are dicts, and the
-orchestrator blends them with `{**pred, **result}` (line 90), which silently
-allows key collisions and typos (`"ml_probability"` vs `"probability"` — see the
-inconsistency between `feature_engineering.py:19` and consumers). There is no
-compile-time or runtime contract.
-
-**Recommendation:** Introduce small `@dataclass` value objects for the key
-contracts (`Prediction`, `BetSignal`, `SizedBet`). They document the schema, make
-collisions impossible, and give type checkers something to verify:
+**Recommendation:** Define one shared frozen dataclass for the producer→consumer
+contract and use it at the Kelly, backtest, and persistence boundaries:
 
 ```python
 @dataclass(frozen=True)
-class BetSignal:
-    bet: bool
-    confidence: float
-    strategy_type: str
+class Prediction:
+    game_id: str
+    prob_win: float
+    odds: float            # decimal
+    recent_win_rate_10: float | None = None
 ```
 
-Start with the Strategy return type since it is the most-copied dict shape.
+`PickResult` already proves the team is comfortable with rich dataclasses; the gap
+is purely that the *inter-layer* contract isn't one.
 
 ---
 
-### 8. Duplicated, incompatible agent hierarchies (Template Method split in two) — Importance 6/10
+### 7. Two `__new__`-based singletons are the riskier idiom vs the module-global ones used elsewhere — Importance 5/10
 
-**Files:** `src/agents/base.py` vs `agents/base_agent.py`
+**Files:** `src/config/secrets.py:80` (`SecretsManager.__new__`),
+`src/swarms/model_loader.py:21` (`ModelLoader.__new__`), vs. the cleaner
+`get_settings`/`settings` (`settings.py:435/444`) and `get_council`
+(`llm_council.py:717`)
 
-There are two `BaseAgent` ABCs with **different contracts**: `src/agents/base.py`
-mandates `predict(features) -> List[Dict]` (used by `EnsembleAgent`), while
-`agents/base_agent.py` mandates `run(data) -> Dict` (used by
-`DataCollectorAgent`, `PredictionAgent`). Both use `@abstractmethod` correctly in
-isolation (a fine Template Method), but having two parallel package trees
-(`src/agents` and top-level `agents`) means agents cannot be used
-interchangeably, and `SwarmCoordinator.coordinate` (`swarm_coordinator.py:18-23`)
-calls `agent.predict(data)` — which the top-level `run`-based agents do not
-implement, so the swarm can only ever hold `src/agents` agents.
+The codebase mixes two singleton idioms. The module-global + accessor idiom
+(`settings`, `_council_instance`/`get_council`, `message_bus` at
+`message_bus.py:122`, `agent_registry` at `base_agent.py:282`) is clean and
+Pythonic. The `__new__`-guarded idiom in `secrets.py` and `model_loader.py` uses
+the `_instance` + `_initialized` flag pattern — which works but is the classic
+footgun: `__init__` still re-runs on every `ClassName()` call, so any future
+`__init__` body must guard on `self._initialized`. `secrets.py` also wraps this in
+`@lru_cache` at line 180, layering two singleton mechanisms on the same object.
 
-**Recommendation:** Collapse to one agent package and one base contract
-(pick `predict` or `run`, not both). Have `SwarmCoordinator` depend on that single
-interface. This also removes the dead top-level `agents/` package.
+**Recommendation:** Standardize on the module-global + `@lru_cache` accessor idiom
+the project already uses well for `settings`. Replace the `__new__` guards with:
 
----
+```python
+@lru_cache(maxsize=1)
+def get_secrets() -> SecretsManager: return SecretsManager()
+```
 
-### 9. Logger factory is fine but is not a Singleton-managed component — Importance 3/10
-
-**File:** `src/utils/logger.py`
-
-`get_logger` (lines 6-17) is a thin **Factory Method** over `logging.getLogger`
-and is correct: it guards against duplicate handlers with `if not logger.handlers`.
-This is appropriate and needs no Singleton — `logging` already returns the same
-logger object per name. Minor: most modules call `logging.getLogger(__name__)`
-directly (e.g. `kelly.py:5`, `notifier.py:5`) and **ignore** `get_logger`, so the
-nice formatter/handler setup is inconsistently applied across the codebase.
-
-**Recommendation:** Either standardize on `get_logger` everywhere or move handler
-configuration into a single `logging.config.dictConfig` call at app startup and
-let modules use plain `getLogger`. Pick one; today it is mixed.
+and a plain `__init__`. Removes the `_initialized` footgun and the
+double-singleton in `secrets.py`.
 
 ---
 
-### 10. `Settings` is a reasonable config singleton but is not actually used — Importance 4/10
+### 8. Caching Proxy is not enforced — callers can and do bypass the cache — Importance 6/10
 
-**File:** `src/config/settings.py`
+**Files:** `src/utils/odds_cache.py`, `agents/api_integrations.py:161-287`,
+`src/api/request_orchestrator.py:221`
 
-`Settings` (lines 6-16) reads all config from env with sensible defaults and is
-exported as a module-level singleton `settings` (line 20) — an appropriate,
-idiomatic pattern. The issue is purely that **callers ignore it**: API keys are
-hardcoded at call sites (`main_orchestrator.py:63`, `data_pipeline.py:64`) and
-Kelly fraction defaults are re-declared in `kelly.py:8` rather than read from
-`settings.kelly_fraction`. The pattern is correct; adoption is zero.
+`OddsCache` is excellent, but it is a *collaborator* objects pass around rather
+than a transparent Proxy in front of the client, so caching depends on each
+caller remembering to use it — and they don't do it uniformly:
+- Good path: `RequestOrchestrator._fetch_from_api` does cache-check then
+  `self.cache.set` (`request_orchestrator.py:221, 366`).
+- Leaky path: `agents/api_integrations.py` re-implements cache-aside inline
+  (lines 222-287) with its own `force_refresh`, `should_fetch_fresh`, and
+  `max_age_minutes` fallbacks (2hr/4hr). And `MasterPipeline.odds_api`
+  (`master_pipeline.py:152`) constructs `TheOddsAPI()` directly, so its caching
+  behaviour depends on that class's internals, not the orchestrator's.
 
-**Recommendation:** Inject `settings` into the components that need config and
-delete the hardcoded literals (ties into findings #3 and #6).
+**Recommendation:** Wrap the raw client in a caching proxy implementing the same
+interface so it cannot be bypassed:
+
+```python
+class CachedOddsClient:
+    def __init__(self, inner, cache: OddsCache):
+        self._inner, self._cache = inner, cache
+    def get_nfl_odds(self, **kw):
+        hit = self._cache.get("nfl_odds")
+        if hit is not None: return hit.get("data")
+        data = self._inner.get_nfl_odds(**kw)
+        self._cache.set({"data": data}, "nfl_odds")
+        return data
+```
+
+Inject it wherever `TheOddsAPI()` is built today and delete the hand-rolled cache
+logic in `api_integrations.py`.
 
 ---
 
-## Missing Patterns Worth Adding
+### 9. `OddsCache` carries two competing rate-limit surfaces — Importance 4/10
 
-- **Observer / event bus (Importance 6/10):** `AuditLogger`
-  (`src/audit/audit_logger.py`) and `Notifier` (`src/notifications/notifier.py`)
-  are both reactive sinks that the orchestrator must call imperatively
-  (`_notify`, line 103). An Observer/pub-sub would let audit, notification, and
-  the dashboard subscribe to pipeline events (`bet_placed`, `pipeline_complete`)
-  without the orchestrator knowing about each sink. `Notifier` even has an unused
-  `self.channels = []` (notifier.py:12) hinting at a multi-subscriber design that
-  was never built.
+**File:** `src/utils/odds_cache.py:98` (`api_usage` dict) vs. line 107
+(`token_bucket`)
 
-- **Chain of Responsibility for bet filtering (Importance 5/10):** Bet
-  acceptance currently mixes thresholds across `strategy.evaluate`, Kelly sizing,
-  and `settings.min_edge`/`max_bet_size` (unused). A small chain of validators
-  (min-edge → bankroll cap → max-bet-size → exposure limit) would make the
-  risk rules explicit, ordered, and individually testable instead of implicit in
-  scattered `if` checks.
+`OddsCache` keeps a legacy `self.api_usage` dict (line 98) *and* a
+`MultiAPITokenBucket` (line 107). `record_api_call` (line 616) and
+`should_fetch_fresh` (line 659) update/read both, with the bucket primary and the
+dict a hand-synced shadow (`if self.token_bucket: ... else: <legacy>`). This is
+duplicate state that can drift. The class also mixes three responsibilities
+(caching, the historical-odds DB, and rate limiting).
 
-- **Command pattern for the pipeline steps (Importance 4/10):** The six
-  `_collect / _engineer / _predict / _apply / _size / _notify` steps in
-  `run_pipeline` are a fixed sequence. Modeling each as a `Step`/Command object in
-  a list would enable retry, logging, skipping, and reordering uniformly — and
-  pairs naturally with the CircuitBreaker (finding #4) wrapping each command.
+**Recommendation:** Make the token bucket the single source of truth, derive any
+"remaining/monthly" figures from it on demand, and delete `self.api_usage`.
+Optionally extract the line-movement DB (`get_line_movement`, line 501) into the
+Repository from Finding 4.
 
-- **Adapter for API clients (Importance 5/10):** `OddsAPIClient` and
-  `SportsDataClient` expose different method names/shapes (`get_odds` vs
-  `get_stats`, different auth: query param vs header). A common
-  `DataSource`/Adapter interface would let `_collect_data` treat them uniformly
-  and make adding a new provider a drop-in.
+---
+
+### 10. `MasterPipeline` mostly avoids the god-object trap — keep it that way — Importance 3/10 (largely positive)
+
+**File:** `src/orchestrator/master_pipeline.py:125`
+
+Worth noting as a *good* pattern: `MasterPipeline` uses lazy-loading `@property`
+accessors for every collaborator (`odds_api`, `espn_api`, `llm_council`,
+`research_agent`, `adaptive_engine`, `visualizer`, lines 151-221) plus a
+fallback-chain in `fetch_todays_games` (odds → ESPN, lines 250-317). This is a
+reasonable Facade and keeps construction cheap. The only blemishes are the
+duplicate Kelly (Finding 3), direct `os.getenv` (Finding 5), and that
+collaborators are not injectable for testing (the properties hardcode the concrete
+class). A minimal improvement: let `__init__` accept optional pre-built
+collaborators and fall back to lazy construction, enabling test doubles without
+monkeypatching imports.
+
+---
+
+## Missing / Under-used Patterns Worth Adding
+
+- **Chain of Responsibility for bet acceptance (Importance 5/10):** Bet gating is
+  spread across `KellyCriterion` thresholds (`kelly.py:66-74`), `PipelineConfig`
+  thresholds (`master_pipeline.py:49-50`), the LLM council's `_assign_tier`
+  (`llm_council.py:686`), and `settings.betting.*`. An ordered chain
+  (min-probability → min-edge → tier → bankroll cap → exposure limit) would make
+  risk rules explicit, ordered, and individually testable instead of scattered.
+
+- **Unify the two orchestrators (Importance 5/10):** `MasterPipeline` (pipeline
+  stages) and `RequestOrchestrator` (API queueing/resilience) are complementary,
+  but `MasterPipeline` builds `TheOddsAPI()` directly rather than routing through
+  `RequestOrchestrator`, so its API calls miss the priority queue, dedup, and
+  breaker. Having `MasterPipeline` fetch via `RequestOrchestrator` would give the
+  whole pipeline one resilient data path.
+
+- **Observer at the pipeline layer (Importance 4/10):** A real `MessageBus`
+  already exists (`message_bus.py:17`) and is used by agents. Pipeline side
+  effects (notifications, audit, visualization) are still driven by direct calls
+  in `MasterPipeline.run_daily_pipeline` (lines 648-705). Emitting pipeline
+  lifecycle events (`pick_generated`, `pipeline_complete`) onto the existing bus
+  and letting sinks subscribe would decouple them — reusing the bus you have
+  rather than inventing a second eventing system.
 
 ---
 
 ## Items Unable to Verify
 
-- Whether any runtime wiring (e.g. dependency-injection container, plugin loader)
-  exists outside the reviewed Python files (config files, entry points). Only the
-  in-scope `.py` files were inspected.
-- Actual behavior of `SwarmCoordinator` with mixed agent types at runtime — no
-  call site instantiates it in the reviewed code, so the incompatibility in
-  finding #8 is inferred from the interfaces, not observed at runtime.
+- Whether the top-level `agents/` package classes (`agents/api_integrations.py`,
+  `agents/aggressive_kelly.py`, etc.) conform to the `src/agents/base_agent.py`
+  `BaseAgent` contract — they appear to be a separate, looser agent family
+  (`MasterPipeline` imports `TheOddsAPI`/`ESPNAPI` from `agents.api_integrations`,
+  not from `src/agents`), but their full class definitions were not read.
+- The task referenced `src/utils/odds_cache.py` as the Proxy example (confirmed,
+  correct) and a `features/data_pipeline.py` — no such file exists; the actual
+  modules are `src/data_pipeline.py` (parquet/nflverse repository) and
+  `src/features/pipeline.py` (the `FeaturePipeline` builder).
