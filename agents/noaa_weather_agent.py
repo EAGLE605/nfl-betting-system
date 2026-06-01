@@ -113,7 +113,7 @@ class NOAAWeatherAgent:
             else:
                 speed = int(wind_str.split()[0])
             return speed
-        except:
+        except Exception:
             return 8  # Default/average
     
     def _find_closest_period(self, periods: List, game_time: datetime) -> Dict:
