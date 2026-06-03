@@ -57,6 +57,7 @@ def _get_stable_secret_key() -> str:
     if secret_path.exists():
         return secret_path.read_text().strip()
     new_key = secrets.token_urlsafe(32)
+    secret_path.touch(mode=0o600, exist_ok=True)
     secret_path.write_text(new_key)
     return new_key
 
