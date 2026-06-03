@@ -85,7 +85,7 @@ class AutoRemediation:
             from src.utils.odds_cache import OddsCache
 
             cache = OddsCache()
-            cache.clear_memory_cache()
+            cache.clear_memory()
         except Exception:
             pass
         return {"remediated": True, "action": "cache_cleared"}

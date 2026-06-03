@@ -34,8 +34,10 @@ except ImportError:
     from src.features.form import FormFeatures
     from src.features.injury import InjuryFeatures
     from src.features.line import LineFeatures
+    from src.features.market import MarketFeatures
     from src.features.referee import RefereeFeatures
     from src.features.rest_days import RestDaysFeatures
+    from src.features.strength_of_schedule import StrengthOfScheduleFeatures
     from src.features.weather import WeatherFeatures
 
 logger = logging.getLogger(__name__)

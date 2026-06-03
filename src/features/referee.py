@@ -81,7 +81,7 @@ class RefereeFeatures(FeatureBuilder):
 
         if "home_team" in pbp.columns:
             home_penalties = (
-                penalties[penalties["penalty_team"] == penalties.get("home_team")]
+                penalties[penalties["penalty_team"] == penalties["home_team"]]
                 .groupby("game_id")
                 .agg(home_penalties=("penalty", "sum"))
                 .reset_index()

@@ -40,10 +40,19 @@ class ModelCalibrator:
     def calibrate(self, X_val: pd.DataFrame, y_val: pd.Series) -> None:
         estimator = self._get_estimator()
         if self.cv == "prefit":
-            self.calibrated_model = CalibratedClassifierCV(
-                estimator,
-                method=self.method,
-            )
+            try:
+                from sklearn.frozen import FrozenEstimator
+
+                self.calibrated_model = CalibratedClassifierCV(
+                    FrozenEstimator(estimator),
+                    method=self.method,
+                )
+            except ImportError:
+                self.calibrated_model = CalibratedClassifierCV(
+                    estimator,
+                    method=self.method,
+                    cv="prefit",
+                )
         else:
             self.calibrated_model = CalibratedClassifierCV(
                 estimator,

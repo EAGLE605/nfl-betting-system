@@ -161,7 +161,15 @@ class ValidationSwarm(SwarmBase):
         """Detect discrepancies across agent backtest results."""
         valid = [r for r in results if "error" not in r]
         if len(valid) < 2:
-            return {"consistent": True, "discrepancies": [], "n_valid": len(valid)}
+            roi_mean = float(valid[0]["roi"]) if valid else 0.0
+            wr_mean = float(valid[0]["win_rate"]) if valid else 0.0
+            return {
+                "consistent": True,
+                "discrepancies": [],
+                "n_valid": len(valid),
+                "roi_mean": roi_mean,
+                "win_rate_mean": wr_mean,
+            }
 
         rois = [r["roi"] for r in valid]
         win_rates = [r["win_rate"] for r in valid]
